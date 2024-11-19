@@ -10,7 +10,7 @@ Ti = ChemicalElement(
     atomic_number=22,  # Atomic number = 22 / Source: Periodic Table
     atomic_mass=47.867 * Constants.u,  # Atomic mass = 47.867 u / Source: NIST
     temperature_melt=1941,  # Melting temperature = 1941 K / Source: RSC
-    temperature_boil=3533,  # Boiling temperature = 3533 K / Source: RSC
+    temperature_boil=3560,  # Boiling temperature = 3560 K / Source: RSC
     latent_heat_of_fusion=18700,  # Latent heat of fusion = 18700 J/kg / Source: CRC
     latent_heat_of_vaporization=427000  # Latent heat of vaporization = 427000 J/kg / Source: CRC
 )
@@ -39,7 +39,7 @@ Fe = ChemicalElement(
     name="Iron",
     atomic_number=26,  # Atomic number = 26 / Source: Periodic Table
     atomic_mass=55.845 * Constants.u,  # Atomic mass = 55.845 u / Source: NIST
-    temperature_melt=1811,  # Melting temperature = 1811 K / Source: RSC
+    temperature_melt=1809,  # Melting temperature = 1809 K / Source: RSC
     temperature_boil=3134,  # Boiling temperature = 3134 K / Source: RSC
     latent_heat_of_fusion=13800,  # Latent heat of fusion = 13800 J/kg / Source: CRC
     latent_heat_of_vaporization=340000  # Latent heat of vaporization = 340000 J/kg / Source: CRC
@@ -73,4 +73,14 @@ Ni = ChemicalElement(
     temperature_boil=3186,  # Boiling temperature = 3186 K / Source: RSC
     latent_heat_of_fusion=17200,  # Latent heat of fusion = 17200 J/kg / Source: CRC
     latent_heat_of_vaporization=377000  # Latent heat of vaporization = 377000 J/kg / Source: CRC
+)
+
+Mo = ChemicalElement(
+    name="Molybdenum",
+    atomic_number=42,
+    atomic_mass=95.96 * Constants.u,
+    temperature_melt=2896,  # Melting temperature = 2896K (2623°C)
+    temperature_boil=4912,  # Boiling temperature = 4912K (4639°C)
+    latent_heat_of_fusion=37480,  # Latent heat of fusion = 37.48 kJ/mol
+    latent_heat_of_vaporization=598000  # Latent heat of vaporization = 598 kJ/mol
 )
