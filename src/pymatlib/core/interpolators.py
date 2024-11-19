@@ -32,7 +32,7 @@ def interpolate_equidistant(
         COUNT += 1
 
         sym_data = sp.IndexedBase(label + "_var", shape=len(v_array))
-        sym_idx = sp.symbols(label + '_idx', cls=sp.Idx)
+        sym_idx = sp.symbols(label + '_idx')  # , cls=sp.Idx)
         sym_dec = sp.Symbol(label + "_dec")
 
         T_base = Wrapper(T_base)  # T_base = sp.Float(T_base)

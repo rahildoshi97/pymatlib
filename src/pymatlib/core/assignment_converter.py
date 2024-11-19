@@ -4,7 +4,7 @@ import pystencils as ps
 from typing import List, Dict, Tuple, Union
 from pystencils.types.quick import Arr, Fp
 from pystencils.sympyextensions.typed_sympy import CastFunc
-from pymatlib.core import Assignment, ArrayTypes
+from pymatlib.core.typedefs import Assignment, ArrayTypes
 
 
 def type_mapping(type_str: str, length: int) -> Union[np.dtype, Arr]:
