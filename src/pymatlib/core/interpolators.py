@@ -2,7 +2,7 @@ import numpy as np
 import sympy as sp
 from typing import Union, List, Tuple
 from pymatlib.core.models import Wrapper, MaterialPropertyWrapper
-from pymatlib.core import Assignment, ArrayTypes, MaterialProperty
+from pymatlib.core.typedefs import Assignment, ArrayTypes, MaterialProperty
 
 COUNT = 0
 

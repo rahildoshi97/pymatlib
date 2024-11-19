@@ -1,0 +1,18 @@
+[project]
+name = "pymatlib"
+authors=[
+    {name = "Rahil Doshi", email = "rahil.doshi@fau.de"},
+]
+dependencies = [
+    "pystencils@git+https://i10git.cs.fau.de/pycodegen/pystencils.git@v2.0-dev"
+]
+requires-python = ">=3.10"
+readme = "README.md"
+version = "0.1.0"
+
+[build-system]
+requires = [
+    "setuptools>=69",
+]
+
+build-backend = "setuptools.build_meta"
