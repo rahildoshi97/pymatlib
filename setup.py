@@ -1,14 +1,9 @@
 from setuptools import setup, find_packages
-import versioneer
 
-
-def get_cmdclass():
-    return versioneer.get_cmdclass()
 
 setup(
     name='pymatlib',
-    # version='0.1.0',  # Update this version as needed
-    version=versioneer.get_version(),
+    version='0.1.0',  # Update this version as needed
     author='Rahil Doshi',  # Replace with your name
     author_email='rahil.doshi@fau.de',  # Replace with your email
     description='A Python based material library',
@@ -41,5 +36,4 @@ setup(
         ],
     },
     include_package_data=True,  # Include package data specified in MANIFEST.in
-    cmdclass=get_cmdclass(),  # Add command class from versioneer
 )
