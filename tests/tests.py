@@ -8,7 +8,7 @@ from src.pymatlib.data.alloys.SS316L.SS316L import create_SS316L
 from src.pymatlib.core.assignment_converter import type_mapping, assignment_converter
 from src.pymatlib.data.element_data import Fe, Cr, Mn, Ni
 from src.pymatlib.core.interpolators import interpolate_property, interpolate_lookup, interpolate_equidistant, \
-    test_equidistant
+    check_equidistant
 from src.pymatlib.core.models import density_by_thermal_expansion, thermal_diffusivity_by_heat_conductivity
 from src.pymatlib.core.typedefs import MaterialProperty, Assignment
 
@@ -17,16 +17,16 @@ def test_alloy_creation():
     # Test creating an alloy with valid elemental composition and phase transition temperatures
     alloy = Alloy(elements=[Fe, Cr, Mn, Ni], composition=[0.7, 0.2, 0.05, 0.05], temperature_solidus=1700, temperature_liquidus=1800)
     assert np.allclose(alloy.composition, [0.7, 0.2, 0.05, 0.05])
-    assert alloy.temperature_solidus == 1700
-    assert alloy.temperature_liquidus == 1800
+    assert alloy.temperature_solidus == 1700.
+    assert alloy.temperature_liquidus == 1800.
 
     # Test creating an alloy with invalid elemental composition
     with pytest.raises(ValueError):
-        Alloy(elements=[Fe, Cr], composition=[0.6, 0.5], temperature_solidus=1700, temperature_liquidus=1800)
+        Alloy(elements=[Fe, Cr], composition=[0.6, 0.5], temperature_solidus=1700., temperature_liquidus=1800.)
 
     # Test creating an alloy with invalid phase transition temperatures
     with pytest.raises(ValueError):
-        Alloy(elements=[Fe, Cr, Mn, Ni], composition=[0.7, 0.2, 0.05, 0.05], temperature_solidus=1900, temperature_liquidus=1800)
+        Alloy(elements=[Fe, Cr, Mn, Ni], composition=[0.7, 0.2, 0.05, 0.05], temperature_solidus=1900., temperature_liquidus=1800.)
 
 def test_create_SS316L():
     # Test creating SS316L alloy with a float temperature input
@@ -208,11 +208,11 @@ def temp():
 
 def test_test_equidistant(temp):
     # Test with equidistant temperature array
-    assert test_equidistant(temp) == 100.0
+    assert check_equidistant(temp) == 100.0
 
     # Test with non-equidistant temperature array
     temp_non_equidistant = np.array([100.0, 150.0, 300.0, 450.0, 500.0])
-    assert test_equidistant(temp_non_equidistant) == 0.0
+    assert check_equidistant(temp_non_equidistant) == 0.0
 
 def test_density_by_thermal_expansion():
     # Test calculating density with float temperature and thermal expansion coefficient inputs
