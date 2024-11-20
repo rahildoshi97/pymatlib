@@ -1,7 +1,7 @@
 import numpy as np
 import sympy as sp
 from typing import Union, List, Tuple
-from pymatlib.core.models import Wrapper, MaterialPropertyWrapper
+from pymatlib.core.models import wrapper, material_property_wrapper
 from pymatlib.core.typedefs import Assignment, ArrayTypes, MaterialProperty
 
 COUNT = 0
@@ -35,19 +35,19 @@ def interpolate_equidistant(
         sym_idx = sp.symbols(label + '_idx')  # , cls=sp.Idx)
         sym_dec = sp.Symbol(label + "_dec")
 
-        T_base = Wrapper(T_base)  # T_base = sp.Float(T_base)
-        T_incr = Wrapper(T_incr)  # T_incr = sp.Float(T_incr)
+        T_base = wrapper(T_base)  # T_base = sp.Float(T_base)
+        T_incr = wrapper(T_incr)  # T_incr = sp.Float(T_incr)
 
         pos = (T - T_base) / T_incr
         pos_dec = pos - sp.floor(pos)
 
         result = sp.Piecewise(
-            (Wrapper(v_array[0]), T < T_base),
-            (Wrapper(v_array[-1]), T >= T_base + (len(v_array) - 1) * T_incr),
+            (wrapper(v_array[0]), T < T_base),
+            (wrapper(v_array[-1]), T >= T_base + (len(v_array) - 1) * T_incr),
             ((1 - sym_dec) * sym_data[sym_idx] + sym_dec * sym_data[sym_idx + 1], True)
         )
         sub_expressions = [
-            Assignment(sym_data, tuple(Wrapper(v_array)), "double[]"),
+            Assignment(sym_data, tuple(wrapper(v_array)), "double[]"),
             Assignment(sym_idx, pos, "int"),
             Assignment(sym_dec, pos_dec, "double")
         ]
@@ -59,16 +59,16 @@ def interpolate_equidistant(
         min_temp = T_base
         max_temp = T_base + (n - 1) * T_incr
         if T < min_temp:
-            return MaterialPropertyWrapper(v_array[0])
+            return material_property_wrapper(v_array[0])
         elif T > max_temp:
-            return MaterialPropertyWrapper(v_array[-1])
+            return material_property_wrapper(v_array[-1])
 
         pos = (T - T_base) / T_incr
         pos_int = int(pos)
         pos_dec = pos - pos_int
 
         value = (1 - pos_dec) * v_array[pos_int] + pos_dec * v_array[pos_int + 1]
-        return MaterialPropertyWrapper(value)
+        return material_property_wrapper(value)
 
     else:
         raise ValueError(f"Unsupported type for T: {type(T)}")
@@ -101,8 +101,8 @@ def interpolate_lookup(
 
         sym_expr = sp.Symbol(label + "_expr")
 
-        T_array = Wrapper(T_array)
-        v_array = Wrapper(v_array)
+        T_array = wrapper(T_array)
+        v_array = wrapper(v_array)
 
         conditions = [
             (v_array[0], T < T_array[0]),
@@ -120,12 +120,12 @@ def interpolate_lookup(
 
     elif isinstance(T, float):
         if T < T_array[0]:
-            return MaterialPropertyWrapper(v_array[0])
+            return material_property_wrapper(v_array[0])
         elif T > T_array[-1]:
-            return MaterialPropertyWrapper(v_array[-1])
+            return material_property_wrapper(v_array[-1])
         else:
             v = np.interp(T, T_array, v_array)
-            return MaterialPropertyWrapper(float(v))
+            return material_property_wrapper(float(v))
     else:
         raise ValueError(f"Invalid input for T: {type(T)}")
 

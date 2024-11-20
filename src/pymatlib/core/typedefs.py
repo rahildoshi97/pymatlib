@@ -43,7 +43,6 @@ class Assignment:
 
 # Type aliases for various data types used in the project
 ArrayTypes = Union[np.ndarray, List, Tuple]  # Numerical values can be represented as numpy arrays, lists, or tuples
-# def evalf(self, symbol: sp.Symbol, temperature: Union[sp.Symbol, float, ArrayTypes]) -> Union[float, np.ndarray]:
 
 @dataclass
 class MaterialProperty:

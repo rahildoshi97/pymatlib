@@ -152,10 +152,8 @@ def run_tests() -> None:
         {"name": "Invalid Data Entries", "file_path": "test_files/test_data_invalid_data.txt"},
         {"name": "Mismatched Columns", "file_path": "test_files/test_data_mismatched_columns.txt"},
         {"name": "Missing Data Entries", "file_path": "test_files/test_data_missing_data.txt"},
-        {"name": "Ascending density_temperature values",
-         "file_path": "test_files/test_data_density_temperature_ascending.txt"},
-        {"name": "Descending density_temperature values",
-         "file_path": "test_files/test_data_density_temperature_descending.txt"}
+        {"name": "Ascending density_temperature values", "file_path": "test_files/test_data_density_temperature_ascending.txt"},
+        {"name": "Descending density_temperature values", "file_path": "test_files/test_data_density_temperature_descending.txt"}
     ]
 
     for case in test_cases:
