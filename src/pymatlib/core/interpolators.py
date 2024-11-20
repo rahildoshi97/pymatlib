@@ -58,9 +58,9 @@ def interpolate_equidistant(
 
         min_temp = T_base
         max_temp = T_base + (n - 1) * T_incr
-        if T < min_temp:
+        if T <= min_temp:
             return material_property_wrapper(v_array[0])
-        elif T > max_temp:
+        elif T >= max_temp:
             return material_property_wrapper(v_array[-1])
 
         pos = (T - T_base) / T_incr
@@ -115,13 +115,12 @@ def interpolate_lookup(
         sub_expressions = [
             Assignment(sym_expr, sp.Piecewise(*conditions), "double"),
         ]
-        # return MaterialProperty(sp.Piecewise(*conditions))
         return MaterialProperty(sym_expr, sub_expressions)
 
     elif isinstance(T, float):
-        if T < T_array[0]:
+        if T <= T_array[0]:
             return material_property_wrapper(v_array[0])
-        elif T > T_array[-1]:
+        elif T >= T_array[-1]:
             return material_property_wrapper(v_array[-1])
         else:
             v = np.interp(T, T_array, v_array)
@@ -130,15 +129,18 @@ def interpolate_lookup(
         raise ValueError(f"Invalid input for T: {type(T)}")
 
 
-def test_equidistant(temp: np.ndarray) -> float:
+def check_equidistant(temp: np.ndarray) -> float:
     """
     Tests if the temperature values are equidistant.
 
     :param temp: Array of temperature values.
     :return: The common difference if equidistant, otherwise 0.
     """
+    if len(temp) <= 1:
+        return 0.0
+
     temperature_diffs = np.diff(temp)
-    if np.allclose(temperature_diffs, temperature_diffs[0], atol=1e-12):
+    if np.allclose(temperature_diffs, temperature_diffs[0], atol=1e-10):
         return float(temperature_diffs[0])
     return 0
 
@@ -147,7 +149,7 @@ def interpolate_property(
         T: Union[float, sp.Symbol],
         temp_array: ArrayTypes,
         prop_array: ArrayTypes,
-        temp_array_limit: int = 6,
+        temp_array_limit: int = 6,  # if len(temp_array) <= 5, force_lookup
         force_lookup: bool = False) -> MaterialProperty:
     """
     Perform interpolation based on the type of temperature array (equidistant or not).
@@ -160,6 +162,8 @@ def interpolate_property(
     :return: Interpolated value.
     :raises ValueError: If T_array and v_array lengths do not match.
     """
+    if len(temp_array) <= 1 or len(prop_array) <= 1:
+        raise ValueError(f"Length of temp_array {len(temp_array)} or length of prop_array {len(prop_array)} <= 1")
     # Ensure that temp_array and prop_array are arrays
     if not isinstance(temp_array, (Tuple, List, np.ndarray)):
         raise TypeError(f"Expected temp_array to be a list or array or tuple, got {type(temp_array)}")
@@ -174,7 +178,7 @@ def interpolate_property(
         temp_array = np.flip(temp_array)
         prop_array = np.flip(prop_array)
 
-    incr = test_equidistant(np.asarray(temp_array))
+    incr = check_equidistant(np.asarray(temp_array))
 
     if force_lookup or incr == 0 or len(temp_array) < temp_array_limit:
         print('interpolate_lookup')
