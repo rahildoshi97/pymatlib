@@ -47,7 +47,7 @@ addopts = "-v" # --cov=pymatlib
 testpaths = [
     "tests",
 ]
-# pythonpath = ["src"]
+pythonpath = ["src"]
 
 [tool.setuptools]
 include-package-data = true
