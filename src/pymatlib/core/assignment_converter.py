@@ -3,12 +3,12 @@ import sympy as sp
 import pystencils as ps
 from typing import List, Dict, Tuple, Union
 from pystencils.types.quick import Arr, Fp
-from pystencils.types import create_type
+from pystencils.types import create_type, PsType
 from pystencils.sympyextensions.typed_sympy import CastFunc
 from pymatlib.core.typedefs import Assignment, ArrayTypes
 
 
-def type_mapping(str_type: str, length: int) -> Union[np.dtype, Arr]:
+def type_mapping(str_type: str, length: int) -> Union[PsType, Arr]:
     """
     Maps a string representation of a type to a corresponding numpy or pystencils data type.
 
@@ -31,17 +31,17 @@ def type_mapping(str_type: str, length: int) -> Union[np.dtype, Arr]:
         return Arr(Fp(64, const=True), length)  # 64-bit floating point array
     elif str_type == "float[]":
         return Arr(Fp(32, const=True), length)  # 32-bit floating point array
-    elif str_type == "double":
-        return np.dtype('float64')
-    elif str_type == "float":
-        return np.dtype('float32')
-    elif str_type == "int":
-        return np.dtype('int32')
-    elif str_type == "bool":
-        return np.dtype('bool')
+    # elif str_type == "double":
+    #     return np.dtype('float64')
+    # elif str_type == "float":
+    #     return np.dtype('float32')
+    # elif str_type == "int":
+    #     return np.dtype('int32')
+    # elif str_type == "bool":
+    #     return np.dtype('bool')
     else:
-        # return create_type(str_type)
-        raise ValueError(f"Unsupported type string: {str_type}")
+        return create_type(str_type)
+        # raise ValueError(f"Unsupported type string: {str_type}")
 
 
 def assignment_converter(assignment_list: List[Assignment]) \

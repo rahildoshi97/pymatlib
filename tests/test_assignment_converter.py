@@ -4,8 +4,10 @@ import sympy as sp
 import pystencils as ps
 from pystencils.types import PsArrayType
 from pystencils.types.quick import Arr, Fp
+from pystencils.types import create_type
 from pymatlib.core.typedefs import Assignment
 from pymatlib.core.assignment_converter import type_mapping, assignment_converter
+from sympy.codegen.ast import float64, float32
 
 
 def test_type_mapping():
@@ -13,17 +15,17 @@ def test_type_mapping():
     # Test array types
     array_type = type_mapping("double[]", 5)
     assert isinstance(array_type, PsArrayType)
-    assert array_type.base_type.width == 64  # Check if it's 64-bit (double)
+    assert array_type.base_type == create_type("float64")  # Check if it's 64-bit (double)
 
     array_type = type_mapping("float[]", 3)
     assert isinstance(array_type, PsArrayType)
-    assert array_type.base_type.width == 32  # Check if it's 32-bit (double)
+    assert array_type.base_type == create_type("float32")  # Check if it's 32-bit (double)
 
     # Test scalar types
-    assert type_mapping("double", 1) == np.dtype('float64')
-    assert type_mapping("float", 1) == np.dtype('float32')
-    assert type_mapping("int", 1) == np.dtype('int32')
-    assert type_mapping("bool", 1) == np.dtype('bool')
+    assert type_mapping("double", 1) == create_type('float64')
+    assert type_mapping("float", 1) == create_type('float32')
+    assert type_mapping("int", 1) == create_type('int64')
+    assert type_mapping("bool", 1) == create_type('bool')
 
     # Test invalid type
     with pytest.raises(ValueError):
