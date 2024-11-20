@@ -5,9 +5,50 @@ from pymatlib.core.elements import (ChemicalElement,
                                     interpolate_atomic_mass,
                                     interpolate_atomic_number,
                                     interpolate_temperature_boil)
-from pymatlib.data.element_data import Ti, Al, V
 from pymatlib.core.typedefs import ArrayTypes, PropertyTypes
 
+
+class AlloyCompositionError(ValueError):
+    """Exception raised when alloy composition validation fails."""
+    pass
+
+class AlloyTemperatureError(ValueError):
+    """Exception raised when alloy temperature validation fails."""
+    pass
+
+'''class PropertyTypeChecker:
+    """
+    A descriptor class for handling property type checking.
+    
+    Args:
+        name (str): Name of the property to check.
+    
+    Raises:
+        TypeError: If the value being set is not None and not of type PropertyTypes.
+    """
+    def __init__(self, name: str):
+        self.private_name = f'_{name}'
+
+    def __get__(self, obj, objtype=None):
+        """Get the property value."""
+        if obj is None:
+            return self
+        return getattr(obj, self.private_name)
+
+    def __set__(self, obj, value):
+        """
+        Set the property value with type checking.
+        
+        Args:
+            obj: The object instance.
+            value: The value to set.
+            
+        Raises:
+            TypeError: If value is not None and not of type PropertyTypes.
+        """
+        if value is not None and not isinstance(value, get_args(PropertyTypes)):
+            raise TypeError(f"{self.private_name[1:]} must be of type PropertyTypes (float or MaterialProperty)")
+        setattr(obj, self.private_name, value)'''
 
 @dataclass
 class Alloy:
@@ -34,6 +75,11 @@ class Alloy:
             surface_tension (PropertyTypes): Surface tension of the alloy.
             thermal_diffusivity (PropertyTypes): Thermal diffusivity of the alloy.
             thermal_expansion_coefficient (PropertyTypes): Thermal expansion coefficient of the alloy.
+
+    Raises:
+        AlloyCompositionError: If the composition fractions don't sum to 1.0.
+        AlloyTemperatureError: If solidus temperature is greater than liquidus temperature.
+        ValueError: If elements list is empty or composition length doesn't match elements length.
     """
     elements: List[ChemicalElement]
     composition: ArrayTypes  # List of fractions summing to 1.0
@@ -57,6 +103,29 @@ class Alloy:
     thermal_diffusivity: PropertyTypes = None
     thermal_expansion_coefficient: PropertyTypes = None
 
+    '''# Private fields for properties
+    _density: PropertyTypes = field(default=None, init=False, repr=False)
+    _dynamic_viscosity: PropertyTypes = field(default=None, init=False, repr=False)
+    _heat_capacity: PropertyTypes = field(default=None, init=False, repr=False)
+    _heat_conductivity: PropertyTypes = field(default=None, init=False, repr=False)
+    _kinematic_viscosity: PropertyTypes = field(default=None, init=False, repr=False)
+    _latent_heat_of_fusion: PropertyTypes = field(default=None, init=False, repr=False)
+    _latent_heat_of_vaporization: PropertyTypes = field(default=None, init=False, repr=False)
+    _surface_tension: PropertyTypes = field(default=None, init=False, repr=False)
+    _thermal_diffusivity: PropertyTypes = field(default=None, init=False, repr=False)
+    _thermal_expansion_coefficient: PropertyTypes = field(default=None, init=False, repr=False)
+    
+    # Property descriptors
+    density = PropertyTypeChecker("density")
+    dynamic_viscosity = PropertyTypeChecker("dynamic_viscosity")
+    heat_capacity = PropertyTypeChecker("heat_capacity")
+    heat_conductivity = PropertyTypeChecker("heat_conductivity")
+    kinematic_viscosity = PropertyTypeChecker("kinematic_viscosity")
+    latent_heat_of_fusion = PropertyTypeChecker("latent_heat_of_fusion")
+    latent_heat_of_vaporization = PropertyTypeChecker("latent_heat_of_vaporization")
+    surface_tension = PropertyTypeChecker("surface_tension")
+    thermal_diffusivity = PropertyTypeChecker("thermal_diffusivity")
+    thermal_expansion_coefficient = PropertyTypeChecker("thermal_expansion_coefficient")'''
 
     def solidification_interval(self) -> Tuple[float, float]:
         """
@@ -67,67 +136,44 @@ class Alloy:
         """
         return self.temperature_solidus, self.temperature_liquidus
 
-    def __post_init__(self) -> None:
+    def _validate_composition(self) -> None:
         """
-        Initializes properties based on elemental composition and validates the composition and phase transition temperatures.
+        Validate the alloy composition.
 
         Raises:
-            ValueError: If the sum of the composition array does not equal 1 or if the solidus temperature is greater than the liquidus temperature.
+            ValueError: If elements list is empty or composition length doesn't match elements length.
+            AlloyCompositionError: If composition fractions don't sum to 1.0.
         """
-        if not np.isclose(sum(self.composition), 1.0, atol=1e-12):
-            raise ValueError(f"The sum of the composition array must be 1.0, got {sum(self.composition)}")
+        if not self.elements:
+            raise ValueError("Elements list cannot be empty")
+        if len(self.elements) != len(self.composition):
+            raise ValueError(f"Number of elements ({len(self.elements)}) must match composition length ({len(self.composition)})")
+        if not np.isclose(sum(self.composition), 1.0, atol=1e-10):
+            raise AlloyCompositionError(f"The sum of the composition array must be 1.0, got {sum(self.composition)}")
 
+    def _validate_temperatures(self) -> None:
+        """
+        Validate the alloy temperatures.
+
+        Raises:
+            AlloyTemperatureError: If solidus temperature is greater than liquidus temperature.
+        """
         if self.temperature_solidus > self.temperature_liquidus:
-            raise ValueError("The solidus temperature must be less than or equal to the liquidus temperature.")
+            raise AlloyTemperatureError("The solidus temperature must be less than or equal to the liquidus temperature.")
 
-        # utils = ElementUtils()
+    def _calculate_properties(self) -> None:
+        """Calculate derived properties based on composition."""
         self.atomic_number = interpolate_atomic_number(self.elements, self.composition)
         self.atomic_mass = interpolate_atomic_mass(self.elements, self.composition)
         self.temperature_boil = interpolate_temperature_boil(self.elements, self.composition)
 
+    def __post_init__(self) -> None:
+        """
+        Initialize and validate the alloy properties.
 
-if __name__ == '__main__':
-    try:
-        # Valid case
-        Ti64 = Alloy([Ti, Al, V], [0.90, 0.06, 0.04], 1878, 1928)
-        print(f"Calculated Atomic Number: {0.90 * Ti.atomic_number + 0.06 * Al.atomic_number + 0.04 * V.atomic_number}")
-        print(f"Alloy Atomic Number: {Ti64.atomic_number}")
-        print(f"Initial Heat Conductivity: {Ti64.heat_conductivity}")
-        Ti64.heat_conductivity = 34
-        print(f"Updated Heat Conductivity: {Ti64.heat_conductivity}")
-        print(f"Boiling Temperature (Before Change): {Ti64.temperature_boil}")
-        Ti64.temperature_boil = 1000
-        print(f"Boiling Temperature (After Change): {Ti64.temperature_boil}")
-
-        # Invalid Composition
-        try:
-            invalid_alloy = Alloy([Ti, Al], [0.5, 0.5], 1878, 1928)
-        except ValueError as e:
-            print(f"Invalid Composition Test Passed: {e}")
-
-        # Empty Composition
-        try:
-            empty_composition_alloy = Alloy([Ti], [], 1878, 1928)
-        except ValueError as e:
-            print(f"Empty Composition Test Passed: {e}")
-
-        # Single Element Alloy
-        single_element_alloy = Alloy([Ti], [1.0], 1878, 1928)
-        print(f"Single Element Alloy Atomic Number: {single_element_alloy.atomic_number}")
-
-        # Invalid Property Assignment
-        try:
-            Ti64.heat_conductivity = "invalid_value"  # type: ignore
-        except TypeError as e:
-            print(f"Invalid Property Assignment Test Passed: {e}")
-
-        # Boundary Values for Temperatures
-        boundary_alloy = Alloy([Ti, Al, V], [0.33, 0.33, 0.34], -273.15, 10000)
-        print(f"Boundary Temperatures: Solidus={boundary_alloy.temperature_solidus}, Liquidus={boundary_alloy.temperature_liquidus}")
-
-        # Properties Initialization
-        default_alloy = Alloy([Ti], [1.0], 1878, 1928)
-        print(f"Default Density: {default_alloy.density}")
-
-    except Exception as e:
-        print(f"An unexpected error occurred: {e}")
+        Called automatically after the dataclass initialization.
+        Validates composition and temperatures, then calculates derived properties.
+        """
+        self._validate_composition()
+        self._validate_temperatures()
+        self._calculate_properties()
