@@ -1,6 +1,5 @@
 import numpy as np
 from typing import Union, Tuple
-from pymatlib.tests.create_test_files import create_test_files
 
 
 def print_results(file_path: str, temperatures: np.ndarray, material_property: np.ndarray) -> None:
@@ -20,50 +19,43 @@ def print_results(file_path: str, temperatures: np.ndarray, material_property: n
 
 def read_data(file_path: str, header: bool = True) -> Tuple[np.ndarray, np.ndarray]:
     """
-    Reads temperature and property data from a file and returns both the original and cleaned data.
+    Reads temperature and property data from a file.
 
-    Parameters:
+    Args:
         file_path (str): The path to the data file.
-        header (bool): Indicates if the file contains a header row. If True, the first row is skipped.
+        header (bool): Indicates if the file contains a header row.
 
     Returns:
-        Tuple[np.ndarray, np.ndarray]:
-            - Original temperatures and properties if the data is clean.
-            - Empty arrays if there are errors in the data.
+        Tuple[np.ndarray, np.ndarray]: Temperature and property arrays.
 
     Raises:
-        ValueError: If the data file has more or fewer than two columns.
-        ValueError: If there are NaN values in either the temperature or property columns.
-        ValueError: If there are duplicate temperature entries.
+        ValueError: If:
+            - Data has incorrect number of columns
+            - Data contains NaN values
+            - Data contains duplicate temperature entries
     """
-    try:
-        print(f"Reading data from file: {file_path}")
-        data = np.loadtxt(file_path, dtype=float, skiprows=1 if header else 0)
+    print(f"Reading data from file: {file_path}")
+    data = np.loadtxt(file_path, dtype=float, skiprows=1 if header else 0)
 
-        if data.ndim != 2 or data.shape[1] != 2:
-            raise ValueError("Data should have exactly two columns")
+    if data.ndim != 2 or data.shape[1] != 2:
+        raise ValueError("Data should have exactly two columns")
 
-        temp = data[:, 0]
-        prop = data[:, 1]
+    temp = data[:, 0]
+    prop = data[:, 1]
 
-        # Check for NaN values in both columns
-        if np.any(np.isnan(temp)) or np.any(np.isnan(prop)):
-            nan_rows = np.where(np.isnan(temp) | np.isnan(prop))[0] + 1  # 1-based indexing for row numbers
-            raise ValueError(f"Data contains NaN values in rows: {', '.join(map(str, nan_rows))}")
+    # Check for NaN values
+    if np.any(np.isnan(temp)) or np.any(np.isnan(prop)):
+        nan_rows = np.where(np.isnan(temp) | np.isnan(prop))[0] + 1
+        raise ValueError(f"Data contains NaN values in rows: {', '.join(map(str, nan_rows))}")
 
-        # Check for duplicate temperature values
-        unique_temp, counts = np.unique(temp, return_counts=True)
-        duplicates = unique_temp[counts > 1]
-        if len(duplicates) > 0:
-            duplicate_rows = [str(idx + 1) for idx, value in enumerate(temp) if value in duplicates]
-            raise ValueError(f"Duplicate temperature entries found in rows: {', '.join(duplicate_rows)}")
+    # Check for duplicate temperatures
+    unique_temp, counts = np.unique(temp, return_counts=True)
+    duplicates = unique_temp[counts > 1]
+    if len(duplicates) > 0:
+        duplicate_rows = [str(idx + 1) for idx, value in enumerate(temp) if value in duplicates]
+        raise ValueError(f"Duplicate temperature entries found in rows: {', '.join(duplicate_rows)}")
 
-        return temp, prop
-
-    except Exception as e:
-        print(f"Error reading data from {file_path}: {e}")
-        return np.array([]), np.array([])
-
+    return temp, prop
 
 def celsius_to_kelvin(temp: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
     """
@@ -76,7 +68,6 @@ def celsius_to_kelvin(temp: Union[float, np.ndarray]) -> Union[float, np.ndarray
         Union[float, np.ndarray]: Temperature(s) in Kelvin.
     """
     return temp + 273.15
-
 
 def fahrenheit_to_kelvin(temp: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
     """
@@ -105,8 +96,7 @@ def thousand_times(q: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
     """
     return q * 1000
 
-
-def test_equidistant(temp: np.ndarray, tolerance: float = 1.0e-3) -> Union[float, bool]:
+def check_equidistant(temp: np.ndarray, tolerance: float = 1.0e-3) -> Union[float, bool]:
     """
     Tests if the temperature values are equidistant.
 
@@ -133,7 +123,6 @@ def test_equidistant(temp: np.ndarray, tolerance: float = 1.0e-3) -> Union[float
             return float(unique_diffs[0])
 
     return False
-
 
 def run_tests() -> None:
     """
@@ -173,7 +162,7 @@ def run_tests() -> None:
         print(f"Converted Temperatures to Kelvin: {temp_kelvin}")
 
         # Check if temperatures are equidistant
-        dtemp = test_equidistant(temp_kelvin)
+        dtemp = check_equidistant(temp_kelvin)
         if not dtemp:
             print("Temperatures are not equidistant")
         else:
@@ -184,5 +173,4 @@ def run_tests() -> None:
 
 
 if __name__ == "__main__":
-    create_test_files()  # Ensure test files are created before running tests
     run_tests()
