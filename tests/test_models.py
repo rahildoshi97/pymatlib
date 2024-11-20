@@ -14,19 +14,19 @@ from pymatlib.core.typedefs import MaterialProperty
 def test_validate_density_parameters():
     """Test density parameter validation."""
     # Valid parameters
-    validate_density_parameters(300.0, 8000.0, 1e-6)
+    validate_density_parameters(300.0, 1000.0, 8000.0, 1e-6)
 
     # Test temperature validation
     with pytest.raises(ValueError, match="Temperature cannot be below absolute zero"):
-        validate_density_parameters(-274.0, 8000.0, 1e-6)
+        validate_density_parameters(-274.0, 1000., 8000.0, 1e-6)
 
     # Test density validation
     with pytest.raises(ValueError, match="Base density must be positive"):
-        validate_density_parameters(300.0, -8000.0, 1e-6)
+        validate_density_parameters(300.0, 1000., -8000.0, 1e-6)
 
     # Test thermal expansion coefficient validation
-    with pytest.raises(ValueError, match="Thermal expansion coefficient must be greater than -1"):
-        validate_density_parameters(300.0, 8000.0, -1.5)
+    with pytest.raises(ValueError, match="Thermal expansion coefficient must be greater than -3e-5"):
+        validate_density_parameters(300.0, 1000, 8000.0, -1.5)
 
 def test_validate_thermal_diffusivity_parameters():
     """Test thermal diffusivity parameter validation."""
@@ -175,3 +175,74 @@ def test_models():
 
         # Test assignment combination
         assert hasattr(result, 'assignments')
+
+def test_density_by_thermal_expansion1():
+    """Test calculating density with various inputs."""
+
+    # Test with float inputs
+    T = 1400.0
+    T_ref = 1000.0
+    rho_ref = 8000.0
+    alpha = 1e-5
+
+    result = density_by_thermal_expansion(T, T_ref, rho_ref, alpha)
+    assert np.isclose(result.expr, 7904.762911)  # Ensure this expected value is correct
+
+    # Test with symbolic temperature input
+    T_symbolic = sp.Symbol('T')
+    result_sym = density_by_thermal_expansion(T_symbolic, T_ref, rho_ref, alpha)
+    assert isinstance(result_sym, MaterialProperty)
+    assert np.isclose(result_sym.evalf(T_symbolic, T), 7904.76)
+
+    # Test with numpy array for temperature input
+    T_array = np.array([1300.0, 1400.0, 1500.0])
+    result_array = density_by_thermal_expansion(T_array, T_ref, rho_ref, alpha)
+    assert isinstance(result_array, MaterialProperty)
+
+    # Test edge cases with negative values
+    with pytest.raises(ValueError):
+        density_by_thermal_expansion(-100.0, T_ref, rho_ref, alpha)  # Invalid temperature
+
+    with pytest.raises(ValueError):
+        density_by_thermal_expansion(T, T_ref, -8000.0, alpha)  # Invalid density
+
+    with pytest.raises(ValueError):
+        density_by_thermal_expansion(T, T_ref, rho_ref, -1e-4)  # Invalid thermal expansion coefficient
+
+def test_thermal_diffusivity_by_heat_conductivity1():
+    # Test calculating thermal diffusivity with float heat conductivity, density, and heat capacity inputs
+    k = 50.0
+    rho = 8000.0
+    c_p = 500.0
+    result = thermal_diffusivity_by_heat_conductivity(k, rho, c_p)
+    assert np.isclose(result.expr, 1.25e-5)
+
+    # Test calculating thermal diffusivity with symbolic heat conductivity, density, and heat capacity inputs
+    k = sp.Symbol('k')
+    rho = sp.Symbol('rho')
+    c_p = sp.Symbol('c_p')
+    result = thermal_diffusivity_by_heat_conductivity(k, rho, c_p)
+    assert isinstance(result, MaterialProperty)
+    assert result.expr == k / (rho * c_p)
+
+def test_density_by_thermal_expansion_invalid_inputs():
+    # Test calculating density with invalid temperature or thermal expansion coefficient inputs
+    with pytest.raises(ValueError):
+        density_by_thermal_expansion(-100.0, 1000.0, 8000.0, 1e-5)
+    with pytest.raises(ValueError):
+        density_by_thermal_expansion(1000.0, -1000.0, 8000.0, 1e-5)
+    with pytest.raises(ValueError):
+        density_by_thermal_expansion(1000.0, 1000.0, -8000.0, 1e-5)
+    with pytest.raises(ValueError):
+        density_by_thermal_expansion(1000.0, 1000.0, 8000.0, -1e-4)
+    with pytest.raises(ValueError):
+        density_by_thermal_expansion(np.array([-100.0, 1000.0]), 1000.0, 8000.0, 1e-5)
+
+def test_thermal_diffusivity_invalid_inputs():
+    # Test calculating thermal diffusivity with invalid heat conductivity, density, or heat capacity inputs
+    with pytest.raises(ValueError):
+        thermal_diffusivity_by_heat_conductivity(-10.0, 8000.0, 500.0)  # Negative heat conductivity
+    with pytest.raises(ValueError):
+        thermal_diffusivity_by_heat_conductivity(50.0, -8000.0, 500.0)  # Negative density
+    with pytest.raises(ValueError):
+        thermal_diffusivity_by_heat_conductivity(50.0, 8000.0, -500.0)  # Negative heat capacity

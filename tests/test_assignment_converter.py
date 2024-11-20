@@ -68,3 +68,14 @@ def test_invalid_assignments():
     x = sp.Symbol('x')
     with pytest.raises(ValueError):
         assignment_converter([Assignment(x, sp.Symbol('value_x'), None)])
+
+def test_type_mapping_unsupported():
+    # Test mapping unsupported type strings
+    with pytest.raises(ValueError):
+        type_mapping("unsupported_type", 1)
+
+def test_assignment_converter_invalid():
+    # Test converting assignments with invalid or missing attributes
+    invalid_assignment = Assignment(lhs=None, rhs=None, lhs_type=None)
+    with pytest.raises(ValueError, match="Invalid assignment: lhs, rhs, and lhs_type must not be None"):
+        assignment_converter([invalid_assignment])

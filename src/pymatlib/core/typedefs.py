@@ -91,22 +91,19 @@ class MaterialProperty:
                 - temperature contains non-numeric values
                 - invalid type for temperature
         """
-        # Get all symbols from expression and assignments
-        expr_symbols = self.expr.free_symbols
-        assignment_symbols = set().union(*(
-            assignment.rhs.free_symbols
-            for assignment in self.assignments
-            if isinstance(assignment.rhs, sp.Expr)
-        ))
-        all_symbols = expr_symbols.union(assignment_symbols)
-
-        # If we have symbols but the provided one isn't among them, raise TypeError
-        if all_symbols and symbol not in all_symbols:
-            raise TypeError(f"Symbol {symbol} not found in expression or assignments")
-
         # If the expression has no symbolic variables, return it as a constant float
         if not self.expr.free_symbols:
             return float(self.expr)
+
+        # Collect all relevant symbols from expressions and assignments
+        all_symbols = self.expr.free_symbols.union(
+            *(assignment.rhs.free_symbols
+              for assignment in self.assignments
+              if isinstance(assignment.rhs, sp.Expr))
+        )
+        # If we have symbols but the provided one isn't among them, raise TypeError
+        if all_symbols and symbol not in all_symbols:
+            raise TypeError(f"Symbol {symbol} not found in expression or assignments")
 
         # Handle array inputs
         # If temperature is a numpy array, list, or tuple (ArrayTypes), evaluate the property for each temperature
@@ -144,148 +141,3 @@ class MaterialProperty:
 
 # Type alias for properties that can be either constant floats or MaterialProperty instances
 PropertyTypes = Union[float, MaterialProperty]
-
-if __name__ == '__main__':
-    # Example usage and tests for MaterialProperty and Assignment classes
-
-    T = sp.Symbol('T')
-    v = sp.IndexedBase('v')
-    i = sp.Symbol('i', type=sp.Integer)
-
-    # Example 1: Constant material property
-    mp0 = MaterialProperty(sp.Float(405.))
-    mp0.assignments.append(Assignment(sp.Symbol('A'), (100, 200), 'int'))
-    print(mp0)
-    print(mp0.evalf(T, 100.))
-
-    # Example 2: Linear temperature-dependent property
-    mp1 = MaterialProperty(T * 100.)
-    print(mp1)
-    print(mp1.evalf(T, 100.))
-
-    # Example 3: Indexed base with symbolic assignments
-    mp2 = MaterialProperty(v[i])
-    mp2.assignments.append(Assignment(v, (3, 6, 9), 'float'))
-    mp2.assignments.append(Assignment(i, T / 100, 'int'))
-    print(mp2)
-    print(mp2.evalf(T, 97))  # Should evaluate with i=0 (since 97/100 is 0 when converted to int)
-    print(mp2.evalf(T, 107))  # Should evaluate with i=1 (since 107/100 is 1 when converted to int)
-
-    # Example 4: Evaluate an expression with an array of temperatures
-    rho = 1e-6 * T ** 3 * 4000
-    print(rho * np.array([10, 20, 30]))
-
-if __name__ == '__main__':
-    # Example usage and tests for MaterialProperty and Assignment classes
-
-    T = sp.Symbol('T')
-    v = sp.IndexedBase('v')
-    i = sp.Symbol('i', type=sp.Integer)
-
-    # Test 1: Constant material property
-    mp0 = MaterialProperty(sp.Float(405.))
-    mp0.assignments.append(Assignment(sp.Symbol('A'), (100, 200), 'int'))
-    print(f"Test 1 - Constant property, no symbolic variables: {mp0.evalf(T, 100.)}")  # Expected output: 405.0
-
-    # Test 2: Linear temperature-dependent property
-    mp1 = MaterialProperty(T * 100.)
-    print(f"Test 2 - Linear temperature-dependent property: {mp1.evalf(T, 100.)}")  # Expected output: 10000.0
-
-    # Test 3: Indexed base with symbolic assignments
-    mp2 = MaterialProperty(v[i])
-    mp2.assignments.append(Assignment(v, (3, 6, 9), 'float'))
-    mp2.assignments.append(Assignment(i, T / 100, 'int'))
-    print(f"Test 3a - Indexed base with i=0: {mp2.evalf(T, 97)}")  # Expected output: 3 (i=0)
-    print(f"Test 3b - Indexed base with i=1: {mp2.evalf(T, 107)}")  # Expected output: 6 (i=1)
-
-    # Test 4: Evaluate an expression with an array of temperatures
-    rho = 1e-6 * T ** 3 * 4000
-    temps = np.array([10, 20, 30])
-    print(f"Test 4 - Expression evaluated with array: {rho * temps}")  # Expected output: array of evaluated values
-
-    # Additional Tests:
-
-    # Test 5: Non-linear temperature-dependent property
-    mp3 = MaterialProperty(T ** 2 + T * 50 + 25)
-    print(f"Test 5 - Non-linear temperature-dependent property: {mp3.evalf(T, 10)}")  # Expected output: 625.0
-
-    # Test 6: Temperature array evaluation for non-linear expression
-    print(f"Test 6 - Non-linear property with temperature array: {mp3.evalf(T, temps)}")
-    # Expected output: array of evaluated values for T in [10, 20, 30]
-
-    # Test 7: Property with multiple symbolic assignments
-    mp4 = MaterialProperty(v[i] * T)
-    mp4.assignments.append(Assignment(v, (3, 6, 9), 'float'))
-    mp4.assignments.append(Assignment(i, T / 100, 'int'))
-    print(f"Test 7a - Property with multiple symbolic assignments at T=95: {mp4.evalf(T, 95)}")  # Expected: 285.0
-    print(f"Test 7b - Property with multiple symbolic assignments at T=205: {mp4.evalf(T, 205)}")  # Expected: 1230.0
-
-    # Test 8: Constant property evaluated with temperature array
-    mp5 = MaterialProperty(sp.Float(500.))
-    print(f"Test 8 - Constant property with temperature array: {mp5.evalf(T, temps)}")
-    # Expected output: array of 500s for each temperature
-
-    # Test 9: Handling numpy scalar input
-    scalar_temp = np.float64(150.0)
-    mp6 = MaterialProperty(T + 50)
-    print(f"Test 9 - Handling numpy scalar input: {mp6.evalf(T, scalar_temp)}")  # Expected output: 200.0
-
-    # Test 10: Property with no symbolic dependencies
-    mp7 = MaterialProperty(sp.Float(1500.))
-    print(f"Test 10 - Property with no symbolic dependencies: {mp7.evalf(T, 200.)}")  # Expected output: 1500.0
-
-    # Test 11: Piecewise function
-    mp8 = MaterialProperty(sp.Piecewise((100, T < 0), (200, T >= 100), (T, True)))
-    print(f"Test 11a - Piecewise function at T=-10: {mp8.evalf(T, -10)}")  # Expected: 100
-    print(f"Test 11b - Piecewise function at T=50: {mp8.evalf(T, 50)}")   # Expected: 50
-    print(f"Test 11c - Piecewise function at T=150: {mp8.evalf(T, 150)}") # Expected: 200
-
-    # Test 12: Complex expression with trigonometric functions
-    mp9 = MaterialProperty(100 * sp.sin(T) + 50 * sp.cos(T))
-    print(f"Test 12a - Complex expression at T=0: {mp9.evalf(T, 0)}")       # Expected: 50
-    print(f"Test 12b - Complex expression at T=pi/2: {mp9.evalf(T, np.pi/2)}") # Expected: 100
-
-    # Test 13: Expression with logarithmic and exponential functions
-    mp10 = MaterialProperty(10 * sp.log(T + 1) + 5 * sp.exp(T/100))
-    print(f"Test 13 - Log and exp expression at T=10: {mp10.evalf(T, 10)}") # Expected: ~28.19
-
-    # Test 14: Property with multiple variables
-    T2 = sp.Symbol('T2')
-    mp11 = MaterialProperty(T * T2)
-    res = mp11.evalf(T, 10)
-    print(f"Test 14 - Multi-variable property: {res}")  # This should raise an error or return a symbolic expression
-    assert isinstance(res, sp.Expr)
-    assert sp.Eq(res, 10 * T2)
-
-    # Test 15: Handling very large and very small numbers
-    mp12 = MaterialProperty(1e20 * T + 1e-20)
-    print(f"Test 15a - Large numbers: {mp12.evalf(T, 1e5)}")
-    print(f"Test 15b - Small numbers: {mp12.evalf(T, 1e-5)}")
-
-    # Test 16: Property with rational functions
-    mp13 = MaterialProperty((T**2 + 1) / (T + 2))
-    print(f"Test 16 - Rational function at T=3: {mp13.evalf(T, 3)}")
-
-    # Test 17: Handling undefined values (division by zero)
-    mp14 = MaterialProperty(1 / (T - 1))
-    try:
-        res = mp14.evalf(T, 1)
-        print(f"Test 17 - Division by zero at T=1: {res}")  # "zoo" in SymPy represents complex infinity
-    except ZeroDivisionError:
-        print("Test 17 - Division by zero at T=1: ZeroDivisionError raised as expected")
-
-    # Test 18: Property with absolute value
-    mp15 = MaterialProperty(sp.Abs(T - 50))
-    print(f"Test 18a - Absolute value at T=30: {mp15.evalf(T, 30)}")
-    print(f"Test 18b - Absolute value at T=70: {mp15.evalf(T, 70)}")
-
-    # Test 19: Property with floor and ceiling functions
-    mp16 = MaterialProperty(sp.floor(T/10) + sp.ceiling(T/10))
-    print(f"Test 19 - Floor and ceiling at T=25: {mp16.evalf(T, 25)}")
-
-    # Test 20: Handling complex numbers
-    mp17 = MaterialProperty(sp.sqrt(T))
-    print(f"Test 20a - Square root at T=4: {mp17.evalf(T, 4)}")
-    res = mp17.evalf(T, -1)
-    print(f"Test 20b - Square root at T=-1: {res}")
-    assert isinstance(res, sp.Expr)
