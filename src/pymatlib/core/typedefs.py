@@ -62,6 +62,18 @@ class MaterialProperty:
     expr: sp.Expr
     assignments: List[Assignment] = field(default_factory=list)
 
+    def __post_init__(self):
+        """Validate assignments after initialization."""
+        if any(assignment is None for assignment in self.assignments):
+            raise ValueError("None assignments are not allowed")
+
+        # Validate each assignment
+        for assignment in self.assignments:
+            if not isinstance(assignment, Assignment):
+                raise ValueError(f"Invalid assignment type: {type(assignment)}")
+            if assignment.lhs is None or assignment.rhs is None or assignment.lhs_type is None:
+                raise ValueError("Assignment fields cannot be None")
+
     def evalf(self, symbol: sp.Symbol, temperature: Union[float, ArrayTypes]) -> Union[float, np.ndarray]:
         """
         Evaluates the material property at specific temperature values.
@@ -72,18 +84,44 @@ class MaterialProperty:
 
         Returns:
             Union[float, np.ndarray]: The evaluated property value(s) at the given temperature(s).
+
+        Raises:
+            TypeError: If:
+                - symbol is not found in expression or assignments
+                - temperature contains non-numeric values
+                - invalid type for temperature
         """
+        # Get all symbols from expression and assignments
+        expr_symbols = self.expr.free_symbols
+        assignment_symbols = set().union(*(
+            assignment.rhs.free_symbols
+            for assignment in self.assignments
+            if isinstance(assignment.rhs, sp.Expr)
+        ))
+        all_symbols = expr_symbols.union(assignment_symbols)
+
+        # If we have symbols but the provided one isn't among them, raise TypeError
+        if all_symbols and symbol not in all_symbols:
+            raise TypeError(f"Symbol {symbol} not found in expression or assignments")
+
         # If the expression has no symbolic variables, return it as a constant float
         if not self.expr.free_symbols:
             return float(self.expr)
 
+        # Handle array inputs
         # If temperature is a numpy array, list, or tuple (ArrayTypes), evaluate the property for each temperature
         if isinstance(temperature, get_args(ArrayTypes)):
             return np.array([self.evalf(symbol, t) for t in temperature])
 
         # Convert any numpy scalar to Python float
-        elif isinstance(temperature, np.generic):
+        if isinstance(temperature, np.floating):
             temperature = float(temperature)
+
+        # Convert numeric types to float
+        try:
+            temperature = float(temperature)
+        except (TypeError, ValueError):
+            raise TypeError(f"Temperature must be numeric, got {type(temperature)}")
 
         # Prepare substitutions for symbolic assignments
         substitutions = [(symbol, temperature)]
@@ -98,7 +136,6 @@ class MaterialProperty:
 
         # Evaluate the material property with the substitutions
         result = sp.N(self.expr.subs(substitutions))
-        # return float(result)
         # Try to convert the result to float if possible
         try:
             return float(result)
