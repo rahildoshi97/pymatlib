@@ -3,16 +3,17 @@ import sympy as sp
 import pystencils as ps
 from typing import List, Dict, Tuple, Union
 from pystencils.types.quick import Arr, Fp
+from pystencils.types import create_type
 from pystencils.sympyextensions.typed_sympy import CastFunc
 from pymatlib.core.typedefs import Assignment, ArrayTypes
 
 
-def type_mapping(type_str: str, length: int) -> Union[np.dtype, Arr]:
+def type_mapping(str_type: str, length: int) -> Union[np.dtype, Arr]:
     """
     Maps a string representation of a type to a corresponding numpy or pystencils data type.
 
     Parameters:
-        type_str (str): The string representation of the type (e.g., "double[]", "float[]").
+        str_type (str): The string representation of the type (e.g., "double[]", "float[]").
         length (int): The length of the array for array types.
 
     Returns:
@@ -26,21 +27,21 @@ def type_mapping(type_str: str, length: int) -> Union[np.dtype, Arr]:
         >>> type_mapping("double", 1)
         dtype('float64')
     """
-    if type_str == "double[]":
+    if str_type == "double[]":
         return Arr(Fp(64, const=True), length)  # 64-bit floating point array
-    elif type_str == "float[]":
+    elif str_type == "float[]":
         return Arr(Fp(32, const=True), length)  # 32-bit floating point array
-    elif type_str == "double":
+    elif str_type == "double":
         return np.dtype('float64')
-    elif type_str == "float":
+    elif str_type == "float":
         return np.dtype('float32')
-    elif type_str == "int":
+    elif str_type == "int":
         return np.dtype('int32')
-    elif type_str == "bool":
+    elif str_type == "bool":
         return np.dtype('bool')
     else:
-        # return np.dtype(type_str)  # Default to numpy data type
-        raise ValueError(f"Unsupported type string: {type_str}")
+        # return create_type(str_type)
+        raise ValueError(f"Unsupported type string: {str_type}")
 
 
 def assignment_converter(assignment_list: List[Assignment]) \
@@ -84,38 +85,3 @@ def assignment_converter(assignment_list: List[Assignment]) \
         subs[assignment.lhs] = data_symbol
 
     return subexp, subs
-
-
-if __name__ == '__main__':
-    # Define test symbols and assignments
-    x = sp.Symbol('x')
-    y = sp.Symbol('y')
-    z = sp.Symbol('z')
-
-    # Example assignments
-    assignments = [
-        Assignment(lhs=x, rhs=sp.Symbol('value_x'), lhs_type='double[]'),
-        Assignment(lhs=y, rhs=sp.Symbol('value_y'), lhs_type='float[]'),
-        Assignment(lhs=z, rhs=sp.Symbol('value_z'), lhs_type='int')
-    ]
-
-    # Test type_mapping function
-    print("Testing type_mapping function:")
-    print(type_mapping("double[]", 5))  # Expected: Arr(Fp(64), length=5)
-    print(type_mapping("float[]", 3))   # Expected: Arr(Fp(32), length=3)
-    print(type_mapping("int", 1))       # Expected: np.int32 or equivalent numpy type
-
-    # Test assignment_converter function
-    print("\nTesting assignment_converter function:")
-    assignments_converted, symbol_map = assignment_converter(assignments)
-
-    for conv in assignments_converted:
-        print(conv)
-
-    print("\nSymbol to TypedSymbol mapping:")
-    for sym, typed_sym in symbol_map.items():
-        print(f"{sym}: {typed_sym}")
-
-    # Validate specific conditions for tests
-    assert isinstance(assignments_converted[0], ps.Assignment), "The converted assignment should be of type pystencils.Assignment"
-    assert isinstance(symbol_map[x], ps.TypedSymbol), "The symbol map should map symbols to pystencils.TypedSymbol"
