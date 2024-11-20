@@ -3,7 +3,7 @@ import sympy as sp
 from pathlib import Path
 from typing import Union
 from pymatlib.core.alloy import Alloy
-from pymatlib.data.element_data import Fe, Cr, Mn, Ni
+from pymatlib.data.element_data import Fe, Cr, Ni, Mo, Mn
 from pymatlib.core.models import thermal_diffusivity_by_heat_conductivity, density_by_thermal_expansion
 from pymatlib.core.data_handler import read_data, celsius_to_kelvin, thousand_times
 from pymatlib.core.interpolators import interpolate_property
@@ -20,28 +20,49 @@ def create_SS316L(T: Union[float, sp.Symbol]) -> Alloy:
         Alloy: Initialized SS316L alloy with physical properties.
 
     Notes:
-        - **Data Units**: All input data should be in SI units. If data is not in SI units, it must be converted. For example:
-            - **Temperature**: Convert Celsius to Kelvin using `celsius_to_kelvin` function.
-            - **Density**: Should be in kg/m³.
-            - **Heat Capacity**: Should be in J/(kg·K).
-            - **Heat Conductivity**: Should be in W/(m·K).
-        - **Temperature Array Consistency**: Ensure that all temperature arrays used for interpolation (`density_temp_array`, `heat_capacity_temp_array`, `heat_conductivity_temp_array`) have the same length.
-          In this implementation, `density_temp_array` is used as the reference array for all properties to ensure consistency.
-        - **Input Data Files**: The data files (`density_temperature.txt`, `heat_capacity_temperature.txt`, `heat_conductivity_temperature.txt`) must be located in the same directory as this script.
-          They should contain data in the units specified above.
+        - **Material Properties**:
+            - **Density**: 8.0 g/cm³ (8000 kg/m³) at room temperature
+            - **Composition**:
+                - Iron (Fe): 67.5 wt% (Balance)
+                - Chromium (Cr): 17.0 wt%
+                - Nickel (Ni): 12.0 wt%
+                - Molybdenum (Mo): 2.5 wt%
+                - Manganese (Mn): 1.0 wt%
+            - **Phase Transitions**:
+                - Solidus: 1658.0 K (1385°C)
+                - Liquidus: 1723.0 K (1450°C)
+            - **Thermal Expansion**: 16.3 × 10^-6 /K at room temperature
+
+        - **Data Units**: All input data should be in SI units:
+            - **Temperature**: Kelvin (K)
+            - **Density**: kg/m³
+            - **Heat Capacity**: J/(kg·K)
+            - **Heat Conductivity**: W/(m·K)
+
+        - **Temperature Range**: Valid from room temperature (273.15K) to 2000K
+        - **Property Variations**: Properties are temperature-dependent and implemented as piecewise functions
+        - **Data Sources**: Property values based on experimental data and literature
+
+        - **Input Data Files**: Required files in same directory:
+            - density_temperature.txt
+            - heat_capacity_temperature.txt
+            - heat_conductivity_temperature.txt
 
     Example:
-        If you have temperature data in Celsius and property data in non-SI units, convert the temperature to Kelvin and property values to SI units before using them.
+        >>> T = sp.Symbol('T')
+        >>> ss316l = create_SS316L(T)
+        >>> density_at_1000K = ss316l.density.evalf(T, 1000.0)
     """
-    if isinstance(T, float) and (T < 0 or T > 3000):  # Example valid range: 0 to 3000 K
-        raise ValueError("Invalid temperature. Temperature must be within the valid range (0 to 3000 K).")
+    if isinstance(T, float):
+        if not (273.15 <= T <= 2000):  # Room temp to max temp
+            raise ValueError("Temperature must be between 273.15K and 2000K")
     # Define the alloy with specific elemental composition and phase transition temperatures
     SS316L = Alloy(
-        elements=[Fe, Cr, Mn, Ni],
-        composition=[0.708, 0.192, 0.018, 0.082],  # Composition: 70.8% Fe, 19.2% Cr, 1.8% Mn, 8.2% Ni
-        temperature_solidus=1395.68,  # Solidus temperature in Kelvin
-        temperature_liquidus=1455.26,  # Liquidus temperature in Kelvin
-        thermal_expansion_coefficient=1.7e-5  # in 1/K
+        elements=[Fe, Cr, Ni, Mo, Mn],
+        composition=[0.675, 0.17, 0.12, 0.025, 0.01],  # Fe: 67.5%, Cr: 17%, Ni: 12%, Mo: 2.5%, Mn: 1%
+        temperature_solidus=1658.0,  # Solidus temperature in Kelvin
+        temperature_liquidus=1723.0,  # Liquidus temperature in Kelvin
+        thermal_expansion_coefficient=16.3e-6  # in 1/K
     )
 
     # Determine the base directory
@@ -89,10 +110,10 @@ def create_SS316L(T: Union[float, sp.Symbol]) -> Alloy:
     tec = interpolate_property(T, tec_temperature_array, tec_array)
 
     # Define the corresponding thermal expansion coefficients at these points
-    alpha_solidus = 21.8e-6  # 1/K at solidus
-    alpha_liquidus = 22.5e-6  # 1/K at liquidus
-    alpha_below = 18.0e-6     # 1/K below solidus (approximated starting value)
-    alpha_above = 24.0e-6     # 1/K above liquidus (approximated final value)
+    alpha_solidus = 17.0e-6   # 1/K at solidus
+    alpha_liquidus = 18.0e-6  # 1/K at liquidus
+    alpha_below = 15.0e-6     # 1/K below solidus
+    alpha_above = 19.0e-6     # 1/K above liquidus
 
     # Fit a cubic polynomial for the thermal expansion coefficient
     # Define the symbolic variable for temperature
@@ -145,22 +166,23 @@ def create_SS316L(T: Union[float, sp.Symbol]) -> Alloy:
 
     # Thermal Conductivity (W/m·K)
     k_expr = sp.Piecewise(
-        (15.1 - (T - 900) * (0.4 / (1000 - 900)), T < 1000),
-        (15.0 - (T - 1000) * (0.4 / (1100 - 1000)), (T >= 1000) & (T < 1100)),
-        (14.9 - (T - 1100) * (0.4 / (1200 - 1100)), (T >= 1100) & (T < 1200)),
-        (14.8 - (T - 1200) * (0.4 / (1300 - 1200)), (T >= 1200) & (T < 1300)),
-        (14.7 - (T - 1300) * (0.4 / (1400 - 1300)), (T >= 1300) & (T < 1400)),
-        (14.5 - (T - 1400) * (0.3 / (1500 - 1400)), (T >= 1400) & (T < 1500)),
-        (14.3 - (T - 1500) * (0.3 / (1600 - 1500)), (T >= 1500) & (T < 1600)),
-        (14.2 - (T - 1600) * (0.2 / (1700 - 1600)), (T >= 1600) & (T < 1700)),
-        (14.0 - (T - 1700) * (0.2 / (1800 - 1700)), (T >= 1700) & (T < 1800)),
-        (13.8 - (T - 1800) * (0.1 / (1900 - 1800)), (T >= 1800) & (T < 1900)),
-        (13.7, True)  # for T >= 1900
+        (16.3 - (T - 300) * (1.3 / (900 - 300)), T < 900),  # Starting from room temp (300K) to 900K
+        (15.0 - (T - 900) * (0.2 / (1000 - 900)), T < 1000),
+        (14.8 - (T - 1000) * (0.2 / (1100 - 1000)), (T >= 1000) & (T < 1100)),
+        (14.6 - (T - 1100) * (0.2 / (1200 - 1100)), (T >= 1100) & (T < 1200)),
+        (14.4 - (T - 1200) * (0.2 / (1300 - 1200)), (T >= 1200) & (T < 1300)),
+        (14.2 - (T - 1300) * (0.2 / (1400 - 1300)), (T >= 1300) & (T < 1400)),
+        (14.0 - (T - 1400) * (0.2 / (1500 - 1400)), (T >= 1400) & (T < 1500)),
+        (13.8 - (T - 1500) * (0.2 / (1600 - 1500)), (T >= 1500) & (T < 1600)),
+        (13.6 - (T - 1600) * (0.2 / (1700 - 1600)), (T >= 1600) & (T < 1700)),
+        (13.4 - (T - 1700) * (0.2 / (1800 - 1700)), (T >= 1700) & (T < 1800)),
+        (13.2, True)  # for T >= 1800
     )
 
     # Density (kg/m³)
     rho_expr = sp.Piecewise(
-        (7900.0 - (T - 900) * (50.0 / (1000 - 900)), T < 1000),
+        (8000.0 - (T - 300) * (100.0 / (900 - 300)), T < 900),  # Room temp (300K) to 900K
+        (7900.0 - (T - 900) * (50.0 / (1000 - 900)), (T >= 900) & (T < 1000)),
         (7850.0 - (T - 1000) * (50.0 / (1100 - 1000)), (T >= 1000) & (T < 1100)),
         (7800.0 - (T - 1100) * (50.0 / (1200 - 1100)), (T >= 1100) & (T < 1200)),
         (7750.0 - (T - 1200) * (50.0 / (1300 - 1200)), (T >= 1200) & (T < 1300)),
@@ -188,7 +210,6 @@ def create_SS316L(T: Union[float, sp.Symbol]) -> Alloy:
         (550.0, True)  # for T >= 1900
     )
 
-    print("helloo")
     diffusivity_3 = thermal_diffusivity_by_heat_conductivity(k_expr, rho_expr, c_p_expr)
     print("diffusivity_3:", diffusivity_3, "type:", type(diffusivity_3))
 
@@ -231,10 +252,7 @@ def create_SS316L(T: Union[float, sp.Symbol]) -> Alloy:
     # print("SS316L.heat_conductivity.evalf(T, density_temp_array):", SS316L.heat_conductivity.evalf(T, density_temp_array))
 
     SS316L.thermal_diffusivity = thermal_diffusivity_by_heat_conductivity(SS316L.heat_conductivity, SS316L.density, SS316L.heat_capacity)
-        # SS316L.heat_conductivity.expr,
-        # SS316L.density.expr,
-        # SS316L.heat_capacity.expr
-    # )
+
     # print('SS316L.heat_conductivity.evalf(T, density_temp_array): ', (SS316L.heat_conductivity.evalf(T, density_temp_array)))  # <class 'numpy.ndarray'>
     # print('SS316L.density.expr: ', type(SS316L.density.expr))  # <class 'sympy.core.mul.Mul'>
     # print('SS316L.heat_capacity.evalf(T, heat_conductivity_temp_array): ', (SS316L.heat_capacity.evalf(T, heat_conductivity_temp_array)))  # <class 'numpy.ndarray'>
