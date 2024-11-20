@@ -7,7 +7,6 @@ from pystencils.types.quick import Arr, Fp
 from pystencils.types import create_type
 from pymatlib.core.typedefs import Assignment
 from pymatlib.core.assignment_converter import type_mapping, assignment_converter
-from sympy.codegen.ast import float64, float32
 
 
 def test_type_mapping():
