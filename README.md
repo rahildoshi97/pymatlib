@@ -1,7 +1,142 @@
 # pymatlib
 
 
+Pymatlib is a Python library designed to simulate and analyze material properties. 
+It provides tools for modeling alloys, interpolating material properties, and more.
 
+
+<!-- # TODO
+![Build Status](https://img.shields.io/github/actions/workflow/status/rahil.doshi/pymatlib/build.yml)
+-->
+[![Pipeline Status](https://i10git.cs.fau.de/rahil.doshi/pymatlib/badges/master/pipeline.svg)](https://i10git.cs.fau.de/rahil.doshi/pymatlib/-/pipelines)
+![License](https://img.shields.io/badge/license-GPLv3-blue)
+
+
+## Table of Contents
+- [Installation](#installation)
+- [Usage](#usage)
+- [Features](#features)
+- [Classes](#classes)
+- [Contributing](#contributing)
+- [License](#license)
+- [Contact](#contact)
+
+
+## Installation
+To install `pymatlib`, you can use pip. It is recommended to install it in a virtual environment:
+```bash
+pip install -e .
+```
+This command installs the package in editable mode, allowing you to make changes without needing to reinstall.
+
+### Installation Requirements
+- **Python version**: >= 3.10
+- Required packages:
+    - `numpy`
+    - `sympy`
+    - `pytest`
+    - [`pystencils`](https://i10git.cs.fau.de/pycodegen/pystencils/-/tree/v2.0-dev?ref_type=heads)
+
+### Installation Steps
+1. Clone the repository:
+```bash
+git clone https://i10git.cs.fau.de/rahil.doshi/pymatlib.git
+cd pymatlib
+```
+2. Install the package:
+```bash
+pip install -e .
+```
+This installs pymatlib in editable mode for development.
+
+
+## Usage
+Here are some examples of how to use the library:
+
+### Example 1: Creating an Alloy
+```bash
+from pymatlib.core.alloy import Alloy
+
+alloy = Alloy(
+  elements=['Fe', 'Cr'], 
+  composition=[0.7, 0.3], 
+  temperature_solidus=1700.0, 
+  temperature_liquidus=1800.0)
+print(alloy)
+# Output: Alloy(Fe: 70%, Cr: 30%, solidus: 1700.0 K, liquidus: 1800.0 K)
+```
+
+### Example 2: Interpolating Material Properties
+```bash
+from pymatlib.core.interpolators import interpolate_property
+
+T = 1400.0
+temp_array = [1300.0, 1400.0, 1500.0]
+prop_array = [100.0, 200.0, 300.0]
+
+result = interpolate_property(T, temp_array, prop_array)
+print(result)
+# Output: 200.0
+```
+
+
+## Features
+- **Material Modeling**: Define alloys and their properties with ease. Supports various material properties including density, thermal conductivity, and heat capacity.
+- **Interpolation**: Interpolate material properties across temperature ranges. Provides functions for interpolation of properties based on temperature.
+- **Symbolic Calculations**: Utilize symbolic math with tools like sympy. Includes data structures for managing assignments and symbolic variables.
+- **Extensibility**: Add new material properties and interpolators as needed.
+
+
+## Classes
+
+### Alloy
+A dataclass for alloys, with properties like:
+- ```elements```
+- ```composition```
+- ```temperature_solidus```
+- ```temperature_liquidus```
+
+### Assignment
+A dataclass representing an assignment operation with:
+- lhs: Left-hand side (symbolic variable).
+- rhs: Right-hand side (expression or tuple).
+- lhs_type: Type of the left-hand side.
+
+### MaterialProperty
+A dataclass representing a material property that can be evaluated as a function of a symbolic variable (e.g., temperature) and includes symbolic assignments.
+
+
+## Contributing
+Contributions are welcome! Please follow these steps:
+1. Fork the repository.
+2. Create a new branch:
+```bash
+git checkout -b feature/your-feature
+```
+3. Make your changes and commit:
+```bash
+git commit -m "Add new feature"
+```
+4. Push to the branch:
+```bash
+git push origin feature/your-feature
+```
+5. Open a pull request.
+
+
+## License
+This project is licensed under the GNU General Public License v3 (GPLv3). See the [LICENSE](https://i10git.cs.fau.de/rahil.doshi/pymatlib/-/blob/master/LICENSE?ref_type=heads) file for details.
+
+
+## Contact
+For inquiries or issues:
+- **Author**: Rahil Doshi 
+- **Email**: rahil.doshi@fau.de
+- **Project Homepage**: [pymatlib](https://i10git.cs.fau.de/rahil.doshi/pymatlib)
+- **Bug Tracker**: [Issues](https://i10git.cs.fau.de/rahil.doshi/pymatlib/-/issues)
+
+
+<!--
 ## Getting started
 
 To make it easy for you to get started with GitLab, here's a list of recommended next steps.
@@ -91,3 +226,4 @@ For open source projects, say how it is licensed.
 
 ## Project status
 If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+-->
