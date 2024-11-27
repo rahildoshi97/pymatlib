@@ -28,12 +28,10 @@ def validate_density_parameters(
         temp_array = np.asarray(temperature)
         if np.any(temp_array < ABSOLUTE_ZERO):
             raise ValueError("Temperature array contains values below absolute zero")
-
     if density_base <= 0:
         raise ValueError("Base density must be positive")
-
-    if isinstance(thermal_expansion_coefficient, float) and thermal_expansion_coefficient < -3e-5:
-        raise ValueError("Thermal expansion coefficient must be greater than -3e-5")
+    if isinstance(thermal_expansion_coefficient, float) and (thermal_expansion_coefficient < -3e-5 or thermal_expansion_coefficient > 0.001):
+        raise ValueError("Thermal expansion coefficient must be between -3e-5 and 0.001")
 
 def validate_thermal_diffusivity_parameters(
         heat_conductivity: Union[float, MaterialProperty],
