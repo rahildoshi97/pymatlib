@@ -149,7 +149,7 @@ def interpolate_property(
         T: Union[float, sp.Symbol],
         temp_array: ArrayTypes,
         prop_array: ArrayTypes,
-        temp_array_limit: int = 6,  # if len(temp_array) <= 5, force_lookup
+        temp_array_limit: int = 6,  # if len(temp_array) < 6, force_lookup
         force_lookup: bool = False) -> MaterialProperty:
     """
     Perform interpolation based on the type of temperature array (equidistant or not).
@@ -160,11 +160,20 @@ def interpolate_property(
     :param temp_array_limit: Minimum length of the temperature array to force equidistant interpolation.
     :param force_lookup: Boolean to force lookup interpolation regardless of temperature array type.
     :return: Interpolated value.
-    :raises ValueError: If T_array and v_array lengths do not match.
+    :raises ValueError:
+    :raises ValueError:
+        - If T (numeric) is not in range.
+        - If temp_array or prop_array length < 2.
+        - If temp_array and prop_array lengths mismatch.
+    :raises TypeError: If temp_array or prop_array is not a list, tuple, or ndarray.
     """
+    if isinstance(T, float):
+        if T < 20.0 or T > 20000.0:
+            raise ValueError(f"Temperature must be between 20K and 20000K")
+
     if len(temp_array) <= 1 or len(prop_array) <= 1:
         raise ValueError(f"Length of temp_array {len(temp_array)} or length of prop_array {len(prop_array)} <= 1")
-    # Ensure that temp_array and prop_array are arrays
+
     if not isinstance(temp_array, (Tuple, List, np.ndarray)):
         raise TypeError(f"Expected temp_array to be a list or array or tuple, got {type(temp_array)}")
 
