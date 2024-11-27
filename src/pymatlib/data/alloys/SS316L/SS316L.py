@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Union
 from pymatlib.core.alloy import Alloy
 from pymatlib.data.element_data import Fe, Cr, Ni, Mo, Mn
-from pymatlib.core.models import thermal_diffusivity_by_heat_conductivity, density_by_thermal_expansion
+from pymatlib.core.models import thermal_diffusivity_by_heat_conductivity, density_by_thermal_expansion, calc_energy_density
 from pymatlib.core.data_handler import read_data, celsius_to_kelvin, thousand_times
 from pymatlib.core.interpolators import interpolate_property
 
@@ -95,6 +95,10 @@ def create_SS316L(T: Union[float, sp.Symbol]) -> Alloy:
     print("SS316L.heat_conductivity:", SS316L.heat_conductivity, "type:", type(SS316L.heat_conductivity))
     print("SS316L.density:", SS316L.density, "type:", type(SS316L.density))
     print("SS316L.heat_capacity:", SS316L.heat_capacity, "type:", type(SS316L.heat_capacity))
+    SS316L.latent_heat_of_fusion = interpolate_property(T, SS316L.solidification_interval(), np.array([0.0, 260000.0]))
+    print(f"SS316L.latent_heat_of_fusion, {SS316L.latent_heat_of_fusion}")
+    SS316L.energy_density = calc_energy_density(T, SS316L.density, SS316L.heat_capacity, SS316L.latent_heat_of_fusion)
+    print(f"SS316L.energy_density, {SS316L.energy_density}")
     print("----------" * 10)
 
     # ---------- ---------- ---------- ---------- ---------- ---------- ---------- ---------- ---------- ----------
