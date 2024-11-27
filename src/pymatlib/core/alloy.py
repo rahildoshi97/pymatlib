@@ -78,7 +78,8 @@ class Alloy:
 
     Raises:
         AlloyCompositionError: If the composition fractions don't sum to 1.0.
-        AlloyTemperatureError: If solidus temperature is greater than liquidus temperature.
+        AlloyTemperatureError: If solidus temperature is greater than liquidus temperature
+            or temperatures are out of the general valid range for alloys.
         ValueError: If elements list is empty or composition length doesn't match elements length.
     """
     elements: List[ChemicalElement]
@@ -156,10 +157,16 @@ class Alloy:
         Validate the alloy temperatures.
 
         Raises:
-            AlloyTemperatureError: If solidus temperature is greater than liquidus temperature.
+            AlloyTemperatureError:
+                - If solidus temperature is greater than liquidus temperature.
+                - If temperatures are outside the general range for alloys (450 K to 2000 K).
         """
         if self.temperature_solidus > self.temperature_liquidus:
             raise AlloyTemperatureError("The solidus temperature must be less than or equal to the liquidus temperature.")
+        if not (450 <= self.temperature_solidus <= 1900):
+            raise AlloyTemperatureError(f"Solidus temperature {self.temperature_solidus} K is out of range (450 K - 1900 K).")
+        if not (600 <= self.temperature_liquidus <= 2000):
+            raise AlloyTemperatureError(f"Liquidus temperature {self.temperature_liquidus} K is out of range (600 K - 2000 K).")
 
     def _calculate_properties(self) -> None:
         """Calculate derived properties based on composition."""
