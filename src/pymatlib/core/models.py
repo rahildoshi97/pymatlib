@@ -221,7 +221,11 @@ def calc_energy_density(
     if isinstance(temperature, float) and temperature < ABSOLUTE_ZERO:
         raise ValueError(f"Temperature cannot be below absolute zero ({ABSOLUTE_ZERO}K)")
     if isinstance(density, float) and density <= 0:
-        raise ValueError("Density must be positive")
+        raise ValueError(f"Density must be positive, got {density}")
+    if isinstance(heat_capacity, float) and heat_capacity <= 0:
+        raise ValueError(f"Heat capacity must be positive, got {heat_capacity}")
+    if isinstance(latent_heat, float) and latent_heat < 0:
+        raise ValueError(f"Latent heat cannot be negative (should be zero or positive), got {latent_heat}")
 
     for param_name, param_value in [
         ("density", density),
