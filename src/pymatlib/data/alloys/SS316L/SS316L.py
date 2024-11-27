@@ -211,20 +211,6 @@ def create_SS316L(T: Union[float, sp.Symbol]) -> Alloy:
     diffusivity_3 = thermal_diffusivity_by_heat_conductivity(k_expr, rho_expr, c_p_expr)
     print("diffusivity_3:", diffusivity_3, "type:", type(diffusivity_3))
 
-    '''k_inputs = [k_arr, k_expr, float_value]
-    rho_inputs = [rho_arr, rho_expr, float_value]
-    c_p_inputs = [c_p_arr, c_p_expr, float_value]
-
-    # Test all combinations of inputs using three nested loops
-    for i, k in enumerate(k_inputs):
-        for j, rho in enumerate(rho_inputs):
-            for k, c_p in enumerate(c_p_inputs):
-                try:
-                    diffusivity = thermal_diffusivity_by_heat_conductivity(k, rho, c_p)
-                    print(f"Combination k[{i+1}], rho[{j+1}], c_p[{k+1}]: diffusivity = {diffusivity}, type = {type(diffusivity)}")
-                except Exception as e:
-                    print(f"Combination k[{i+1}], rho[{j+1}], c_p[{k+1}]: Error - {e}") '''
-
     diffusivity_4 = interpolate_property(T, SS316L.solidification_interval(), (4.81e-6, 4.66e-6))
     print("diffusivity_4:", diffusivity_4, "type:", type(diffusivity_4))
 
