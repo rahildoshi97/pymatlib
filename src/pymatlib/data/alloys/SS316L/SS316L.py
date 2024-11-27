@@ -53,9 +53,6 @@ def create_SS316L(T: Union[float, sp.Symbol]) -> Alloy:
         >>> ss316l = create_SS316L(T)
         >>> density_at_1000K = ss316l.density.evalf(T, 1000.0)
     """
-    if isinstance(T, float):
-        if not (273.15 <= T <= 2000):  # Room temp to max temp
-            raise ValueError("Temperature must be between 273.15K and 2000K")
     # Define the alloy with specific elemental composition and phase transition temperatures
     SS316L = Alloy(
         elements=[Fe, Cr, Ni, Mo, Mn],
@@ -98,6 +95,7 @@ def create_SS316L(T: Union[float, sp.Symbol]) -> Alloy:
     print("SS316L.heat_conductivity:", SS316L.heat_conductivity, "type:", type(SS316L.heat_conductivity))
     print("SS316L.density:", SS316L.density, "type:", type(SS316L.density))
     print("SS316L.heat_capacity:", SS316L.heat_capacity, "type:", type(SS316L.heat_capacity))
+    print("----------" * 10)
 
     # ---------- ---------- ---------- ---------- ---------- ---------- ---------- ---------- ---------- ----------
 
@@ -233,7 +231,7 @@ def create_SS316L(T: Union[float, sp.Symbol]) -> Alloy:
     # diffusivity_5 = interpolate_property(T, temp_array, density_by_thermal_expansion_array)
     # print("diffusivity_5:", diffusivity_5, "type:", type(diffusivity_5))
 
-    density_1 = density_by_thermal_expansion(SS316L.solidification_interval(), 293.0, 8000.0, 12.0)
+    density_1 = density_by_thermal_expansion(SS316L.solidification_interval(), 293.0, 8000.0, 0.001)
     print("density_1:", density_1)
 
     # SS316L.thermal_diffusivity = diffusivity_1
@@ -276,7 +274,7 @@ if __name__ == '__main__':
 
     # Test interpolate_property
     print("\nTesting interpolate_property:")
-    test_temp = 1400.0  # Example temperature value
+    test_temp = 2003.15  # Example temperature value
 
     # Interpolate density, heat capacity, and heat conductivity
     density_result = alloy.density.evalf(Temp, test_temp)
@@ -289,9 +287,9 @@ if __name__ == '__main__':
     print(f"Interpolated heat conductivity at T={test_temp} using evalf: {heat_conductivity_result}")
 
     # Test thermal diffusivity calculation
-    heat_conductivity = 500.  # Example value for testing
-    density = 5000.  # Example value for testing
-    heat_capacity = 600.  # Example value for testing
+    heat_conductivity = heat_conductivity_result  # Example value for testing
+    density = density_result  # Example value for testing
+    heat_capacity = heat_capacity_result  # Example value for testing
     thermal_diffusivity = thermal_diffusivity_by_heat_conductivity(
         heat_conductivity, density, heat_capacity)
-    print(f"Calculated thermal diffusivity: {thermal_diffusivity}")
+    print(f"Calculated thermal diffusivity at T={test_temp}: {thermal_diffusivity}")
