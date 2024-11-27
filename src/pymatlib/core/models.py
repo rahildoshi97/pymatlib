@@ -218,6 +218,11 @@ def calc_energy_density(
         -> MaterialProperty:
 
     # Input validation to check for incompatible data types
+    if isinstance(temperature, float) and temperature < ABSOLUTE_ZERO:
+        raise ValueError(f"Temperature cannot be below absolute zero ({ABSOLUTE_ZERO}K)")
+    if isinstance(density, float) and density <= 0:
+        raise ValueError("Density must be positive")
+
     for param_name, param_value in [
         ("density", density),
         ("heat_capacity", heat_capacity),

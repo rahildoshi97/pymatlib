@@ -99,6 +99,16 @@ def create_SS316L(T: Union[float, sp.Symbol]) -> Alloy:
     print(f"SS316L.latent_heat_of_fusion, {SS316L.latent_heat_of_fusion}")
     SS316L.energy_density = calc_energy_density(T, SS316L.density, SS316L.heat_capacity, SS316L.latent_heat_of_fusion)
     print(f"SS316L.energy_density, {SS316L.energy_density}")
+    SS316L.energy_density_solidus = calc_energy_density(SS316L.temperature_solidus,
+                                                        interpolate_property(SS316L.temperature_solidus, density_temp_array, density_array),
+                                                        interpolate_property(SS316L.temperature_solidus, heat_capacity_temp_array, heat_capacity_array),
+                                                        interpolate_property(SS316L.temperature_solidus, SS316L.solidification_interval(), np.array([0.0, 260000.0])))
+    print(f"SS316L.energy_density_solidus, {SS316L.energy_density_solidus}")
+    SS316L.energy_density_liquidus = calc_energy_density(SS316L.temperature_liquidus,
+                                                         interpolate_property(SS316L.temperature_liquidus, density_temp_array, density_array),
+                                                         interpolate_property(SS316L.temperature_liquidus, heat_capacity_temp_array, heat_capacity_array),
+                                                         interpolate_property(SS316L.temperature_liquidus, SS316L.solidification_interval(), np.array([0.0, 260000.0])))
+    print(f"SS316L.energy_density_liquidus, {SS316L.energy_density_liquidus}")
     print("----------" * 10)
 
     # ---------- ---------- ---------- ---------- ---------- ---------- ---------- ---------- ---------- ----------
