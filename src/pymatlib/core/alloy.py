@@ -95,6 +95,7 @@ class Alloy:
     # Optional properties with default values
     density: PropertyTypes = None
     dynamic_viscosity: PropertyTypes = None
+    energy_density: PropertyTypes = None
     heat_capacity: PropertyTypes = None
     heat_conductivity: PropertyTypes = None
     kinematic_viscosity: PropertyTypes = None
