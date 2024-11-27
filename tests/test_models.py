@@ -25,7 +25,7 @@ def test_validate_density_parameters():
         validate_density_parameters(300.0, 1000., -8000.0, 1e-6)
 
     # Test thermal expansion coefficient validation
-    with pytest.raises(ValueError, match="Thermal expansion coefficient must be greater than -3e-5"):
+    with pytest.raises(ValueError, match="Thermal expansion coefficient must be between -3e-5 and 0.001"):
         validate_density_parameters(300.0, 1000, 8000.0, -1.5)
 
 def test_validate_thermal_diffusivity_parameters():
