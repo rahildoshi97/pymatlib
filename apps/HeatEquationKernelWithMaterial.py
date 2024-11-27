@@ -35,6 +35,8 @@ with SourceFileGenerator() as sfg:
     subexp, subs = assignment_converter(mat.thermal_diffusivity.assignments)
     print(f"subexp\n{subexp}")
     print(f"subs\n{subs}")
+    # subexp_ed, _ = assignment_converter(mat.energy_density.assignments)
+    # print(f"subexp_ed =\n{subexp_ed}")
 
     subexp.append(ps.Assignment(thermal_diffusivity, mat.thermal_diffusivity.expr))
 

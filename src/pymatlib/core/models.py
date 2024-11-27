@@ -217,9 +217,24 @@ def calc_energy_density(
         latent_heat: Union[float, MaterialProperty]) \
         -> MaterialProperty:
 
+    # Input validation to check for incompatible data types
+    for param_name, param_value in [
+        ("density", density),
+        ("heat_capacity", heat_capacity),
+        ("latent_heat", latent_heat),
+    ]:
+        if isinstance(param_value, float) and param_value <= 0:
+            raise ValueError(f"{param_name} must be positive")
+
+    sub_assignments = [
+        assignment for prop in [density, heat_capacity, latent_heat]
+        if isinstance(prop, MaterialProperty)
+        for assignment in prop.assignments
+    ]
+
     density_expr = density.expr if isinstance(density, MaterialProperty) else wrapper(density)
     heat_capacity_expr = heat_capacity.expr if isinstance(heat_capacity, MaterialProperty) else wrapper(heat_capacity)
     latent_heat_expr = latent_heat.expr if isinstance(latent_heat, MaterialProperty) else wrapper(latent_heat)
 
     result = density_expr * (temperature * heat_capacity_expr + latent_heat_expr)
-    return material_property_wrapper(result)
+    return MaterialProperty(result, sub_assignments)
