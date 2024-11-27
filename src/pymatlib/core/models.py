@@ -208,3 +208,18 @@ def thermal_diffusivity_by_heat_conductivity(
         return MaterialProperty(_result, sub_assignments)
     except ZeroDivisionError:
         raise ValueError("Division by zero encountered in thermal diffusivity calculation")
+
+
+def calc_energy_density(
+        temperature: Union[float, sp.Expr],
+        density: Union[float, MaterialProperty],
+        heat_capacity: Union[float, MaterialProperty],
+        latent_heat: Union[float, MaterialProperty]) \
+        -> MaterialProperty:
+
+    density_expr = density.expr if isinstance(density, MaterialProperty) else wrapper(density)
+    heat_capacity_expr = heat_capacity.expr if isinstance(heat_capacity, MaterialProperty) else wrapper(heat_capacity)
+    latent_heat_expr = latent_heat.expr if isinstance(latent_heat, MaterialProperty) else wrapper(latent_heat)
+
+    result = density_expr * (temperature * heat_capacity_expr + latent_heat_expr)
+    return material_property_wrapper(result)

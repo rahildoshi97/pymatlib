@@ -33,10 +33,8 @@ with SourceFileGenerator() as sfg:
     print(mat.thermal_diffusivity.expr)
     print(mat.thermal_diffusivity.assignments)
     subexp, subs = assignment_converter(mat.thermal_diffusivity.assignments)
-    print("subexp")
-    print(subexp)
-    print("subs")
-    print(subs)
+    print(f"subexp\n{subexp}")
+    print(f"subs\n{subs}")
 
     subexp.append(ps.Assignment(thermal_diffusivity, mat.thermal_diffusivity.expr))
 
@@ -53,8 +51,7 @@ with SourceFileGenerator() as sfg:
     # ac = ps.simp.simplifications.add_subexpressions_for_field_reads(ac)
     # ac = ps.simp.sympy_cse(ac)
 
-    print("ac")
-    print(ac)
+    print(f"ac\n{ac}")
 
     # generate_sweep(ctx, 'HeatEquationKernelWithMaterial', ac, varying_parameters=((data_type, str(thermal_diffusivity)),))
     sweep = Sweep("HeatEquationKernelWithMaterial", ac)
