@@ -96,6 +96,8 @@ class Alloy:
     density: PropertyTypes = None
     dynamic_viscosity: PropertyTypes = None
     energy_density: PropertyTypes = None
+    energy_density_solidus: float = None
+    energy_density_liquidus: float = None
     heat_capacity: PropertyTypes = None
     heat_conductivity: PropertyTypes = None
     kinematic_viscosity: PropertyTypes = None
