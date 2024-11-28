@@ -11,6 +11,7 @@ ABSOLUTE_ZERO = 0.0  # Kelvin
 DEFAULT_TOLERANCE = 1e-10
 
 
+'''
 def validate_density_parameters(
         temperature: Union[float, ArrayTypes, sp.Expr],
         temperature_base: float,
@@ -32,6 +33,7 @@ def validate_density_parameters(
         raise ValueError("Base density must be positive")
     if isinstance(thermal_expansion_coefficient, float) and (thermal_expansion_coefficient < -3e-5 or thermal_expansion_coefficient > 0.001):
         raise ValueError("Thermal expansion coefficient must be between -3e-5 and 0.001")
+'''
 
 def validate_thermal_diffusivity_parameters(
         heat_conductivity: Union[float, MaterialProperty],
@@ -121,12 +123,19 @@ def density_by_thermal_expansion(
     """
     from pymatlib.core.interpolators import interpolate_property
 
-    if validate:
-        validate_density_parameters(temperature, temperature_base, density_base, thermal_expansion_coefficient)
-
+    if isinstance(temperature, float):
+        if temperature < ABSOLUTE_ZERO:
+            raise ValueError(f"Temperature cannot be below absolute zero ({ABSOLUTE_ZERO}K)")
     if isinstance(temperature, ArrayTypes):
-            temperature = np.asarray(temperature)
-
+        temperature = np.asarray(temperature)
+        if np.any(temperature < ABSOLUTE_ZERO):
+            raise ValueError("Temperature array contains values below absolute zero")
+    if temperature_base < ABSOLUTE_ZERO:
+        raise ValueError(f"Base temperature cannot be below absolute zero ({ABSOLUTE_ZERO}K)")
+    if density_base <= 0:
+        raise ValueError("Base density must be positive")
+    if isinstance(thermal_expansion_coefficient, float) and (thermal_expansion_coefficient < -3e-5 or thermal_expansion_coefficient > 0.001):
+        raise ValueError("Thermal expansion coefficient must be between -3e-5 and 0.001")
     if isinstance(temperature, ArrayTypes) and isinstance(thermal_expansion_coefficient, MaterialProperty):
         raise TypeError(
             f"Incompatible combination of temperature (type:{type(temperature)}) "
