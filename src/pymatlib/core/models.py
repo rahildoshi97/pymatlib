@@ -144,9 +144,10 @@ def density_by_thermal_expansion(
             return density
 
         else:  # isinstance(thermal_expansion_coefficient, MaterialProperty)
+            sub_assignments = thermal_expansion_coefficient.assignments if isinstance(thermal_expansion_coefficient, MaterialProperty) else []
             tec_expr = thermal_expansion_coefficient.expr
             density = density_base * (1 + tec_expr * (temperature - temperature_base)) ** (-3)
-            return material_property_wrapper(density)
+            return MaterialProperty(density, sub_assignments)
     except ZeroDivisionError:
         raise ValueError("Division by zero encountered in density calculation")
 
@@ -204,8 +205,8 @@ def thermal_diffusivity_by_heat_conductivity(
     cp_expr = heat_capacity.expr if isinstance(heat_capacity, MaterialProperty) else wrapper(heat_capacity)
 
     try:
-        _result = k_expr / (rho_expr * cp_expr)
-        return MaterialProperty(_result, sub_assignments)
+        thermal_diffusivity = k_expr / (rho_expr * cp_expr)
+        return MaterialProperty(thermal_diffusivity, sub_assignments)
     except ZeroDivisionError:
         raise ValueError("Division by zero encountered in thermal diffusivity calculation")
 
@@ -245,5 +246,5 @@ def calc_energy_density(
     heat_capacity_expr = heat_capacity.expr if isinstance(heat_capacity, MaterialProperty) else wrapper(heat_capacity)
     latent_heat_expr = latent_heat.expr if isinstance(latent_heat, MaterialProperty) else wrapper(latent_heat)
 
-    result = density_expr * (temperature * heat_capacity_expr + latent_heat_expr)
-    return MaterialProperty(result, sub_assignments)
+    energy_density = density_expr * (temperature * heat_capacity_expr + latent_heat_expr)
+    return MaterialProperty(energy_density, sub_assignments)
