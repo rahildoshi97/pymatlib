@@ -96,7 +96,7 @@ def thousand_times(q: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
     """
     return q * 1000
 
-def check_equidistant(temp: np.ndarray, tolerance: float = 1.0e-3) -> Union[float, bool]:
+'''def check_equidistant(temp: np.ndarray, tolerance: float = 1.0e-3) -> Union[float, bool]:
     """
     Tests if the temperature values are equidistant.
 
@@ -122,4 +122,63 @@ def check_equidistant(temp: np.ndarray, tolerance: float = 1.0e-3) -> Union[floa
         if diffs_within_tolerance:
             return float(unique_diffs[0])
 
-    return False
+    return False'''
+
+def find_min_max_temperature(temperatures_input) -> tuple:
+    """
+    Find the minimum and maximum temperature from either a text file or a NumPy array.
+
+    Args:
+        temperatures_input (str or np.ndarray):
+            - If str, it is the path to the text file.
+            - If np.ndarray, it is the array of temperatures.
+
+    Returns:
+        tuple: A tuple containing (min_temperature, max_temperature).
+    """
+    try:
+        # Case 1: Input is a file path
+        if isinstance(temperatures_input, str):
+            temperatures = []
+            with open(temperatures_input, 'r') as file:
+                for line in file:
+                    # Skip empty lines or non-data lines
+                    if not line.strip() or not line[0].isdigit():
+                        continue
+
+                    # Split the line and extract the first column (temperature)
+                    parts = line.split()
+                    temperature = float(parts[0])
+                    temperatures.append(temperature)
+
+        # Case 2: Input is a NumPy array
+        elif isinstance(temperatures_input, np.ndarray):
+            temperatures = temperatures_input.tolist()
+
+        else:
+            raise TypeError("Input must be either a file path (str) or a numpy array.")
+
+        # Get min and max temperatures
+        min_temperature = min(temperatures)
+        max_temperature = max(temperatures)
+
+        return min_temperature, max_temperature
+
+    except FileNotFoundError:
+        raise FileNotFoundError(f"The file '{temperatures_input}' does not exist.")
+    except Exception as e:
+        raise ValueError(f"An error occurred while processing the input: {e}")
+
+# Example usage:
+# 1. Using a file path
+_file_path = "/local/ca00xebo/repos/pymatlib/src/pymatlib/data/alloys/SS316L/density_temperature.txt"
+min_temp, max_temp = find_min_max_temperature(_file_path)
+print(f"Minimum Temperature from file: {min_temp}")
+print(f"Maximum Temperature from file: {max_temp}")
+
+# 2. Using a numpy array
+temperature_array = np.array([3300, 500, 800, 1000, 1500])
+min_temp, max_temp = find_min_max_temperature(temperature_array)
+print(f"Minimum Temperature from array: {min_temp}")
+print(f"Maximum Temperature from array: {max_temp}")
+
