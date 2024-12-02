@@ -4,8 +4,7 @@ from pathlib import Path
 from typing import Union
 from pymatlib.core.alloy import Alloy
 from pymatlib.data.element_data import Fe, Cr, Ni, Mo, Mn
-from pymatlib.core.models import (thermal_diffusivity_by_heat_conductivity, density_by_thermal_expansion,
-                                  compute_energy_density_MaterialProperty, compute_energy_density_array)
+from pymatlib.core.models import thermal_diffusivity_by_heat_conductivity, density_by_thermal_expansion, energy_density
 from pymatlib.core.data_handler import read_data, celsius_to_kelvin, thousand_times
 from pymatlib.core.interpolators import interpolate_property
 
@@ -13,13 +12,10 @@ from pymatlib.core.interpolators import interpolate_property
 def create_SS316L(T: Union[float, sp.Symbol]) -> Alloy:
     """
     Creates an Alloy instance for SS316L stainless steel with specific properties.
-
     Args:
         T (Union[float, sp.Symbol]): Temperature as a symbolic variable or numeric value.
-
     Returns:
         Alloy: Initialized SS316L alloy with physical properties.
-
     Notes:
         - **Material Properties**:
             - **Density**: 8.0 g/cm³ (8000 kg/m³) at room temperature
@@ -33,22 +29,18 @@ def create_SS316L(T: Union[float, sp.Symbol]) -> Alloy:
                 - Solidus: 1658.0 K (1385°C)
                 - Liquidus: 1723.0 K (1450°C)
             - **Thermal Expansion**: 16.3 × 10^-6 /K at room temperature
-
         - **Data Units**: All input data should be in SI units:
             - **Temperature**: Kelvin (K)
             - **Density**: kg/m³
             - **Heat Capacity**: J/(kg·K)
             - **Heat Conductivity**: W/(m·K)
-
         - **Temperature Range**: Valid from room temperature (273.15K) to 2000K
         - **Property Variations**: Properties are temperature-dependent and implemented as piecewise functions
         - **Data Sources**: Property values based on experimental data and literature
-
         - **Input Data Files**: Required files in same directory:
             - density_temperature.txt
             - heat_capacity_temperature.txt
             - heat_conductivity_temperature.txt
-
     Example:
         >>> T = sp.Symbol('T')
         >>> ss316l = create_SS316L(T)
@@ -62,7 +54,7 @@ def create_SS316L(T: Union[float, sp.Symbol]) -> Alloy:
         temperature_liquidus=1723.0,  # Liquidus temperature in Kelvin
         thermal_expansion_coefficient=16.3e-6  # in 1/K
     )
-
+    # density_data_file_path = "/local/ca00xebo/repos/pymatlib/src/pymatlib/data/alloys/SS316L/density_temperature.txt"
     # Determine the base directory
     base_dir = Path(__file__).parent  # Directory of the current file
 
@@ -98,17 +90,11 @@ def create_SS316L(T: Union[float, sp.Symbol]) -> Alloy:
     print("SS316L.heat_capacity:", SS316L.heat_capacity, "type:", type(SS316L.heat_capacity))
     SS316L.latent_heat_of_fusion = interpolate_property(T, SS316L.solidification_interval(), np.array([0.0, 260000.0]))
     print(f"SS316L.latent_heat_of_fusion: {SS316L.latent_heat_of_fusion}")
-    # SS316L.energy_density = calc_energy_density(T, SS316L.density, SS316L.heat_capacity, SS316L.latent_heat_of_fusion)
-    # print(f"SS316L.energy_density: {SS316L.energy_density}")
-    SS316L.energy_density_solidus = compute_energy_density_MaterialProperty(T,
-                                                        interpolate_property(SS316L.temperature_solidus, density_temp_array, density_array),
-                                                        interpolate_property(T, heat_capacity_temp_array, heat_capacity_array),
-                                                        interpolate_property(SS316L.temperature_solidus, SS316L.solidification_interval(), np.array([0.0, 260000.0])))
+    SS316L.energy_density = energy_density(T, SS316L.density, SS316L.heat_capacity, SS316L.latent_heat_of_fusion)
+    print(f"SS316L.energy_density: {SS316L.energy_density}")
+    SS316L.energy_density_solidus = SS316L.energy_density.evalf(T, SS316L.temperature_solidus)
     print(f"SS316L.energy_density_solidus: {SS316L.energy_density_solidus}")
-    SS316L.energy_density_liquidus = compute_energy_density_MaterialProperty(SS316L.temperature_liquidus,
-                                                         interpolate_property(SS316L.temperature_liquidus, density_temp_array, density_array),
-                                                         interpolate_property(SS316L.temperature_liquidus, heat_capacity_temp_array, heat_capacity_array),
-                                                         interpolate_property(SS316L.temperature_liquidus, SS316L.solidification_interval(), np.array([0.0, 260000.0])))
+    SS316L.energy_density_liquidus = SS316L.energy_density.evalf(T, SS316L.temperature_liquidus)
     print(f"SS316L.energy_density_liquidus: {SS316L.energy_density_liquidus}")
     print("----------" * 10)
 
@@ -183,6 +169,7 @@ def create_SS316L(T: Union[float, sp.Symbol]) -> Alloy:
     print("diffusivity_1:", diffusivity_1, "type:", type(diffusivity_1))
     print("expr type:", type(diffusivity_1.expr))
     print("assignments type:", type(diffusivity_1.assignments))
+    print(f"diffusivity_1_evalf:\n{diffusivity_1.evalf(T, density_temp_array)}")
 
     # diffusivity_2 = thermal_diffusivity_by_heat_conductivity(k_arr, rho_arr, c_p_arr)
     # print("diffusivity_2:", diffusivity_2, "type:", type(diffusivity_2))
@@ -237,22 +224,19 @@ def create_SS316L(T: Union[float, sp.Symbol]) -> Alloy:
     print("diffusivity_3:", diffusivity_3, "type:", type(diffusivity_3))
     print("expr type:", type(diffusivity_3.expr))
     print("assignments type:", type(diffusivity_3.assignments))
+    print(f"diffusivity_3_evalf:\n{diffusivity_3.evalf(T, density_temp_array)}")
 
     diffusivity_4 = interpolate_property(T, SS316L.solidification_interval(), (4.81e-6, 4.66e-6))
     print("diffusivity_4:", diffusivity_4, "type:", type(diffusivity_4))
     print("expr type:", type(diffusivity_4.expr))
     print("assignments type:", type(diffusivity_4.assignments[0].rhs))
+    print(f"diffusivity_4_evalf:\n{diffusivity_4.evalf(T, density_temp_array)}")
 
-    # diffusivity_5 = interpolate_property(T, temp_array, density_by_thermal_expansion_array)
-    # print("diffusivity_5:", diffusivity_5, "type:", type(diffusivity_5))
-
-    density_1 = density_by_thermal_expansion(SS316L.solidification_interval(), 293.0, 8000.0, 0.001)
+    density_1 = density_by_thermal_expansion(123.4, 293.0, 8000.0, 0.001)
     print("density_1:", density_1)
 
     T_dbte = sp.Symbol('T_dbte')
-    print("density_1.expr):", type(density_1.expr))
-    print("density_1.assignments[0].rhs):", type(density_1.assignments[0].rhs))
-    print("density_1.assignments[0].rhs.subs(T_dbte, 2003.15):", density_1.assignments[0].rhs.subs(T_dbte, 2003.15))
+    print(f"density_1.evalf:\n{density_1.evalf(T, density_temp_array)}")
 
     # SS316L.thermal_diffusivity = diffusivity_1
 
@@ -275,34 +259,8 @@ def create_SS316L(T: Union[float, sp.Symbol]) -> Alloy:
     # print('SS316L.density.expr: ', type(SS316L.density.expr))  # <class 'sympy.core.mul.Mul'>
     # print('SS316L.heat_capacity.evalf(T, heat_conductivity_temp_array): ', (SS316L.heat_capacity.evalf(T, heat_conductivity_temp_array)))  # <class 'numpy.ndarray'>
     print('SS316L.thermal_diffusivity: ', SS316L.thermal_diffusivity)
-    print('SS316L.thermal_diffusivity.evalf(T, 2003.15): ', (heat_capacity_interpolate_1.evalf(T, 1000.0)))
+    print('SS316L.thermal_diffusivity.evalf(T, 2003.15): ', (SS316L.thermal_diffusivity.evalf(T, density_temp_array)))
     print("----------" * 10)
-
-    SS316L.energy_density_solidus = compute_energy_density_MaterialProperty(SS316L.temperature_solidus,
-                                                        interpolate_property(SS316L.temperature_solidus, density_temp_array, density_array),
-                                                        interpolate_property(SS316L.temperature_solidus, heat_capacity_temp_array, heat_capacity_array),
-                                                        interpolate_property(SS316L.temperature_solidus, SS316L.solidification_interval(), np.array([0.0, 260000.0])))
-    print(f"SS316L.energy_density_solidus: {SS316L.energy_density_solidus}")
-    print(interpolate_property(T, density_temp_array, density_array))
-    print(interpolate_property(T, heat_capacity_temp_array, heat_capacity_array))
-
-    file_path = "/local/ca00xebo/repos/pymatlib/src/pymatlib/data/alloys/SS316L/density_temperature.txt"
-    test_density = 8000.0  # Example density (in kg/m³)
-    test_heat_capacity = 500.0  # Example heat capacity (in J/(kg·K))
-    test_latent_heat = 250000.0  # Example latent heat (in J/kg)
-
-    print(f"density_by_thermal_expansion_expr: {density_by_thermal_expansion_expr}")
-    print(f"density_by_thermal_expansion_float: {density_by_thermal_expansion_float}")
-    print(f"heat_capacity_interpolate_1: {heat_capacity_interpolate_1}")
-    test_temperatures, test_energy_densities = compute_energy_density_array(
-        density_by_thermal_expansion_expr, test_heat_capacity, test_latent_heat, file_path
-    )
-
-    # Print the results
-    print("Temperatures (K):")
-    print(test_temperatures)
-    print("\nEnergy Densities (J/m³):")
-    print(test_energy_densities)
 
     return SS316L
 
