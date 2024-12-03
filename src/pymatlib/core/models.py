@@ -351,3 +351,53 @@ def compute_energy_density_array(
             np.array(_latent_heats),
             np.array(_energy_densities))
 '''
+
+def temperature_from_enthalpy(
+        T: sp.Expr,
+        temperature_array: np.ndarray,
+        h_in: float,
+        enthalpy: MaterialProperty
+        ) -> float:
+    """
+    Compute the temperature for a given enthalpy using linear interpolation.
+    Args:
+        T: Symbol for temperature in material property.
+        temperature_array: Array of temperature values.
+        h_in: Target enthalpy value.
+        enthalpy: Material property for enthalpy.
+    Returns:
+        Corresponding temperature(s) for the input enthalpy value(s).
+    """
+    T_min, T_max = np.min(temperature_array), np.max(temperature_array)
+    print(f"T_min, T_max: {T_min, T_max}")
+    h_min, h_max = enthalpy.evalf(T, T_min), enthalpy.evalf(T, T_max)
+    print(f"h_min, h_max: {h_min, h_max}")
+
+    if h_in < h_min or h_in > h_max:
+        raise ValueError(f"The input enthalpy value of {h_in} is outside the computed enthalpy range {h_min, h_max}.")
+
+    tolerance: float = 1e-1
+    max_iterations: int = 1000
+
+    iteration_count = 0
+
+    for _ in range(max_iterations):
+        iteration_count += 1
+        # Linear interpolation to find T_1
+        T_1 = T_min + (h_in - h_min) * (T_max - T_min) / (h_max - h_min)
+        print(f"T_1: {T_1}")
+        # Evaluate h_1 at T_1
+        h_1 = enthalpy.evalf(T, np.array([T_1]))[0]
+        print(f"h_1: {h_1}")
+        print(f"h_min, h_max: {h_min, h_max}")
+
+        if abs(h_1 - h_in) < tolerance:
+            print(f"Linear interpolation converged in {iteration_count} iterations.")
+            return T_1
+
+        if h_1 < h_in:
+            T_min, h_min = T_1, h_1
+        else:
+            T_max, h_max = T_1, h_1
+
+    raise RuntimeError(f"Linear interpolation did not converge within {max_iterations} iterations.")
