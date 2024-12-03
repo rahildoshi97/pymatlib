@@ -4,9 +4,10 @@ from pathlib import Path
 from typing import Union
 from pymatlib.core.alloy import Alloy
 from pymatlib.data.element_data import Fe, Cr, Ni, Mo, Mn
-from pymatlib.core.models import thermal_diffusivity_by_heat_conductivity, density_by_thermal_expansion, energy_density
+from pymatlib.core.models import thermal_diffusivity_by_heat_conductivity, density_by_thermal_expansion, energy_density, temperature_from_enthalpy
 from pymatlib.core.data_handler import read_data, celsius_to_kelvin, thousand_times
 from pymatlib.core.interpolators import interpolate_property
+import time
 
 
 def create_SS316L(T: Union[float, sp.Symbol]) -> Alloy:
@@ -97,6 +98,19 @@ def create_SS316L(T: Union[float, sp.Symbol]) -> Alloy:
     SS316L.energy_density_liquidus = SS316L.energy_density.evalf(T, SS316L.temperature_liquidus)
     print(f"SS316L.energy_density_liquidus: {SS316L.energy_density_liquidus}")
     print("----------" * 10)
+
+    args = (T,
+            density_temp_array,
+            SS316L.energy_density_solidus,
+            # !TODO
+            # SS316L.energy_density_liquidus,  # ValueError: The input enthalpy value of 75801672220.93764 is outside the computed enthalpy range (1541619696.9924808, 17148982967.504948).
+            SS316L.energy_density)
+
+    start_time = time.time()
+    T_star_2 = temperature_from_enthalpy(*args)
+    time_2 = time.time() - start_time
+    print(f"\nT_star from temperature_from_enthalpy2: {T_star_2}")
+    print(f"Execution time for temperature_from_enthalpy2: {time_2:.6f} seconds")
 
     # ---------- ---------- ---------- ---------- ---------- ---------- ---------- ---------- ---------- ----------
 
