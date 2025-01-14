@@ -95,7 +95,7 @@ class MaterialProperty:
         if not self.expr.free_symbols:
             return float(self.expr)
 
-        # Collect all relevant symbols from expressions and assignments
+        """# Collect all relevant symbols from expressions and assignments
         all_symbols = self.expr.free_symbols.union(
             *(assignment.rhs.free_symbols
               for assignment in self.assignments
@@ -103,29 +103,29 @@ class MaterialProperty:
         )
         # If we have symbols but the provided one isn't among them, raise TypeError
         if all_symbols and symbol not in all_symbols:
-            raise TypeError(f"Symbol {symbol} not found in expression or assignments")
+            raise TypeError(f"Symbol {symbol} not found in expression or assignments")"""
 
         # Handle array inputs
         # If temperature is a numpy array, list, or tuple (ArrayTypes), evaluate the property for each temperature
         if isinstance(temperature, get_args(ArrayTypes)):
-            return np.array([self.evalf(symbol, t) for t in temperature])
+            return np.array([self.evalf(symbol, float(t)) for t in temperature])
 
-        # Convert any numpy scalar to Python float
+        """# Convert any numpy scalar to Python float
         if isinstance(temperature, np.floating):
-            temperature = float(temperature)
+            temperature = float(temperature)"""
 
         # Convert numeric types to float
         try:
-            temperature = float(temperature)
+            temperature_value = float(temperature)
         except (TypeError, ValueError):
             raise TypeError(f"Temperature must be numeric, got {type(temperature)}")
 
         # Prepare substitutions for symbolic assignments
-        substitutions = [(symbol, temperature)]
+        substitutions = [(symbol, temperature_value)]
         for assignment in self.assignments:
             if isinstance(assignment.rhs, sp.Expr):
                 # Evaluate the right-hand side expression at the given temperature
-                value = sp.N(assignment.rhs.subs(symbol, temperature))
+                value = sp.N(assignment.rhs.subs(symbol, temperature_value))
                 value = int(value) if assignment.lhs_type == "int" else value
                 substitutions.append((assignment.lhs, value))
             else:
