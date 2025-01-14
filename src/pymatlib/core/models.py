@@ -377,7 +377,7 @@ def temperature_from_energy_density(
         raise ValueError(f"The input energy density value of {h_in} is outside the computed range {h_min, h_max}.")
 
     tolerance: float = 1e-6
-    max_iterations: int = 1000
+    max_iterations: int = 5000
 
     iteration_count = 0
 
