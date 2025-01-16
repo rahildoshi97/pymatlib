@@ -16,6 +16,7 @@ build/
 dist/
 *.egg-info/
 *.so  # Exclude compiled shared object files
+src/pymatlib/core/cpp/*.so
 *.dll # Windows dynamic-link library
 *.dylib # macOS shared library
 
