@@ -376,7 +376,7 @@ def temperature_from_energy_density(
     if h_in < h_min or h_in > h_max:
         raise ValueError(f"The input energy density value of {h_in} is outside the computed range {h_min, h_max}.")
 
-    tolerance: float = 1e-6
+    tolerance: float = 5e-6
     max_iterations: int = 5000
 
     iteration_count = 0
@@ -393,7 +393,7 @@ def temperature_from_energy_density(
         # print(f"h_min, h_max: {h_min, h_max}")
 
         if abs(h_1 - h_in) < tolerance:
-            print(f"Linear interpolation converged in {iteration_count} iterations.")
+            # print(f"Linear interpolation converged in {iteration_count} iterations.")
             return T_1
 
         if h_1 < h_in:
@@ -404,3 +404,42 @@ def temperature_from_energy_density(
             # print(f"T_max, h_max: {T_max, h_max}")
 
     raise RuntimeError(f"Linear interpolation did not converge within {max_iterations} iterations.")
+
+
+def temperature_from_energy_density_array(
+        temperature_array: np.ndarray,
+        h_in: float,
+        energy_density_array: np.ndarray
+        ) -> float:
+    # Input validation
+    if len(temperature_array) != len(energy_density_array):
+        raise ValueError("temperature_array and energy_density_array must have the same length.")
+
+    # Binary search to find the interval
+    left, right = 0, len(energy_density_array) - 1
+
+    while left <= right:
+        mid = (left + right) // 2
+        if energy_density_array[mid] == h_in:
+            return float(temperature_array[mid])
+        elif energy_density_array[mid] > h_in:
+            left = mid + 1
+        else:
+            right = mid - 1
+
+    # After binary search, 'right' points to the upper bound
+    # and 'left' points to the lower bound of our interval
+    if left >= len(energy_density_array):
+        return float(temperature_array[-1])
+    if right < 0:
+        return float(temperature_array[0])
+
+    # Linear interpolation within the found interval
+    x0, x1 = energy_density_array[right], energy_density_array[left]
+    y0, y1 = temperature_array[right], temperature_array[left]
+
+    # Use high-precision arithmetic for interpolation
+    slope = (y1 - y0) / (x1 - x0)
+    temperature = y0 + slope * (h_in - x0)
+
+    return float(temperature)
