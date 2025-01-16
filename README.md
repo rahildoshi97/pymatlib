@@ -36,6 +36,7 @@ This command installs the package in editable mode, allowing you to make changes
     - `sympy`
     - `pytest`
     - [`pystencils`](https://i10git.cs.fau.de/pycodegen/pystencils/-/tree/v2.0-dev?ref_type=heads)
+    - `pybind11`
 
 ### Installation Steps
 1. Clone the repository:
