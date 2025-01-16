@@ -1,13 +1,15 @@
+import time
 import numpy as np
 import sympy as sp
 from pathlib import Path
 from typing import Union
+from matplotlib import pyplot as plt
 from pymatlib.core.alloy import Alloy
 from pymatlib.data.element_data import Fe, Cr, Ni, Mo, Mn
-from pymatlib.core.models import thermal_diffusivity_by_heat_conductivity, density_by_thermal_expansion, energy_density, temperature_from_enthalpy
+from pymatlib.core.models import thermal_diffusivity_by_heat_conductivity, density_by_thermal_expansion, energy_density, temperature_from_energy_density
 from pymatlib.core.data_handler import read_data, celsius_to_kelvin, thousand_times
 from pymatlib.core.interpolators import interpolate_property
-import time
+from pymatlib.core.fast_interpolation import temperature_from_energy_density_array
 
 
 def create_SS316L(T: Union[float, sp.Symbol]) -> Alloy:
@@ -51,8 +53,8 @@ def create_SS316L(T: Union[float, sp.Symbol]) -> Alloy:
     SS316L = Alloy(
         elements=[Fe, Cr, Ni, Mo, Mn],
         composition=[0.675, 0.17, 0.12, 0.025, 0.01],  # Fe: 67.5%, Cr: 17%, Ni: 12%, Mo: 2.5%, Mn: 1%
-        temperature_solidus=1658.0,  # Solidus temperature in Kelvin
-        temperature_liquidus=1723.0,  # Liquidus temperature in Kelvin
+        temperature_solidus=1653.15,  # Solidus temperature in Kelvin (test at 1653.15 K = 1380 C)
+        temperature_liquidus=1723.15,  # Liquidus temperature in Kelvin (test at 1723.15 K = 1450 C)
         thermal_expansion_coefficient=16.3e-6  # in 1/K
     )
     # density_data_file_path = "/local/ca00xebo/repos/pymatlib/src/pymatlib/data/alloys/SS316L/density_temperature.txt"
@@ -61,7 +63,7 @@ def create_SS316L(T: Union[float, sp.Symbol]) -> Alloy:
 
     # Paths to data files using relative paths
     density_data_file_path = str(base_dir / 'density_temperature.txt')
-    heat_capacity_data_file_path = str(base_dir / 'heat_capacity_temperature.txt')
+    heat_capacity_data_file_path = str(base_dir / 'heat_capacity_temperature_edited.txt')
     heat_conductivity_data_file_path = str(base_dir / '..' / 'SS316L' / 'heat_conductivity_temperature.txt')
 
     # Read temperature and material property data from the files
@@ -86,31 +88,147 @@ def create_SS316L(T: Union[float, sp.Symbol]) -> Alloy:
     SS316L.heat_conductivity = interpolate_property(T, heat_conductivity_temp_array, heat_conductivity_array)
     SS316L.density = interpolate_property(T, density_temp_array, density_array)
     SS316L.heat_capacity = interpolate_property(T, heat_capacity_temp_array, heat_capacity_array)
+    SS316L.latent_heat_of_fusion = interpolate_property(T, SS316L.solidification_interval(), np.array([0.0, 260000.0]))
+    SS316L.energy_density = energy_density(T, SS316L.density, SS316L.heat_capacity, SS316L.latent_heat_of_fusion)
+    SS316L.energy_density_solidus = SS316L.energy_density.evalf(T, SS316L.temperature_solidus)
+    SS316L.energy_density_liquidus = SS316L.energy_density.evalf(T, SS316L.temperature_liquidus)
+
     print("SS316L.heat_conductivity:", SS316L.heat_conductivity, "type:", type(SS316L.heat_conductivity))
     print("SS316L.density:", SS316L.density, "type:", type(SS316L.density))
     print("SS316L.heat_capacity:", SS316L.heat_capacity, "type:", type(SS316L.heat_capacity))
-    SS316L.latent_heat_of_fusion = interpolate_property(T, SS316L.solidification_interval(), np.array([0.0, 260000.0]))
     print(f"SS316L.latent_heat_of_fusion: {SS316L.latent_heat_of_fusion}")
-    SS316L.energy_density = energy_density(T, SS316L.density, SS316L.heat_capacity, SS316L.latent_heat_of_fusion)
     print(f"SS316L.energy_density: {SS316L.energy_density}")
-    SS316L.energy_density_solidus = SS316L.energy_density.evalf(T, SS316L.temperature_solidus)
     print(f"SS316L.energy_density_solidus: {SS316L.energy_density_solidus}")
-    SS316L.energy_density_liquidus = SS316L.energy_density.evalf(T, SS316L.temperature_liquidus)
     print(f"SS316L.energy_density_liquidus: {SS316L.energy_density_liquidus}")
+
+    """print("SS316L.heat_conductivity@T_sol/T_liq:", SS316L.heat_conductivity.evalf(T, SS316L.temperature_solidus), SS316L.heat_conductivity.evalf(T, SS316L.temperature_liquidus))
+    print("SS316L.density@T_sol/T_liq:", SS316L.density.evalf(T, SS316L.temperature_solidus), SS316L.density.evalf(T, SS316L.temperature_liquidus))
+    print("SS316L.heat_capacity@T_sol/T_liq:", SS316L.heat_capacity.evalf(T, SS316L.temperature_solidus), SS316L.heat_capacity.evalf(T, SS316L.temperature_liquidus))
+    print("SS316L.latent_heat_of_fusion@T_sol/T_liq:", SS316L.latent_heat_of_fusion.evalf(T, SS316L.temperature_solidus), SS316L.latent_heat_of_fusion.evalf(T, SS316L.temperature_liquidus))
+    print("SS316L.energy_density@T_sol/T_liq:", SS316L.energy_density.evalf(T, SS316L.temperature_solidus), SS316L.energy_density.evalf(T, SS316L.temperature_liquidus))"""
+
+    """c_p = []
+    density_temp_array = np.array(density_temp_array)
+    for temp in density_temp_array:
+        cp = SS316L.heat_capacity.evalf(T, temp)
+        c_p.append(cp)
+    c_p_array = np.array(c_p)
+    print(c_p_array)"""
+
+    energy_density_array = []
+    for temp in density_temp_array:
+        ed = SS316L.energy_density.evalf(T, temp)
+        energy_density_array.append(ed)
+    energy_density_array = np.array(energy_density_array)
+    # print(f"temperature_array:\n{density_temp_array}")
+    # print(f"energy_density_array:\n{energy_density_array}")
+
+    # Create the plot
+    """plt.figure(figsize=(10, 6))
+    plt.plot(density_temp_array, energy_density_array, 'b-', linewidth=1)
+    plt.xlabel('Temperature (K)')
+    plt.ylabel('Energy Density (J/m³)')
+    plt.title('Energy Density vs Temperature')
+    plt.grid(True)
+
+    # Save the plot
+    plt.savefig('energy_density_vs_temperature.png', dpi=300, bbox_inches='tight')
+    plt.show()"""
+
     print("----------" * 10)
 
     args = (T,
             density_temp_array,
-            SS316L.energy_density_solidus,
-            # !TODO
-            # SS316L.energy_density_liquidus,  # ValueError: The input enthalpy value of 75801672220.93764 is outside the computed enthalpy range (1541619696.9924808, 17148982967.504948).
+            # SS316L.energy_density_solidus,  # 9744933767.272629
+            # SS316L.energy_density_liquidus,  # 11789781961.769783
+            # SS316L.energy_density.evalf(T, SS316L.temperature_liquidus),  # T_star: 1743.1412643772671, expected T_star: 1723.15
+            # 10062147268.397945,
+            1.01e10,
             SS316L.energy_density)
+    # energy density has the same value for both temperatures >> function is not monotonically increasing
+    print(SS316L.energy_density.evalf(T, 1723.15))  # 11789781961.769783
+    print(SS316L.energy_density.evalf(T, 1743.1412643772671))  # 11789781961.769783
+
+    args1 = (T,
+            density_temp_array,
+            SS316L.heat_capacity.evalf(T, SS316L.temperature_liquidus),
+            SS316L.heat_capacity)
 
     start_time = time.time()
-    T_star_2 = temperature_from_enthalpy(*args)
+    T_star_1 = temperature_from_energy_density(*args)
+    time_1 = time.time() - start_time
+    print(f"T_star: {T_star_1}")
+    print(f"Execution time: {time_1:.6f} seconds\n")
+
+    args2 = (density_temp_array,
+             # 10062147268.397945,
+             1.01e10,
+             energy_density_array)
+
+    start_time = time.time()
+    T_star_2 = temperature_from_energy_density_array(*args2)
     time_2 = time.time() - start_time
-    print(f"\nT_star from temperature_from_enthalpy2: {T_star_2}")
-    print(f"Execution time for temperature_from_enthalpy2: {time_2:.6f} seconds")
+    print(f"T_star_2: {T_star_2}")
+    print(f"Execution time: {time_2:.6f} seconds\n")
+
+    results = []
+    execution_times = []
+
+    for h_in in energy_density_array:
+        args = (T, density_temp_array, h_in, SS316L.energy_density)
+        args_array = (density_temp_array, h_in, energy_density_array)
+
+        start_time = time.time()
+        T_star = temperature_from_energy_density_array(*args_array)
+        execution_time = time.time() - start_time
+
+        results.append(T_star)
+        execution_times.append(execution_time)
+
+        """print(f"Heat Capacity: {h_in}")
+        print(f"T_star: {T_star}")
+        print(f"Execution time: {execution_time:.6f} seconds\n")"""
+
+    print("Summary:")
+    print(f"Total execution time: {sum(execution_times):.8f} seconds")
+    print(f"Average execution time: {sum(execution_times)/len(execution_times):.8f} seconds\n")
+
+    # Function to measure performance
+    def measure_performance(iterations=1000):
+        all_results = []
+        all_execution_times = []
+
+        for i in range(iterations):
+            results = []
+            execution_times = []
+
+            for h_in in energy_density_array:
+                args_array = (density_temp_array, h_in, energy_density_array)
+
+                # Measure execution time
+                start_time = time.time()
+                T_star = temperature_from_energy_density_array(*args_array)
+                execution_time = time.time() - start_time
+
+                results.append(T_star)
+                execution_times.append(execution_time)
+
+            # Collect results for this iteration
+            all_results.append(results)
+            all_execution_times.append(sum(execution_times))
+
+        # Performance summary
+        total_time = sum(all_execution_times)
+        average_time_per_run = total_time / iterations
+        print("Performance Summary:")
+        print(f"Total execution time (for {iterations} runs): {total_time:.8f} seconds")
+        print(f"Average execution time per run: {average_time_per_run:.8f} seconds")
+        print(f"Average execution time per iteration (array loop): {np.mean(all_execution_times) / len(energy_density_array):.8f} seconds")
+
+    # Run the performance test
+    measure_performance(iterations=100000)
+
+    quit()
 
     # ---------- ---------- ---------- ---------- ---------- ---------- ---------- ---------- ---------- ----------
 
