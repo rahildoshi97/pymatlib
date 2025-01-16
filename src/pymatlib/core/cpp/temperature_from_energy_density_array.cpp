@@ -1,5 +1,4 @@
 #include "temperature_from_energy_density_array.h"
-#include <immintrin.h>
 #include <cmath>
 
 
