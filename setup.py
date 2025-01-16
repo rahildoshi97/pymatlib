@@ -5,7 +5,7 @@ import pybind11
 # Define the extension module
 ext_modules = [
     Extension(
-        "pymatlib.core.fast_interpolation",  # Module name in Python
+        "pymatlib.core.cpp.fast_interpolation",  # Module name in Python
         ["src/pymatlib/core/cpp/temperature_from_energy_density_array.cpp"],
         include_dirs=[pybind11.get_include()],
         extra_compile_args=['-O3', '-std=c++11'],  # Enable high optimization and C++11
