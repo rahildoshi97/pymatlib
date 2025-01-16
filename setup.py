@@ -1,15 +1,27 @@
-from setuptools import setup, find_packages
+from setuptools import setup, find_packages, Extension
+import pybind11
 
+
+# Define the extension module
+ext_modules = [
+    Extension(
+        "pymatlib.core.fast_interpolation",  # Module name in Python
+        ["src/pymatlib/core/cpp/temperature_from_energy_density_array.cpp"],
+        include_dirs=[pybind11.get_include()],
+        extra_compile_args=['-O3', '-std=c++11'],  # Enable high optimization and C++11
+        language='c++'
+    ),
+]
 
 setup(
     name='pymatlib',
     version='0.1.0',  # Update this version as needed
-    author='Rahil Doshi',  # Replace with your name
-    author_email='rahil.doshi@fau.de',  # Replace with your email
+    author='Rahil Doshi',
+    author_email='rahil.doshi@fau.de',
     description='A Python based material library',
-    long_description=open('README.md').read(),  # Ensure you have a README.md file
+    long_description=open('README.md').read(),
     long_description_content_type='text/markdown',
-    url='https://i10git.cs.fau.de/rahil.doshi/pymatlib',  # Replace with your repository URL
+    url='https://i10git.cs.fau.de/rahil.doshi/pymatlib',
     packages=find_packages(where='src'),  # Automatically find packages in the src directory
     package_dir={'': 'src'},  # Set the source directory
     classifiers=[
@@ -26,7 +38,8 @@ setup(
         'numpy>=1.18.0',  # Specify required packages and their versions
         'sympy>=1.7.0',
         'pytest>=6.0.0',
-        'pystencils@git+https://i10git.cs.fau.de/pycodegen/pystencils.git@v2.0-dev'
+        'pystencils@git+https://i10git.cs.fau.de/pycodegen/pystencils.git@v2.0-dev',
+        'pybind11>=2.6.0',
     ],
     extras_require={
         'dev': [
@@ -35,5 +48,6 @@ setup(
             'black',       # For code formatting
         ],
     },
+    ext_modules=ext_modules,
     include_package_data=True,  # Include package data specified in MANIFEST.in
 )
