@@ -4,7 +4,6 @@ include AUTHORS.txt
 include pyproject.toml
 
 recursive-include src/pymatlib *
-recursive-include src/pymatlib/data *
 recursive-include docs *
 
 recursive-exclude * __pycache__
