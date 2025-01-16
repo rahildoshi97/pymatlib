@@ -1,8 +1,37 @@
-venv
-__pycache__
+# Virtual environment and environment files
+venv/
 .env
-.idea
-*.egg-info*
+
+# Python cache files
+__pycache__/
+*.py[cod]
+
+# IDE/editor files
+.idea/
+*.swp  # Vim swap files
+
+# Build directories and files
 **/cmake-build*/
-/build
+build/
+dist/
+*.egg-info/
+*.so  # Exclude compiled shared object files
+*.dll # Windows dynamic-link library
+*.dylib # macOS shared library
+
+# Temporary files
+*.log
+*.tmp
+*.bak
+*.swo
+
+# Images and media (if not required)
 *.png
+*.jpg
+*.jpeg
+*.gif
+
+# Test results or temporary outputs
+test_output/
+coverage/
+*.coverage
