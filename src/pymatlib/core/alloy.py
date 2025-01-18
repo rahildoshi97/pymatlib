@@ -65,12 +65,14 @@ class Alloy:
     energy_density: PropertyTypes = None
     energy_density_solidus: float = None
     energy_density_liquidus: float = None
+    energy_density_array: np.ndarray = field(default_factory=lambda: np.array([]))
     heat_capacity: PropertyTypes = None
     heat_conductivity: PropertyTypes = None
     kinematic_viscosity: PropertyTypes = None
     latent_heat_of_fusion: PropertyTypes = None
     latent_heat_of_vaporization: PropertyTypes = None
     surface_tension: PropertyTypes = None
+    temperature_array: np.ndarray = field(default_factory=lambda: np.array([]))
     thermal_diffusivity: PropertyTypes = None
     thermal_expansion_coefficient: PropertyTypes = None
 
