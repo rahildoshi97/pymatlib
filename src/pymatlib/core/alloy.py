@@ -16,39 +16,6 @@ class AlloyTemperatureError(ValueError):
     """Exception raised when alloy temperature validation fails."""
     pass
 
-'''class PropertyTypeChecker:
-    """
-    A descriptor class for handling property type checking.
-    
-    Args:
-        name (str): Name of the property to check.
-    
-    Raises:
-        TypeError: If the value being set is not None and not of type PropertyTypes.
-    """
-    def __init__(self, name: str):
-        self.private_name = f'_{name}'
-
-    def __get__(self, obj, objtype=None):
-        """Get the property value."""
-        if obj is None:
-            return self
-        return getattr(obj, self.private_name)
-
-    def __set__(self, obj, value):
-        """
-        Set the property value with type checking.
-        
-        Args:
-            obj: The object instance.
-            value: The value to set.
-            
-        Raises:
-            TypeError: If value is not None and not of type PropertyTypes.
-        """
-        if value is not None and not isinstance(value, get_args(PropertyTypes)):
-            raise TypeError(f"{self.private_name[1:]} must be of type PropertyTypes (float or MaterialProperty)")
-        setattr(obj, self.private_name, value)'''
 
 @dataclass
 class Alloy:
@@ -107,29 +74,6 @@ class Alloy:
     thermal_diffusivity: PropertyTypes = None
     thermal_expansion_coefficient: PropertyTypes = None
 
-    '''# Private fields for properties
-    _density: PropertyTypes = field(default=None, init=False, repr=False)
-    _dynamic_viscosity: PropertyTypes = field(default=None, init=False, repr=False)
-    _heat_capacity: PropertyTypes = field(default=None, init=False, repr=False)
-    _heat_conductivity: PropertyTypes = field(default=None, init=False, repr=False)
-    _kinematic_viscosity: PropertyTypes = field(default=None, init=False, repr=False)
-    _latent_heat_of_fusion: PropertyTypes = field(default=None, init=False, repr=False)
-    _latent_heat_of_vaporization: PropertyTypes = field(default=None, init=False, repr=False)
-    _surface_tension: PropertyTypes = field(default=None, init=False, repr=False)
-    _thermal_diffusivity: PropertyTypes = field(default=None, init=False, repr=False)
-    _thermal_expansion_coefficient: PropertyTypes = field(default=None, init=False, repr=False)
-    
-    # Property descriptors
-    density = PropertyTypeChecker("density")
-    dynamic_viscosity = PropertyTypeChecker("dynamic_viscosity")
-    heat_capacity = PropertyTypeChecker("heat_capacity")
-    heat_conductivity = PropertyTypeChecker("heat_conductivity")
-    kinematic_viscosity = PropertyTypeChecker("kinematic_viscosity")
-    latent_heat_of_fusion = PropertyTypeChecker("latent_heat_of_fusion")
-    latent_heat_of_vaporization = PropertyTypeChecker("latent_heat_of_vaporization")
-    surface_tension = PropertyTypeChecker("surface_tension")
-    thermal_diffusivity = PropertyTypeChecker("thermal_diffusivity")
-    thermal_expansion_coefficient = PropertyTypeChecker("thermal_expansion_coefficient")'''
 
     def solidification_interval(self) -> Tuple[float, float]:
         """

@@ -190,9 +190,7 @@ def interpolate_property(
     incr = check_equidistant(np.asarray(temp_array))
 
     if force_lookup or incr == 0 or len(temp_array) < temp_array_limit:
-        print('interpolate_lookup')
         return interpolate_lookup(T, temp_array, prop_array)
     else:
-        print('interpolate_equidistant')
         return interpolate_equidistant(
             T, float(temp_array[0]), incr, prop_array)
