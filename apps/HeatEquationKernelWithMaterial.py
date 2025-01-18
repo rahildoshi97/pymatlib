@@ -6,7 +6,6 @@ import pystencils as ps
 # sys.path.append(walberla_dir)
 from pystencilssfg import SourceFileGenerator
 from sfg_walberla import Sweep
-from pymatlib.data.alloys import Ti6Al4V
 from pymatlib.data.alloys.SS316L import SS316L
 from pymatlib.core.assignment_converter import assignment_converter
 
@@ -24,7 +23,6 @@ with SourceFileGenerator() as sfg:
     heat_pde_discretized = discretize(heat_pde)
     heat_pde_discretized = heat_pde_discretized.args[1] + heat_pde_discretized.args[0].simplify()
 
-    # mat = Ti6Al4V.create_Ti6Al4V(u.center())
     mat = SS316L.create_SS316L(u.center())
 
     # Convert assignments to pystencils format
