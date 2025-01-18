@@ -1,4 +1,5 @@
 import numpy as np
+from pathlib import Path
 from typing import Union, Tuple
 
 
@@ -169,16 +170,17 @@ def find_min_max_temperature(temperatures_input) -> tuple:
     except Exception as e:
         raise ValueError(f"An error occurred while processing the input: {e}")
 
-# Example usage:
-# 1. Using a file path
-_file_path = "/local/ca00xebo/repos/pymatlib/src/pymatlib/data/alloys/SS316L/density_temperature.txt"
-min_temp, max_temp = find_min_max_temperature(_file_path)
-print(f"Minimum Temperature from file: {min_temp}")
-print(f"Maximum Temperature from file: {max_temp}")
+if __name__ == '__main__':
+    # Example usage:
+    # 1. Using a file path
+    base_dir = Path(__file__).parent  # Directory of the current file
+    _file_path = str( base_dir / '..' / 'data' / 'alloys' / 'SS316L' / 'density_temperature.txt' )
+    min_temp, max_temp = find_min_max_temperature(_file_path)
+    print(f"Minimum Temperature from file: {min_temp}")
+    print(f"Maximum Temperature from file: {max_temp}")
 
-# 2. Using a numpy array
-temperature_array = np.array([3300, 500, 800, 1000, 1500])
-min_temp, max_temp = find_min_max_temperature(temperature_array)
-print(f"Minimum Temperature from array: {min_temp}")
-print(f"Maximum Temperature from array: {max_temp}")
-
+    # 2. Using a numpy array
+    temperature_array = np.array([3300, 500, 800, 1000, 1500])
+    min_temp, max_temp = find_min_max_temperature(temperature_array)
+    print(f"Minimum Temperature from array: {min_temp}")
+    print(f"Maximum Temperature from array: {max_temp}")
