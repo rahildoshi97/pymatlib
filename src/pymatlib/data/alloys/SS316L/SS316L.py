@@ -88,6 +88,7 @@ def create_SS316L(T: Union[float, sp.Symbol]) -> Alloy:
     SS316L.heat_conductivity = interpolate_property(T, heat_conductivity_temp_array, heat_conductivity_array)
     SS316L.density = interpolate_property(T, density_temp_array, density_array)
     SS316L.heat_capacity = interpolate_property(T, heat_capacity_temp_array, heat_capacity_array)
+    SS316L.thermal_diffusivity = thermal_diffusivity_by_heat_conductivity(SS316L.heat_conductivity, SS316L.density, SS316L.heat_capacity)
     SS316L.latent_heat_of_fusion = interpolate_property(T, SS316L.solidification_interval(), np.array([0.0, 260000.0]))
     SS316L.energy_density = energy_density(T, SS316L.density, SS316L.heat_capacity, SS316L.latent_heat_of_fusion)
     SS316L.energy_density_solidus = SS316L.energy_density.evalf(T, SS316L.temperature_solidus)
@@ -115,13 +116,12 @@ def create_SS316L(T: Union[float, sp.Symbol]) -> Alloy:
     c_p_array = np.array(c_p)
     print(c_p_array)"""
 
-    energy_density_array = []
-    for temp in density_temp_array:
-        ed = SS316L.energy_density.evalf(T, temp)
-        energy_density_array.append(ed)
-    energy_density_array = np.array(energy_density_array)
-    # print(f"temperature_array:\n{density_temp_array}")
-    # print(f"energy_density_array:\n{energy_density_array}")
+    # Populate temperature_array and energy_density_array
+    SS316L.temperature_array = density_temp_array
+
+    SS316L.energy_density_array = np.array([
+        SS316L.energy_density.evalf(T, temp) for temp in density_temp_array
+    ])
 
     # Create the plot
     """plt.figure(figsize=(10, 6))
@@ -138,7 +138,7 @@ def create_SS316L(T: Union[float, sp.Symbol]) -> Alloy:
     print("----------" * 10)
 
     args = (T,
-            density_temp_array,
+            SS316L.temperature_array,
             # SS316L.energy_density_solidus,  # 9744933767.272629
             # SS316L.energy_density_liquidus,  # 11789781961.769783
             # SS316L.energy_density.evalf(T, SS316L.temperature_liquidus),  # T_star: 1743.1412643772671, expected T_star: 1723.15
@@ -150,7 +150,7 @@ def create_SS316L(T: Union[float, sp.Symbol]) -> Alloy:
     print(SS316L.energy_density.evalf(T, 1743.1412643772671))  # 11789781961.769783
 
     args1 = (T,
-            density_temp_array,
+            SS316L.temperature_array,
             SS316L.heat_capacity.evalf(T, SS316L.temperature_liquidus),
             SS316L.heat_capacity)
 
@@ -160,10 +160,10 @@ def create_SS316L(T: Union[float, sp.Symbol]) -> Alloy:
     print(f"T_star: {T_star_1}")
     print(f"Execution time: {time_1:.6f} seconds\n")
 
-    args2 = (density_temp_array,
+    args2 = (SS316L.temperature_array,
              # 10062147268.397945,
              1.01e10,
-             energy_density_array)
+             SS316L.energy_density_array)
 
     start_time = time.time()
     T_star_2 = temperature_from_energy_density_array(*args2)
@@ -174,9 +174,9 @@ def create_SS316L(T: Union[float, sp.Symbol]) -> Alloy:
     results = []
     execution_times = []
 
-    for h_in in energy_density_array:
-        args = (T, density_temp_array, h_in, SS316L.energy_density)
-        args_array = (density_temp_array, h_in, energy_density_array)
+    for h_in in SS316L.energy_density_array:
+        args = (T, SS316L.temperature_array, h_in, SS316L.energy_density)
+        args_array = (SS316L.temperature_array, h_in, SS316L.energy_density_array)
 
         start_time = time.time()
         T_star = temperature_from_energy_density_array(*args_array)
@@ -202,8 +202,8 @@ def create_SS316L(T: Union[float, sp.Symbol]) -> Alloy:
             results = []
             execution_times = []
 
-            for h_in in energy_density_array:
-                args_array = (density_temp_array, h_in, energy_density_array)
+            for h_in in SS316L.energy_density_array:
+                args_array = (density_temp_array, h_in, SS316L.energy_density_array)
 
                 # Measure execution time
                 start_time = time.time()
@@ -223,7 +223,7 @@ def create_SS316L(T: Union[float, sp.Symbol]) -> Alloy:
         print("Performance Summary:")
         print(f"Total execution time (for {iterations} runs): {total_time:.8f} seconds")
         print(f"Average execution time per run: {average_time_per_run:.8f} seconds")
-        print(f"Average execution time per iteration (array loop): {np.mean(all_execution_times) / len(energy_density_array):.8f} seconds")
+        print(f"Average execution time per iteration (array loop): {np.mean(all_execution_times) / len(SS316L.energy_density_array):.8f} seconds")
 
     # Run the performance test
     measure_performance(iterations=100000)

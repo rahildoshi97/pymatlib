@@ -95,7 +95,7 @@ class MaterialProperty:
         if not self.expr.free_symbols:
             return float(self.expr)
 
-        """# Collect all relevant symbols from expressions and assignments
+        # Collect all relevant symbols from expressions and assignments
         all_symbols = self.expr.free_symbols.union(
             *(assignment.rhs.free_symbols
               for assignment in self.assignments
@@ -103,7 +103,7 @@ class MaterialProperty:
         )
         # If we have symbols but the provided one isn't among them, raise TypeError
         if all_symbols and symbol not in all_symbols:
-            raise TypeError(f"Symbol {symbol} not found in expression or assignments")"""
+            raise TypeError(f"Symbol {symbol} not found in expression or assignments")
 
         # Handle array inputs
         # If temperature is a numpy array, list, or tuple (ArrayTypes), evaluate the property for each temperature

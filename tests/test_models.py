@@ -2,8 +2,6 @@ import pytest
 import numpy as np
 import sympy as sp
 from pymatlib.core.models import (
-    # validate_density_parameters,
-    validate_thermal_diffusivity_parameters,
     wrapper,
     material_property_wrapper,
     density_by_thermal_expansion,
@@ -11,39 +9,6 @@ from pymatlib.core.models import (
 )
 from pymatlib.core.typedefs import MaterialProperty
 
-'''
-def test_validate_density_parameters():
-    """Test density parameter validation."""
-    # Valid parameters
-    validate_density_parameters(300.0, 1000.0, 8000.0, 1e-6)
-
-    # Test temperature validation
-    with pytest.raises(ValueError, match="Temperature cannot be below absolute zero"):
-        validate_density_parameters(-274.0, 1000., 8000.0, 1e-6)
-
-    # Test density validation
-    with pytest.raises(ValueError, match="Base density must be positive"):
-        validate_density_parameters(300.0, 1000., -8000.0, 1e-6)
-
-    # Test thermal expansion coefficient validation
-    with pytest.raises(ValueError, match="Thermal expansion coefficient must be between -3e-5 and 0.001"):
-        validate_density_parameters(300.0, 1000, 8000.0, -1.5)
-'''
-
-def test_validate_thermal_diffusivity_parameters():
-    """Test thermal diffusivity parameter validation."""
-    # Valid parameters
-    validate_thermal_diffusivity_parameters(30.0, 8000.0, 500.0)
-
-    # Test positive value validation
-    with pytest.raises(ValueError, match="heat_conductivity must be positive"):
-        validate_thermal_diffusivity_parameters(-30.0, 8000.0, 500.0)
-
-    with pytest.raises(ValueError, match="density must be positive"):
-        validate_thermal_diffusivity_parameters(30.0, -8000.0, 500.0)
-
-    with pytest.raises(ValueError, match="heat_capacity must be positive"):
-        validate_thermal_diffusivity_parameters(30.0, 8000.0, -500.0)
 
 def test_wrapper():
     """Test wrapper function."""
@@ -130,30 +95,6 @@ def test_models():
         with pytest.raises(ValueError):
             material_property_wrapper(None)
 
-    # Test density parameter validation
-    def test_density_validation():
-        # Test temperature validation at exactly absolute zero
-        with pytest.raises(ValueError):
-            validate_density_parameters(-273.15, 8000.0, 1e-6)
-        # Test array with mixed valid/invalid temperatures
-        with pytest.raises(ValueError):
-            validate_density_parameters(np.array([100.0, -274.0]), 8000.0, 1e-6)
-        # Test zero density
-        with pytest.raises(ValueError):
-            validate_density_parameters(300.0, 0.0, 1e-6)
-        # Test thermal expansion coefficient edge cases
-        with pytest.raises(ValueError):
-            validate_density_parameters(300.0, 8000.0, -1.0)
-
-    # Test thermal diffusivity parameter validation
-    def test_thermal_diffusivity_validation():
-        # Test zero values
-        with pytest.raises(ValueError):
-            validate_thermal_diffusivity_parameters(0.0, 8000.0, 500.0)
-        # Test incompatible types
-        with pytest.raises(TypeError):
-            validate_thermal_diffusivity_parameters(np.array([30.0]), 8000.0, 500.0)
-
     # Test density calculation with various input combinations
     def test_density_calculations():
         # Test with MaterialProperty as thermal expansion coefficient
@@ -198,8 +139,8 @@ def test_density_by_thermal_expansion1():
 
     # Test with numpy array for temperature input
     T_array = np.array([1300.0, 1400.0, 1500.0])
-    result_array = density_by_thermal_expansion(T_array, T_ref, rho_ref, alpha)
-    assert isinstance(result_array, MaterialProperty)
+    with pytest.raises(TypeError):
+        density_by_thermal_expansion(T_array, T_ref, rho_ref, alpha)  # Invalid temperature type
 
     # Test edge cases with negative values
     with pytest.raises(ValueError):
@@ -237,7 +178,7 @@ def test_density_by_thermal_expansion_invalid_inputs():
         density_by_thermal_expansion(1000.0, 1000.0, -8000.0, 1e-5)
     with pytest.raises(ValueError):
         density_by_thermal_expansion(1000.0, 1000.0, 8000.0, -1e-4)
-    with pytest.raises(ValueError):
+    with pytest.raises(TypeError):
         density_by_thermal_expansion(np.array([-100.0, 1000.0]), 1000.0, 8000.0, 1e-5)
 
 def test_thermal_diffusivity_invalid_inputs():

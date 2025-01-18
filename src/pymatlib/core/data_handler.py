@@ -58,6 +58,7 @@ def read_data(file_path: str, header: bool = True) -> Tuple[np.ndarray, np.ndarr
 
     return temp, prop
 
+
 def celsius_to_kelvin(temp: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
     """
     Converts Celsius temperatures to Kelvin.
@@ -69,6 +70,7 @@ def celsius_to_kelvin(temp: Union[float, np.ndarray]) -> Union[float, np.ndarray
         Union[float, np.ndarray]: Temperature(s) in Kelvin.
     """
     return temp + 273.15
+
 
 def fahrenheit_to_kelvin(temp: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
     """

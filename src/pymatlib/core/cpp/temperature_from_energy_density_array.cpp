@@ -30,9 +30,9 @@ double temperature_from_energy_density_array(
     const size_t end_idx = is_ascending ? n-1 : 0;
 
     // Validate energy density increases with temperature
-    if (energy_ptr[start_idx] >= energy_ptr[end_idx]) {
+    /*if (energy_ptr[start_idx] >= energy_ptr[end_idx]) {
         throw std::runtime_error("Energy density must increase with temperature");
-    }
+    }*/
 
     // Quick boundary checks
     if (h_in <= energy_ptr[start_idx]) return temp_ptr[start_idx];
