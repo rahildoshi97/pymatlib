@@ -124,10 +124,6 @@ def thermal_diffusivity_by_heat_conductivity(
         if isinstance(prop, MaterialProperty)
         for assignment in prop.assignments
     ]
-    '''sub_assignments = []
-    for prop in [heat_conductivity, density, heat_capacity]:
-        if isinstance(prop, MaterialProperty):
-            sub_assignments.extend(prop.assignments)'''
 
     # Handle the symbolic expression, using `.expr` only for MaterialProperty objects
     k_expr = heat_conductivity.expr if isinstance(heat_conductivity, MaterialProperty) else wrapper(heat_conductivity)
@@ -170,187 +166,7 @@ def energy_density(
 
     _energy_density = density_expr * (temperature * heat_capacity_expr + latent_heat_expr)
     return MaterialProperty(_energy_density, sub_assignments)
-    # Just FYI: ps.Assignment(T.center, (s.h / s.density_mat - s.latent_heat_mat) / s.heat_capacity_mat)
 
-'''
-def compute_energy_density_MaterialProperty(
-        temperature: Union[float, sp.Expr],
-        _density: Union[float, MaterialProperty],
-        heat_capacity: Union[float, MaterialProperty],
-        latent_heat: Union[float, MaterialProperty]) -> Tuple[MaterialProperty, float, float, float]:
-    """
-    Compute energy density for MaterialProperty objects dynamically and return as a MaterialProperty.
-    """
-    properties = {
-        "density": _density,
-        "heat_capacity": heat_capacity,
-        "latent_heat": latent_heat
-    }
-
-    evaluated_properties = {}
-    assignments = []
-
-    for name, prop in properties.items():
-        print(f"Processing {name}: {prop}, type: {type(prop)}")
-
-        if isinstance(prop, MaterialProperty):
-            print(f"{name} is a MaterialProperty")
-            if len(prop.assignments) == 0:
-                if isinstance(prop.expr, sp.Float):
-                    evaluated_properties[name] = float(prop.expr)
-                elif isinstance(prop.expr, (sp.Piecewise, sp.Add, sp.Mul)):
-                    free_symbols = prop.expr.free_symbols
-                    if free_symbols:
-                        substitutions = {symbol: temperature for symbol in free_symbols}
-                        evaluated_properties[name] = prop.expr.subs(substitutions).evalf() if isinstance(temperature, float) else prop.expr.subs(substitutions)
-                    else:
-                        evaluated_properties[name] = prop.expr.evalf() if isinstance(temperature, float) else prop.expr
-                print(f"Evaluated {name}: {evaluated_properties[name]}")
-            elif len(prop.assignments) >= 1:
-                expr = prop.expr
-                subs_dict = {}
-                for assignment in prop.assignments:
-                    ass_lhs = assignment.lhs
-                    ass_rhs = assignment.rhs
-                    print(f"{name} assignment - LHS: {ass_lhs}, RHS: {ass_rhs}")
-
-                    if isinstance(ass_rhs, (sp.Piecewise, sp.Add)):
-                        subs_dict_rhs = {symbol: temperature for symbol in ass_rhs.free_symbols}
-                        ass_rhs_val = ass_rhs.subs(subs_dict_rhs).evalf() if isinstance(temperature, float) else ass_rhs.subs(subs_dict_rhs)
-                        print(f"ass_rhs_val: {ass_rhs_val}")
-                        ass_rhs_val = int(ass_rhs_val) if assignment.lhs_type == "int" and isinstance(temperature, float) else ass_rhs_val
-                        subs_dict_lhs = {symbol: ass_rhs_val for symbol in ass_lhs.free_symbols}
-                        subs_dict.update(subs_dict_rhs)
-                        subs_dict.update(subs_dict_lhs)
-                        print(f"updated subs_dict: {subs_dict}")
-                    elif isinstance(ass_rhs, Tuple):
-                        tuple_values = [
-                            rhs_part.subs({symbol: temperature for symbol in rhs_part.free_symbols}).evalf()
-                            if isinstance(temperature, float)
-                            else rhs_part.subs({symbol: temperature for symbol in rhs_part.free_symbols})
-                            for rhs_part in ass_rhs
-                        ]
-                        subs_dict[ass_lhs] = ass_rhs
-                        print(f"Updated subs_dict with tuple: {subs_dict}")
-                    else:
-                        raise TypeError(f"Unknown assignment type: {type(ass_rhs)}")
-                print(f"Substitution dictionary for {name}: {subs_dict}")
-                evaluated_properties[name] = expr.subs(subs_dict).evalf() if isinstance(temperature, float) else expr.subs(subs_dict)
-                print(f"Final evaluated {name}: {evaluated_properties[name]}")
-                assignments.extend(prop.assignments)
-            else:
-                raise NotImplementedError(f"Unsupported number of assignments for {name}: {len(prop.assignments)}")
-        else:
-            # Wrap the non-MaterialProperty inputs directly
-            evaluated_properties[name] = wrapper(prop)
-
-    # Compute the final energy density expression
-    energy_density_expr = evaluated_properties["density"] * (temperature * evaluated_properties["heat_capacity"] + evaluated_properties["latent_heat"])
-
-    # Combine all assignments into a MaterialProperty
-    energy_density_property = MaterialProperty(
-        expr=energy_density_expr,
-        assignments=assignments
-    )
-
-    print(f"Returning MaterialProperty with expr: {energy_density_property.expr} "
-          f"and assignments: {energy_density_property.assignments}")
-
-    return (
-        energy_density_property,
-        evaluated_properties["density"],
-        evaluated_properties["heat_capacity"],
-        evaluated_properties["latent_heat"],
-    )
-
-
-def compute_energy_density_array(
-        density: Union[float, MaterialProperty],
-        heat_capacity: Union[float, MaterialProperty],
-        latent_heat: Union[float, MaterialProperty],
-        file_path: Optional[str] = None,
-        temperature_array: Optional[np.ndarray] = None) \
-        -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-    """
-    Compute energy density for temperatures from a file or a NumPy array.
-    Args:
-        density (float or MaterialProperty): Density of the material.
-        heat_capacity (float or MaterialProperty): Specific heat capacity.
-        latent_heat (float or MaterialProperty): Latent heat of the material.
-        file_path (Optional[str]): Path to the temperature data file (optional).
-        temperature_array (Optional[np.ndarray]): Array of temperature values (optional).
-    Returns:
-        Tuple[np.ndarray, np.ndarray]:
-            - Array of temperatures.
-            - Array of corresponding energy densities.
-    Raises:
-        ValueError: If both `file_path` and `temperature_array` are provided, or neither is provided.
-    """
-    print(f"Inside function\nfile_path: {file_path}, temperature_array: {temperature_array}")
-    # Validate input
-    if file_path is None and temperature_array is not None:
-        if isinstance(temperature_array, np.ndarray):
-            if temperature_array.size == 0:
-                raise ValueError(f"Temperature array must not be empty")
-        else:
-            raise TypeError(f"Temperature array must be a numpy array, got {type(temperature_array)}")
-
-    if file_path is not None and temperature_array is not None:
-        raise ValueError("Provide only one of `file_path` or `temperature_array`, not both.")
-    if file_path is None and temperature_array is None:
-        raise ValueError("You must provide either `file_path` or `temperature_array`.")
-
-    _temperatures = []
-    _densities = []
-    _heat_capacities = []
-    _latent_heats = []
-    _energy_densities = []
-
-    # Handle temperatures from file
-    if isinstance(file_path, str) and file_path:
-        try:
-            with open(file_path, 'r') as file:
-                for line in file:
-                    # Skip non-data lines
-                    if not line.strip() or not line[0].isdigit():
-                        continue
-
-                    # Extract the temperature from the first column
-                    temperature = float(line.split()[0])
-                    _temperatures.append(temperature)
-        except FileNotFoundError:
-            raise FileNotFoundError(f"The file '{file_path}' does not exist.")
-        except Exception as e:
-            raise ValueError(f"An error occurred while processing the file: {e}")
-
-    # Handle temperatures from NumPy array
-    if temperature_array is None:
-        raise ValueError("temperature_array is None")
-    if temperature_array is not None:
-        _temperatures = temperature_array.tolist()
-        print(f"_temperatures: {_temperatures}")
-
-    # Compute energy densities
-    for temperature in _temperatures:
-        print(f"temperature: {temperature}")
-        energy_density, density_val, specific_heat_val, latent_heat_val = compute_energy_density_MaterialProperty(
-            temperature=temperature,
-            _density=density,
-            heat_capacity=heat_capacity,
-            latent_heat=latent_heat,
-        )
-        _densities.append(density_val)
-        _heat_capacities.append(specific_heat_val)
-        _latent_heats.append(latent_heat_val)
-        _energy_densities.append(float(energy_density.expr))
-
-    # Convert lists to NumPy arrays
-    return (np.array(_temperatures),
-            np.array(_densities),
-            np.array(_heat_capacities),
-            np.array(_latent_heats),
-            np.array(_energy_densities))
-'''
 
 def temperature_from_energy_density(
         T: sp.Expr,
@@ -369,9 +185,7 @@ def temperature_from_energy_density(
         Corresponding temperature(s) for the input energy density value(s).
     """
     T_min, T_max = np.min(temperature_array), np.max(temperature_array)
-    # print(f"T_min, T_max: {T_min, T_max}")
     h_min, h_max = energy_density.evalf(T, T_min), energy_density.evalf(T, T_max)
-    # print(f"h_min, h_max: {h_min, h_max}")
 
     if h_in < h_min or h_in > h_max:
         raise ValueError(f"The input energy density value of {h_in} is outside the computed range {h_min, h_max}.")
@@ -385,23 +199,16 @@ def temperature_from_energy_density(
         iteration_count += 1
         # Linear interpolation to find T_1
         T_1 = T_min + (h_in - h_min) * (T_max - T_min) / (h_max - h_min)
-        # print(f"T_1: {T_1}, type(T_1): {type(T_1)}")
         # Evaluate h_1 at T_1
-        # h_1 = energy_density.evalf(T, np.array([T_1]))[0]
         h_1 = energy_density.evalf(T, T_1)
-        # print(f"h_1: {h_1}")
-        # print(f"h_min, h_max: {h_min, h_max}")
 
         if abs(h_1 - h_in) < tolerance:
-            # print(f"Linear interpolation converged in {iteration_count} iterations.")
             return T_1
 
         if h_1 < h_in:
             T_min, h_min = T_1, h_1
-            # print(f"T_min, h_min: {T_min, h_min}")
         else:
             T_max, h_max = T_1, h_1
-            # print(f"T_max, h_max: {T_max, h_max}")
 
     raise RuntimeError(f"Linear interpolation did not converge within {max_iterations} iterations.")
 
