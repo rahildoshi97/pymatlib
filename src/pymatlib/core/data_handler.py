@@ -58,6 +58,7 @@ def read_data(file_path: str, header: bool = True) -> Tuple[np.ndarray, np.ndarr
 
     return temp, prop
 
+
 def celsius_to_kelvin(temp: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
     """
     Converts Celsius temperatures to Kelvin.
@@ -69,6 +70,7 @@ def celsius_to_kelvin(temp: Union[float, np.ndarray]) -> Union[float, np.ndarray
         Union[float, np.ndarray]: Temperature(s) in Kelvin.
     """
     return temp + 273.15
+
 
 def fahrenheit_to_kelvin(temp: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
     """
@@ -97,33 +99,6 @@ def thousand_times(q: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
     """
     return q * 1000
 
-'''def check_equidistant(temp: np.ndarray, tolerance: float = 1.0e-3) -> Union[float, bool]:
-    """
-    Tests if the temperature values are equidistant.
-
-    Parameters:
-        temp (np.ndarray): Array of temperature values.
-        tolerance (float): Tolerance for checking equidistant spacing.
-
-    Returns:
-        Union[float, bool]: The common difference if equidistant, otherwise False.
-    """
-    if len(temp) < 2:
-        return False
-
-    temperature_diffs = np.diff(temp)
-    unique_diffs = np.unique(temperature_diffs)
-
-    if len(unique_diffs) == 1:
-        return float(unique_diffs[0])
-
-    # Check if the differences are approximately the same within the tolerance
-    if len(unique_diffs) > 1:
-        diffs_within_tolerance = np.all(np.abs(unique_diffs - unique_diffs[0]) <= tolerance)
-        if diffs_within_tolerance:
-            return float(unique_diffs[0])
-
-    return False'''
 
 def find_min_max_temperature(temperatures_input) -> tuple:
     """

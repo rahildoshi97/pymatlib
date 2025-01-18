@@ -2,7 +2,7 @@ import pytest
 import numpy as np
 from pymatlib.core.data_handler import (
     read_data, celsius_to_kelvin, fahrenheit_to_kelvin,
-    thousand_times, check_equidistant
+    thousand_times
 )
 
 # Test temperature conversion functions
@@ -24,18 +24,6 @@ def test_thousand_times():
     assert thousand_times(0.001) == 1
     assert np.allclose(thousand_times(np.array([1, 0.001])), np.array([1000, 1]))
 
-def test_check_equidistant():
-    """Test equidistant temperature checking."""
-    # Test equidistant values
-    assert check_equidistant(np.array([1, 2, 3, 4])) == 1.0
-    # Test non-equidistant values
-    assert check_equidistant(np.array([1, 2, 4, 8])) is False
-    # Test single value
-    assert check_equidistant(np.array([1])) is False
-    # Test empty array
-    assert check_equidistant(np.array([])) is False
-    # Test with tolerance
-    assert np.isclose(check_equidistant(np.array([1, 2.001, 3, 4]), tolerance=0.002), 1.0, atol=0.002)
 
 def test_read_data(tmp_path):
     """Test data reading functionality."""
