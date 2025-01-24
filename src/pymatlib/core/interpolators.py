@@ -288,3 +288,69 @@ def temperature_from_energy_density_array(
     temperature = y0 + slope * (h_in - x0)
 
     return float(temperature)
+
+
+def E_eq_from_E_neq(E_neq: np.ndarray) -> np.ndarray:
+    # delta_E_neq = np.diff(E_neq)
+    delta_min = np.min(np.diff(E_neq))
+    print(f"delta_min:", delta_min)
+    delta_E_eq = np.floor(delta_min * 0.95)
+    print(f"delta_E_eq:", delta_E_eq)
+    E_eq = np.arange(E_neq[0], E_neq[-1] + delta_E_eq, delta_E_eq, dtype=np.float64)
+    print(f"np.size(E_eq):", np.size(E_eq))
+    return E_eq
+
+
+def create_idx_mapping(E_neq: np.ndarray, E_eq: np.ndarray) -> np.ndarray:
+    """idx_map = np.zeros(len(E_eq), dtype=int)
+    for i, e in enumerate(E_eq):
+        idx = int(np.searchsorted(E_neq, e) - 1)
+        idx = max(0, min(idx, len(E_neq) - 2))  # Bound check
+        idx_map[i] = idx"""
+    idx_map = np.searchsorted(E_neq, E_eq) - 1
+    idx_map = np.clip(idx_map, 0, len(E_neq) - 2)
+    print(f"idx_map: {idx_map}")
+    return idx_map.astype(np.int32)
+
+
+def prepare_interpolation_arrays(temperature_array: np.ndarray, energy_density_array: np.ndarray)\
+        -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+
+    T_incr = check_equidistant(temperature_array)
+
+    if T_incr == 0.0:
+        raise ValueError("Temperature array must be equidistant")
+
+    # Convert to numpy arrays if not already
+    T_eq = np.asarray(temperature_array)
+    E_neq = np.asarray(energy_density_array)
+
+    # Flip arrays if temperature increment is negative
+    if T_incr < 0.0:
+        T_eq = np.flip(T_eq)
+        E_neq = np.flip(E_neq)
+
+    # Create equidistant energy array and index mapping
+    E_eq = E_eq_from_E_neq(E_neq)
+    idx_mapping = create_idx_mapping(E_neq, E_eq)
+
+    return T_eq, E_neq, E_eq, idx_mapping
+
+
+def interpolate_double_lookup(E_target, T_eq, E_neq, E_eq, idx_map) -> float:
+    if E_target <= E_neq[0]:
+        return T_eq[0]
+    if E_target >= E_neq[-1]:
+        return T_eq[-1]
+    idx_E_eq = int((E_target-E_eq[0]) / (E_eq[1] - E_eq[0]))
+    idx_E_eq = min(idx_E_eq, len(idx_map) - 1)
+    idx_E_neq = idx_map[idx_E_eq]
+    if E_neq[idx_E_neq + 1] < E_target:
+        idx_E_neq += 1
+    E1, E2 = E_neq[idx_E_neq], E_neq[idx_E_neq + 1]
+    T1, T2 = T_eq[idx_E_neq], T_eq[idx_E_neq + 1]
+    # E1, E2 = E_neq[idx_E_neq:idx_E_neq + 2]
+    # T1, T2 = T_eq[idx_E_neq:idx_E_neq + 2]
+    # print(f"E1, E2: {E1}, {E2}")
+    # print(f"T1, T2: {T1}, {T2}")
+    return T1 + (T2 - T1) * (E_target - E1) / (E2 - E1)
