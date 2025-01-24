@@ -136,13 +136,13 @@ def check_equidistant(temp: np.ndarray) -> float:
     :param temp: Array of temperature values.
     :return: The common difference if equidistant, otherwise 0.
     """
-    if len(temp) <= 1:
-        return 0.0
+    if len(temp) < 2:
+        raise ValueError(f"{temp} array has length < 2")
 
     temperature_diffs = np.diff(temp)
     if np.allclose(temperature_diffs, temperature_diffs[0], atol=1e-10):
         return float(temperature_diffs[0])
-    return 0
+    return 0.0
 
 
 def interpolate_property(
