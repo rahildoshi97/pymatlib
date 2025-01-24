@@ -6,9 +6,9 @@ from typing import Union
 from matplotlib import pyplot as plt
 from pymatlib.core.alloy import Alloy
 from pymatlib.data.element_data import Fe, Cr, Ni, Mo, Mn
-from pymatlib.core.models import thermal_diffusivity_by_heat_conductivity, density_by_thermal_expansion, energy_density, temperature_from_energy_density
+from pymatlib.core.models import thermal_diffusivity_by_heat_conductivity, density_by_thermal_expansion, energy_density
 from pymatlib.core.data_handler import read_data, celsius_to_kelvin, thousand_times
-from pymatlib.core.interpolators import interpolate_property
+from pymatlib.core.interpolators import interpolate_property, temperature_from_energy_density
 from pymatlib.core.cpp.fast_interpolation import temperature_from_energy_density_array
 
 
