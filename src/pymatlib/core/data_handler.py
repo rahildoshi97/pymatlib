@@ -1,6 +1,8 @@
+import os
 import numpy as np
 from pathlib import Path
 from typing import Union, Tuple
+from matplotlib import pyplot as plt
 
 
 def print_results(file_path: str, temperatures: np.ndarray, material_property: np.ndarray) -> None:
@@ -127,6 +129,7 @@ def thousand_times(q: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
 
     return False'''
 
+
 def find_min_max_temperature(temperatures_input) -> tuple:
     """
     Find the minimum and maximum temperature from either a text file or a NumPy array.
@@ -171,6 +174,31 @@ def find_min_max_temperature(temperatures_input) -> tuple:
         raise FileNotFoundError(f"The file '{temperatures_input}' does not exist.")
     except Exception as e:
         raise ValueError(f"An error occurred while processing the input: {e}")
+
+
+def plot_arrays(x_arr: np.ndarray, y_arr: np.ndarray, x_label: str = None, y_label: str = None) -> None:
+    # Set labels and titles
+    x_label = x_label or "x-axis"
+    y_label = y_label or "y-axis"
+
+    # Create the plot
+    plt.figure(figsize=(10, 6))
+    plt.plot(x_arr, y_arr, 'b-', linewidth=1)
+    plt.xlabel(x_label)
+    plt.ylabel(y_label)
+    plt.title(f'{y_label} vs {x_label}')
+    plt.grid(True)
+
+    # Define filename and directory
+    filename = f"{y_label.replace('/', '_')}_vs_{x_label.replace('/', '_')}.png"
+    directory = "plots"
+    os.makedirs(directory, exist_ok=True)  # Ensure the directory exists
+
+    filepath = os.path.join(directory, filename)
+    plt.savefig(filepath, dpi=300, bbox_inches="tight")
+    plt.show()
+    print(f"Plot saved as {filepath}")
+
 
 if __name__ == '__main__':
     # Example usage:
