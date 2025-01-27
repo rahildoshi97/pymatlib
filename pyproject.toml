@@ -6,6 +6,7 @@ authors = [
     {name = "Rahil Doshi", email = "rahil.doshi@fau.de"},
 ]
 dependencies = [
+    "numpy>=1.18.0",
     "pystencils@git+https://i10git.cs.fau.de/pycodegen/pystencils.git@v2.0-dev"
 ]
 requires-python = ">=3.10"
