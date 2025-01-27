@@ -3,6 +3,7 @@ import sympy as sp
 from typing import Union, List, Tuple
 from pymatlib.core.models import wrapper, material_property_wrapper
 from pymatlib.core.typedefs import Assignment, ArrayTypes, MaterialProperty
+from sympy.physics.pring import energy
 
 COUNT = 0
 
@@ -292,9 +293,11 @@ def temperature_from_energy_density_array(
 
 def E_eq_from_E_neq(E_neq: np.ndarray) -> np.ndarray:
     # delta_E_neq = np.diff(E_neq)
-    delta_min = np.min(np.diff(E_neq))
+    delta_min: float = np.min(np.diff(E_neq))
+    if delta_min < 1.:
+        raise ValueError(f"Energy density array points are very closely spaced, delta = {delta_min}")
     print(f"delta_min:", delta_min)
-    delta_E_eq = np.floor(delta_min * 0.95)
+    delta_E_eq = max(np.floor(delta_min * 0.95), 1.)
     print(f"delta_E_eq:", delta_E_eq)
     E_eq = np.arange(E_neq[0], E_neq[-1] + delta_E_eq, delta_E_eq, dtype=np.float64)
     print(f"np.size(E_eq):", np.size(E_eq))
@@ -316,6 +319,9 @@ def create_idx_mapping(E_neq: np.ndarray, E_eq: np.ndarray) -> np.ndarray:
 def prepare_interpolation_arrays(temperature_array: np.ndarray, energy_density_array: np.ndarray)\
         -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
 
+    # Input validation
+    if len(temperature_array) != len(energy_density_array):
+        raise ValueError("temperature_array and energy_density_array must have the same length.")
     T_incr = check_equidistant(temperature_array)
 
     if T_incr == 0.0:
@@ -327,8 +333,12 @@ def prepare_interpolation_arrays(temperature_array: np.ndarray, energy_density_a
 
     # Flip arrays if temperature increment is negative
     if T_incr < 0.0:
+        print(f"T_incr is {T_incr}, flipping arrays")
         T_eq = np.flip(T_eq)
         E_neq = np.flip(E_neq)
+
+    if E_neq[0] >= E_neq[-1]:
+        raise ValueError("Energy density must increase with temperature")
 
     # Create equidistant energy array and index mapping
     E_eq = E_eq_from_E_neq(E_neq)
