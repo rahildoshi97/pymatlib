@@ -253,7 +253,7 @@ def temperature_from_energy_density(
 
 
 # Moved from models.py to interpolators.py
-def temperature_from_energy_density_array(
+def interpolate_binary_search(
         temperature_array: np.ndarray,
         h_in: float,
         energy_density_array: np.ndarray) -> float:
