@@ -3,7 +3,7 @@ import sympy as sp
 from typing import Union, List, Tuple
 from pymatlib.core.models import wrapper, material_property_wrapper
 from pymatlib.core.typedefs import Assignment, ArrayTypes, MaterialProperty
-from sympy.physics.pring import energy
+from pymatlib.core.data_handler import check_equidistant
 
 COUNT = 0
 
@@ -130,22 +130,6 @@ def interpolate_lookup(
         raise ValueError(f"Invalid input for T: {type(T)}")
 
 
-def check_equidistant(temp: np.ndarray) -> float:
-    """
-    Tests if the temperature values are equidistant.
-
-    :param temp: Array of temperature values.
-    :return: The common difference if equidistant, otherwise 0.
-    """
-    if len(temp) < 2:
-        raise ValueError(f"{temp} array has length < 2")
-
-    temperature_diffs = np.diff(temp)
-    if np.allclose(temperature_diffs, temperature_diffs[0], atol=1e-10):
-        return float(temperature_diffs[0])
-    return 0.0
-
-
 def interpolate_property(
         T: Union[float, sp.Symbol],
         temp_array: ArrayTypes,
@@ -195,8 +179,8 @@ def interpolate_property(
         return interpolate_lookup(T, temp_array, prop_array)
     else:
         print('interpolate_equidistant')
-        return interpolate_equidistant(
-            T, float(temp_array[0]), incr, prop_array)
+        return interpolate_equidistant(T, float(temp_array[0]), incr, prop_array)
+
 
 # Moved from models.py to interpolators.py
 def temperature_from_energy_density(
@@ -256,39 +240,60 @@ def temperature_from_energy_density(
 def interpolate_binary_search(
         temperature_array: np.ndarray,
         h_in: float,
-        energy_density_array: np.ndarray) -> float:
+        energy_density_array: np.ndarray,
+        epsilon: float = 1e-6) -> float:
+
     # Input validation
     if len(temperature_array) != len(energy_density_array):
         raise ValueError("temperature_array and energy_density_array must have the same length.")
 
-    # Binary search to find the interval
-    left, right = 0, len(energy_density_array) - 1
+    n = len(temperature_array)
+    is_ascending = temperature_array[0] < temperature_array[-1]
+    print(f"Python - is_ascending: {is_ascending}")
+    print(f"Python - h_in: {h_in}")
+    print(f"Python - First few T values: {temperature_array[:5]}")
+    print(f"Python - First few E values: {energy_density_array[:5]}")
 
+    # Critical boundary indices
+    start_idx = 0 if is_ascending else n - 1
+    end_idx = n - 1 if is_ascending else 0
+
+    # Boundary checks
+    if h_in <= energy_density_array[start_idx]:
+        return float(temperature_array[start_idx])
+    if h_in >= energy_density_array[end_idx]:
+        return float(temperature_array[end_idx])
+
+    # Binary search
+    left, right = 0, n - 1
     while left <= right:
         mid = (left + right) // 2
-        if energy_density_array[mid] == h_in:
+        mid_val = energy_density_array[mid]
+        print(f"Python - mid: {mid}, mid_val: {mid_val}")
+
+        if abs(mid_val - h_in) < epsilon:
+            print(f"Python - Exact match found at {mid}")
             return float(temperature_array[mid])
-        elif energy_density_array[mid] > h_in:
-            left = mid + 1
-        else:
+
+        if (mid_val > h_in) == is_ascending:
             right = mid - 1
+        else:
+            left = mid + 1
+        print(f"Python - left: {left}, right: {right}")
 
-    # After binary search, 'right' points to the upper bound
-    # and 'left' points to the lower bound of our interval
-    if left >= len(energy_density_array):
-        return float(temperature_array[-1])
-    if right < 0:
-        return float(temperature_array[0])
+    print(f"Python - Final indices - left: {left}, right: {right}")
+    print(f"Python - Interpolating between T[{right}]={temperature_array[right]} and T[{left}]={temperature_array[left]}")
+    print(f"Python - Interpolating between E[{right}]={energy_density_array[right]} and E[{left}]={energy_density_array[left]}")
 
-    # Linear interpolation within the found interval
-    x0, x1 = energy_density_array[right], energy_density_array[left]
-    y0, y1 = temperature_array[right], temperature_array[left]
+    # Linear interpolation
+    x0 = energy_density_array[right]
+    x1 = energy_density_array[left]
+    y0 = temperature_array[right]
+    y1 = temperature_array[left]
 
-    # Use high-precision arithmetic for interpolation
-    slope = (y1 - y0) / (x1 - x0)
-    temperature = y0 + slope * (h_in - x0)
-
-    return float(temperature)
+    result = float(y0 + (y1 - y0) * (h_in - x0) / (x1 - x0))
+    print(f"Python - Result: {result}")
+    return result
 
 
 def E_eq_from_E_neq(E_neq: np.ndarray) -> np.ndarray:
@@ -310,7 +315,8 @@ def create_idx_mapping(E_neq: np.ndarray, E_eq: np.ndarray) -> np.ndarray:
         idx = int(np.searchsorted(E_neq, e) - 1)
         idx = max(0, min(idx, len(E_neq) - 2))  # Bound check
         idx_map[i] = idx"""
-    idx_map = np.searchsorted(E_neq, E_eq) - 1
+    # idx_map = np.searchsorted(E_neq, E_eq) - 1
+    idx_map = np.searchsorted(E_neq, E_eq, side='right') - 1
     idx_map = np.clip(idx_map, 0, len(E_neq) - 2)
     print(f"idx_map: {idx_map}")
     return idx_map.astype(np.int32)
@@ -348,19 +354,37 @@ def prepare_interpolation_arrays(temperature_array: np.ndarray, energy_density_a
 
 
 def interpolate_double_lookup(E_target, T_eq, E_neq, E_eq, idx_map) -> float:
+    print(f"\nPython Debug:")
+    print(f"E_target: {E_target}")
+    print(f"First few T_eq values: {T_eq[:5]}")
+    print(f"First few E_neq values: {E_neq[:5]}")
+    print(f"First few E_eq values: {E_eq[:5]}")
+    print(f"First few idx_map values: {idx_map[:5]}")
+
     if E_target <= E_neq[0]:
+        print(f"Lower boundary case: returning {T_eq[0]}")
         return T_eq[0]
     if E_target >= E_neq[-1]:
+        print(f"Upper boundary case: returning {T_eq[-1]}")
         return T_eq[-1]
+
     idx_E_eq = int((E_target-E_eq[0]) / (E_eq[1] - E_eq[0]))
+    print(f"idx_E_eq initial: {idx_E_eq}")
     idx_E_eq = min(idx_E_eq, len(idx_map) - 1)
+    print(f"idx_E_eq after bound check: {idx_E_eq}")
+
     idx_E_neq = idx_map[idx_E_eq]
+    print(f"idx_E_neq initial: {idx_E_neq}")
     if E_neq[idx_E_neq + 1] < E_target:
         idx_E_neq += 1
+        print(f"idx_E_neq adjusted: {idx_E_neq}")
+
     E1, E2 = E_neq[idx_E_neq], E_neq[idx_E_neq + 1]
     T1, T2 = T_eq[idx_E_neq], T_eq[idx_E_neq + 1]
-    # E1, E2 = E_neq[idx_E_neq:idx_E_neq + 2]
-    # T1, T2 = T_eq[idx_E_neq:idx_E_neq + 2]
-    # print(f"E1, E2: {E1}, {E2}")
-    # print(f"T1, T2: {T1}, {T2}")
-    return T1 + (T2 - T1) * (E_target - E1) / (E2 - E1)
+    print(f"Interpolation points:")
+    print(f"E1, E2: {E1}, {E2}")
+    print(f"T1, T2: {T1}, {T2}")
+
+    result = T1 + (T2 - T1) * (E_target - E1) / (E2 - E1)
+    print(f"Final result: {result}")
+    return result
