@@ -8,8 +8,8 @@ from pymatlib.core.alloy import Alloy
 from pymatlib.data.element_data import Fe, Cr, Ni, Mo, Mn
 from pymatlib.core.models import thermal_diffusivity_by_heat_conductivity, density_by_thermal_expansion, energy_density
 from pymatlib.core.data_handler import read_data, celsius_to_kelvin, thousand_times
-from pymatlib.core.interpolators import interpolate_property, temperature_from_energy_density
-from pymatlib.core.cpp.fast_interpolation import temperature_from_energy_density_array
+from pymatlib.core.interpolators import interpolate_property, prepare_interpolation_arrays#, interpolate_binary_search
+from pymatlib.core.cpp.fast_interpolation import interpolate_binary_search, interpolate_double_lookup
 
 
 def create_SS316L(T: Union[float, sp.Symbol]) -> Alloy:
@@ -62,7 +62,7 @@ def create_SS316L(T: Union[float, sp.Symbol]) -> Alloy:
     base_dir = Path(__file__).parent  # Directory of the current file
 
     # Paths to data files using relative paths
-    density_data_file_path = str(base_dir / 'density_temperature.txt')
+    density_data_file_path = str(base_dir / 'density_temperature_edited.txt')
     heat_capacity_data_file_path = str(base_dir / 'heat_capacity_temperature_edited.txt')
     heat_conductivity_data_file_path = str(base_dir / '..' / 'SS316L' / 'heat_conductivity_temperature.txt')
 
@@ -137,14 +137,12 @@ def create_SS316L(T: Union[float, sp.Symbol]) -> Alloy:
 
     print("----------" * 10)
 
-    args = (T,
-            SS316L.temperature_array,
+    args = (SS316L.temperature_array,
             # SS316L.energy_density_solidus,  # 9744933767.272629
             # SS316L.energy_density_liquidus,  # 11789781961.769783
             # SS316L.energy_density.evalf(T, SS316L.temperature_liquidus),  # T_star: 1743.1412643772671, expected T_star: 1723.15
-            # 10062147268.397945,
-            1.01e10,
-            SS316L.energy_density)
+            11789781961.76978,
+            SS316L.energy_density_array)
     # energy density has the same value for both temperatures >> function is not monotonically increasing
     print(SS316L.energy_density.evalf(T, 1723.15))  # 11789781961.769783
     print(SS316L.energy_density.evalf(T, 1743.1412643772671))  # 11789781961.769783
@@ -154,22 +152,35 @@ def create_SS316L(T: Union[float, sp.Symbol]) -> Alloy:
             SS316L.heat_capacity.evalf(T, SS316L.temperature_liquidus),
             SS316L.heat_capacity)
 
-    start_time = time.time()
-    T_star_1 = temperature_from_energy_density(*args)
-    time_1 = time.time() - start_time
+    start_time1 = time.time()
+    T_star_1 = interpolate_binary_search(*args)
+    time_1 = time.time() - start_time1
     print(f"T_star: {T_star_1}")
     print(f"Execution time: {time_1:.6f} seconds\n")
 
     args2 = (SS316L.temperature_array,
              # 10062147268.397945,
-             1.01e10,
+             11789781961.76978,
              SS316L.energy_density_array)
 
-    start_time = time.time()
-    T_star_2 = temperature_from_energy_density_array(*args2)
-    time_2 = time.time() - start_time
+    start_time2 = time.time()
+    T_star_2 = interpolate_binary_search(*args2)
+    time_2 = time.time() - start_time2
     print(f"T_star_2: {T_star_2}")
     print(f"Execution time: {time_2:.6f} seconds\n")
+
+    E = SS316L.energy_density.evalf(T, SS316L.temperature_liquidus)
+    T_eq, E_neq, E_eq, idx_map = prepare_interpolation_arrays(
+        SS316L.temperature_array,
+        SS316L.energy_density_array
+    )
+    args3 = (E, T_eq, E_neq, E_eq, idx_map)
+
+    start_time3 = time.perf_counter()
+    T_interpolate3 = interpolate_double_lookup(*args3)
+    execution_time3 = time.perf_counter() - start_time3
+    print(f"Interpolated temperature: {T_interpolate3}")
+    print(f"Execution time: {execution_time3:.8f} seconds")
 
     results = []
     execution_times = []
@@ -179,7 +190,7 @@ def create_SS316L(T: Union[float, sp.Symbol]) -> Alloy:
         args_array = (SS316L.temperature_array, h_in, SS316L.energy_density_array)
 
         start_time = time.time()
-        T_star = temperature_from_energy_density_array(*args_array)
+        T_star = interpolate_binary_search(*args_array)
         execution_time = time.time() - start_time
 
         results.append(T_star)
@@ -207,7 +218,7 @@ def create_SS316L(T: Union[float, sp.Symbol]) -> Alloy:
 
                 # Measure execution time
                 start_time = time.time()
-                T_star = temperature_from_energy_density_array(*args_array)
+                T_star = interpolate_binary_search(*args_array)
                 execution_time = time.time() - start_time
 
                 results.append(T_star)
