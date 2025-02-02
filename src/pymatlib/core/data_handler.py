@@ -130,6 +130,58 @@ def thousand_times(q: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
     return False'''
 
 
+# Moved from interpolators.py to data_handler.py
+def check_equidistant(temp: np.ndarray) -> float:
+    """
+    Tests if the temperature values are equidistant.
+
+    :param temp: Array of temperature values.
+    :return: The common difference if equidistant, otherwise 0.
+    """
+    if len(temp) < 2:
+        raise ValueError(f"{temp} array has length < 2")
+
+    temperature_diffs = np.diff(temp)
+    if np.allclose(temperature_diffs, temperature_diffs[0], atol=1e-10):
+        return float(temperature_diffs[0])
+    return 0.0
+
+
+def check_strictly_increasing(arr, name="Array", threshold=0.1):
+    """
+    Check if array is strictly monotonically increasing and raise ValueError if not.
+
+    Args:
+        arr: numpy array to check
+        name: name of array for reporting
+        threshold: minimum required difference between consecutive elements
+
+    Raises:
+        ValueError: If array is not strictly increasing, with detailed information
+                   about where the violation occurs
+    """
+    for i in range(1, len(arr)):
+        diff = arr[i] - arr[i-1]
+        if diff <= threshold:
+            # Prepare error message with context
+            start_idx = max(0, i-2)
+            end_idx = min(len(arr), i+3)
+            context = "\nSurrounding values:\n"
+            for j in range(start_idx, end_idx):
+                context += f"Index {j}: {arr[j]:.10e}\n"
+
+            error_msg = (
+                f"{name} is not strictly increasing at index {i}:\n"
+                f"Previous value ({i-1}): {arr[i-1]:.10e}\n"
+                f"Current value  ({i}): {arr[i]:.10e}\n"
+                f"Difference: {diff:.10e}\n"
+                f"{context}"
+            )
+            raise ValueError(error_msg)
+    print(f"{name} is strictly monotonically increasing")
+    return True
+
+
 def find_min_max_temperature(temperatures_input) -> tuple:
     """
     Find the minimum and maximum temperature from either a text file or a NumPy array.
