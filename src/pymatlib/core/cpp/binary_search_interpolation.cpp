@@ -1,7 +1,84 @@
 #include "include/binary_search_interpolation.h"
+#include <iostream>
 #include <cmath>
 
 
+double interpolate_binary_search(
+    const py::array_t<double>& temperature_array,
+    double h_in,
+    const py::array_t<double>& energy_density_array) {
+
+    static constexpr double EPSILON = 1e-6;
+
+    // Get array views
+    auto temp_arr = temperature_array.unchecked<1>();
+    auto energy_arr = energy_density_array.unchecked<1>();
+    const size_t n = temp_arr.shape(0);
+
+    // Input validation
+    if (temperature_array.size() != energy_density_array.size() || n < 2) {
+        throw std::runtime_error("Invalid array sizes");
+    }
+
+    // Determine array order and cache indices
+    const bool is_ascending = temp_arr(0) < temp_arr(n-1);
+    //std::cout << "C++ - is_ascending: " << is_ascending << std::endl;
+    //std::cout << "C++ - h_in: " << h_in << std::endl;
+    //std::cout << "C++ - First few T values: ";
+    //for(size_t i = 0; i < 5; i++) std::cout << temp_arr(i) << " ";
+    //std::cout << std::endl;
+    //std::cout << "C++ - First few E values: ";
+    //for(size_t i = 0; i < 5; i++) std::cout << energy_arr(i) << " ";
+    //std::cout << std::endl;
+
+    const size_t start_idx = is_ascending ? 0 : n-1;
+    const size_t end_idx = is_ascending ? n-1 : 0;
+
+    // Boundary checks
+    if (h_in <= energy_arr(start_idx)) return temp_arr(start_idx);
+    if (h_in >= energy_arr(end_idx)) return temp_arr(end_idx);
+
+    // Binary search with optimized memory access
+    size_t left = 0;
+    size_t right = n - 1;
+
+    while (left <= right) {
+        const size_t mid = (left + right) / 2;
+        const double mid_val = energy_arr(mid);
+        //std::cout << "C++ - mid: " << mid << ", mid_val: " << mid_val << std::endl;
+
+        if (std::abs(mid_val - h_in) < EPSILON) {
+            //std::cout << "C++ - Exact match found at " << mid << std::endl;
+            return temp_arr(mid);
+        }
+
+        const bool go_left = (mid_val > h_in) == is_ascending;
+        if (go_left) {
+            right = mid - 1;
+        } else {
+            left = mid + 1;
+        }
+        //std::cout << "C++ - left: " << left << ", right: " << right << std::endl;
+    }
+
+    //std::cout << "C++ - Final indices - left: " << left << ", right: " << right << std::endl;
+
+    // Linear interpolation
+    const double x0 = energy_arr(right);
+    const double x1 = energy_arr(left);
+    const double y0 = temp_arr(right);
+    const double y1 = temp_arr(left);
+
+    //std::cout << "C++ - Interpolation points:" << std::endl;
+    //std::cout << "C++ - x0, x1: " << x0 << ", " << x1 << std::endl;
+    //std::cout << "C++ - y0, y1: " << y0 << ", " << y1 << std::endl;
+
+    double result = y0 + (y1 - y0) * (h_in - x0) / (x1 - x0);
+    //std::cout << "C++ - Result: " << result << std::endl;
+    return result;
+}
+
+/*
 double interpolate_binary_search(
     const py::array_t<double>& temperature_array,
     double h_in,
@@ -27,6 +104,14 @@ double interpolate_binary_search(
     const bool is_ascending = temp_ptr[0] < temp_ptr[n-1];
     const size_t start_idx = is_ascending ? 0 : n-1;
     const size_t end_idx = is_ascending ? n-1 : 0;
+    std::cout << "C++ - is_ascending: " << is_ascending << std::endl;
+    std::cout << "C++ - h_in: " << h_in << std::endl;
+    std::cout << "C++ - First few T values: ";
+    for(size_t i = 0; i < 5; i++) std::cout << temp_ptr[i] << " ";
+    std::cout << std::endl;
+    std::cout << "C++ - First few E values: ";
+    for(size_t i = 0; i < 5; i++) std::cout << energy_ptr[i] << " ";
+    std::cout << std::endl;
 
     if (energy_ptr[start_idx] >= energy_ptr[end_idx]) {
         throw std::runtime_error("Energy density must increase with temperature");
@@ -65,7 +150,7 @@ double interpolate_binary_search(
 
     return y0 + (temp_ptr[idx2] - y0) * (h_in - x0) / dx;
 }
-
+*/
 /*
 double interpolate_binary_search(
     const py::array_t<double>& temperature_array,
