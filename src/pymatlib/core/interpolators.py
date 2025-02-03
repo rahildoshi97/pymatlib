@@ -3,7 +3,7 @@ import sympy as sp
 from typing import Union, List, Tuple
 from pymatlib.core.models import wrapper, material_property_wrapper
 from pymatlib.core.typedefs import Assignment, ArrayTypes, MaterialProperty
-from pymatlib.core.data_handler import check_equidistant
+from pymatlib.core.data_handler import check_equidistant, check_strictly_increasing
 
 COUNT = 0
 
@@ -296,7 +296,7 @@ def interpolate_binary_search(
     return result
 
 
-def E_eq_from_E_neq(E_neq: np.ndarray) -> np.ndarray:
+def E_eq_from_E_neq(E_neq: np.ndarray) -> Tuple[np.ndarray, float]:
     # delta_E_neq = np.diff(E_neq)
     delta_min: float = np.min(np.diff(E_neq))
     if delta_min < 1.:
@@ -306,7 +306,8 @@ def E_eq_from_E_neq(E_neq: np.ndarray) -> np.ndarray:
     print(f"delta_E_eq:", delta_E_eq)
     E_eq = np.arange(E_neq[0], E_neq[-1] + delta_E_eq, delta_E_eq, dtype=np.float64)
     print(f"np.size(E_eq):", np.size(E_eq))
-    return E_eq
+    inv_delta_E_eq: float = float(1. / (E_eq[1] - E_eq[0]))
+    return E_eq, inv_delta_E_eq
 
 
 def create_idx_mapping(E_neq: np.ndarray, E_eq: np.ndarray) -> np.ndarray:
@@ -322,20 +323,20 @@ def create_idx_mapping(E_neq: np.ndarray, E_eq: np.ndarray) -> np.ndarray:
     return idx_map.astype(np.int32)
 
 
-def prepare_interpolation_arrays(temperature_array: np.ndarray, energy_density_array: np.ndarray)\
-        -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+def prepare_interpolation_arrays(T_eq: np.ndarray, E_neq: np.ndarray)\
+        -> Tuple[np.ndarray, np.ndarray, np.ndarray, float, np.ndarray]:
 
     # Input validation
-    if len(temperature_array) != len(energy_density_array):
-        raise ValueError("temperature_array and energy_density_array must have the same length.")
-    T_incr = check_equidistant(temperature_array)
+    if len(T_eq) != len(E_neq):
+        raise ValueError("T_eq and E_neq must have the same length.")
 
+    T_incr = check_equidistant(T_eq)
     if T_incr == 0.0:
         raise ValueError("Temperature array must be equidistant")
 
     # Convert to numpy arrays if not already
-    T_eq = np.asarray(temperature_array)
-    E_neq = np.asarray(energy_density_array)
+    T_eq = np.asarray(T_eq)
+    E_neq = np.asarray(E_neq)
 
     # Flip arrays if temperature increment is negative
     if T_incr < 0.0:
@@ -343,17 +344,20 @@ def prepare_interpolation_arrays(temperature_array: np.ndarray, energy_density_a
         T_eq = np.flip(T_eq)
         E_neq = np.flip(E_neq)
 
+    check_strictly_increasing(T_eq, "T_eq")
+    check_strictly_increasing(E_neq, "E_neq")
+
     if E_neq[0] >= E_neq[-1]:
         raise ValueError("Energy density must increase with temperature")
 
     # Create equidistant energy array and index mapping
-    E_eq = E_eq_from_E_neq(E_neq)
+    E_eq, inv_delta_E_eq = E_eq_from_E_neq(E_neq)
     idx_mapping = create_idx_mapping(E_neq, E_eq)
 
-    return T_eq, E_neq, E_eq, idx_mapping
+    return T_eq, E_neq, E_eq, inv_delta_E_eq, idx_mapping
 
 
-def interpolate_double_lookup(E_target, T_eq, E_neq, E_eq, idx_map) -> float:
+def interpolate_double_lookup(E_target: float, T_eq: np.ndarray, E_neq: np.ndarray, E_eq: np.ndarray, inv_delta_E_eq: float, idx_map: np.ndarray) -> float:
     print(f"\nPython Debug:")
     print(f"E_target: {E_target}")
     print(f"First few T_eq values: {T_eq[:5]}")
@@ -363,19 +367,19 @@ def interpolate_double_lookup(E_target, T_eq, E_neq, E_eq, idx_map) -> float:
 
     if E_target <= E_neq[0]:
         print(f"Lower boundary case: returning {T_eq[0]}")
-        return T_eq[0]
+        return float(T_eq[0])
     if E_target >= E_neq[-1]:
         print(f"Upper boundary case: returning {T_eq[-1]}")
-        return T_eq[-1]
+        return float(T_eq[-1])
 
-    idx_E_eq = int((E_target-E_eq[0]) / (E_eq[1] - E_eq[0]))
+    idx_E_eq = int((E_target - E_eq[0]) * inv_delta_E_eq)
     print(f"idx_E_eq initial: {idx_E_eq}")
     idx_E_eq = min(idx_E_eq, len(idx_map) - 1)
     print(f"idx_E_eq after bound check: {idx_E_eq}")
 
     idx_E_neq = idx_map[idx_E_eq]
     print(f"idx_E_neq initial: {idx_E_neq}")
-    if E_neq[idx_E_neq + 1] < E_target:
+    if E_neq[idx_E_neq + 1] < E_target and idx_E_neq + 1 < len(E_neq):
         idx_E_neq += 1
         print(f"idx_E_neq adjusted: {idx_E_neq}")
 
@@ -385,6 +389,6 @@ def interpolate_double_lookup(E_target, T_eq, E_neq, E_eq, idx_map) -> float:
     print(f"E1, E2: {E1}, {E2}")
     print(f"T1, T2: {T1}, {T2}")
 
-    result = T1 + (T2 - T1) * (E_target - E1) / (E2 - E1)
+    result = float(T1 + (T2 - T1) * (E_target - E1) / (E2 - E1))
     print(f"Final result: {result}")
     return result
