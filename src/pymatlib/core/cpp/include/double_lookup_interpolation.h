@@ -12,6 +12,7 @@ double interpolate_double_lookup(
     const py::array_t<double>& T_eq,
     const py::array_t<double>& E_neq,
     const py::array_t<double>& E_eq,
+    double inv_delta_E_eq,
     const py::array_t<int32_t>& idx_map);
 
 #endif // DOUBLE_LOOKUP_INTERPOLATION_H

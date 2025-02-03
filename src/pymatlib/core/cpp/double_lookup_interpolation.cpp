@@ -8,6 +8,7 @@ double interpolate_double_lookup(
     const py::array_t<double>& T_eq,
     const py::array_t<double>& E_neq,
     const py::array_t<double>& E_eq,
+    double inv_delta_E_eq,
     const py::array_t<int32_t>& idx_map) {
 
     //std::cout << "\nC++ Debug:" << std::endl;
@@ -18,6 +19,9 @@ double interpolate_double_lookup(
     auto E_neq_arr = E_neq.unchecked<1>();
     auto E_eq_arr = E_eq.unchecked<1>();
     auto idx_map_arr = idx_map.unchecked<1>();
+
+    // Cache array size
+    const size_t n = T_eq_arr.shape(0);
 
     //std::cout << "First few values:" << std::endl;
     //std::cout << "T_eq: ";
@@ -34,41 +38,42 @@ double interpolate_double_lookup(
     //std::cout << std::endl;
 
     // Cache frequently accessed values
-    const size_t last_idx = E_neq_arr.shape(0) - 1;
-    const double first_e = E_neq_arr(0);
-    const double last_e = E_neq_arr(last_idx);
+    //const size_t last_idx = E_neq_arr.shape(0) - 1;
+    //const double first_e = E_neq_arr(0);
+    //const double last_e = E_neq_arr(last_idx);
 
     // Quick boundary checks with cached values
-    // if (__builtin_expect(E_target <= first_e, 0)) {
-    if (E_target <= first_e) {
+    // if (__builtin_expect(E_target <= E_neq_arr(0), 0)) {
+    if (E_target <= E_neq_arr(0)) {
         //std::cout << "Lower boundary case: returning " << T_eq_arr[0] << std::endl;
         return T_eq_arr(0);
     }
 
-    // if (__builtin_expect(E_target >= last_e, 0)) {
-    if (E_target >= last_e) {
+    // if (__builtin_expect(E_target >= E_neq_arr(n-1), 0)) {
+    if (E_target >= E_neq_arr(n-1)) {
         //std::cout << "Upper boundary case: returning " << T_eq_arr(last_idx) << std::endl;
-        return T_eq_arr(last_idx);
+        return T_eq_arr(n-1);
     }
 
     // Precompute and cache interpolation parameters
-    const double E_eq_start = E_eq_arr(0);
-    const double delta_E = E_eq_arr(1) - E_eq_start;
-    const double inv_delta_E = 1.0 / delta_E;
+    // const double E_eq_start = E_eq_arr(0);
+    // const double delta_E_eq = E_eq_arr(1) - E_eq_start;
+    // const double inv_delta_E = 1.0 / delta_E_eq;
 
-    const int idx_E_eq = std::min(
-        static_cast<int>((E_target - E_eq_start) * inv_delta_E),
+    /* const int idx_E_eq = std::min(
+        static_cast<int>((E_target - E_eq_arr(0)) * inv_delta_E_eq),
         static_cast<int>(idx_map_arr.shape(0) - 1)
-    );
+    ); */
+    const int idx_E_eq = static_cast<int>((E_target - E_eq_arr(0)) * inv_delta_E_eq);
     //std::cout << "idx_E_eq: " << idx_E_eq << std::endl;
 
     int idx_E_neq = idx_map_arr(idx_E_eq);
     //std::cout << "idx_E_neq initial: " << idx_E_neq << std::endl;
-
-    if (E_neq_arr(idx_E_neq + 1) < E_target) {
+    /*if (E_neq_arr(idx_E_neq + 1) < E_target) {
         ++idx_E_neq;
         //std::cout << "idx_E_neq adjusted: " << idx_E_neq << std::endl;
-    }
+    }*/
+    idx_E_neq += E_neq_arr(idx_E_neq + 1) < E_target;
 
     // Get interpolation index
     const double E1 = E_neq_arr(idx_E_neq);
