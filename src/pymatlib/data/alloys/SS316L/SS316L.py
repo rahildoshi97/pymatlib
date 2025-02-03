@@ -6,10 +6,10 @@ from typing import Union
 from matplotlib import pyplot as plt
 from pymatlib.core.alloy import Alloy
 from pymatlib.data.element_data import Fe, Cr, Ni, Mo, Mn
-from pymatlib.core.models import thermal_diffusivity_by_heat_conductivity, density_by_thermal_expansion, energy_density, temperature_from_energy_density
+from pymatlib.core.models import thermal_diffusivity_by_heat_conductivity, density_by_thermal_expansion, energy_density
 from pymatlib.core.data_handler import read_data, celsius_to_kelvin, thousand_times
-from pymatlib.core.interpolators import interpolate_property
-from pymatlib.core.cpp.fast_interpolation import temperature_from_energy_density_array
+from pymatlib.core.interpolators import interpolate_property, prepare_interpolation_arrays#, interpolate_binary_search
+from pymatlib.core.cpp.fast_interpolation import interpolate_binary_search, interpolate_double_lookup
 
 
 def create_SS316L(T: Union[float, sp.Symbol]) -> Alloy:
@@ -62,7 +62,7 @@ def create_SS316L(T: Union[float, sp.Symbol]) -> Alloy:
     base_dir = Path(__file__).parent  # Directory of the current file
 
     # Paths to data files using relative paths
-    density_data_file_path = str(base_dir / 'density_temperature.txt')
+    density_data_file_path = str(base_dir / 'density_temperature_edited.txt')
     heat_capacity_data_file_path = str(base_dir / 'heat_capacity_temperature_edited.txt')
     heat_conductivity_data_file_path = str(base_dir / '..' / 'SS316L' / 'heat_conductivity_temperature.txt')
 
@@ -105,7 +105,7 @@ def create_SS316L(T: Union[float, sp.Symbol]) -> Alloy:
             SS316L.energy_density_liquidus,
             SS316L.energy_density_array)
 
-    T_star = temperature_from_energy_density_array(*args)
+    T_star = interpolate_binary_search(*args)
     print(f"T_star: {T_star}")
 
     return SS316L
