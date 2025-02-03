@@ -3,6 +3,7 @@ import sympy as sp
 from typing import Union, List, Tuple
 from pymatlib.core.models import wrapper, material_property_wrapper
 from pymatlib.core.typedefs import Assignment, ArrayTypes, MaterialProperty
+from pymatlib.core.data_handler import check_equidistant
 
 COUNT = 0
 
@@ -129,22 +130,6 @@ def interpolate_lookup(
         raise ValueError(f"Invalid input for T: {type(T)}")
 
 
-def check_equidistant(temp: np.ndarray) -> float:
-    """
-    Tests if the temperature values are equidistant.
-
-    :param temp: Array of temperature values.
-    :return: The common difference if equidistant, otherwise 0.
-    """
-    if len(temp) <= 1:
-        return 0.0
-
-    temperature_diffs = np.diff(temp)
-    if np.allclose(temperature_diffs, temperature_diffs[0], atol=1e-10):
-        return float(temperature_diffs[0])
-    return 0
-
-
 def interpolate_property(
         T: Union[float, sp.Symbol],
         temp_array: ArrayTypes,
@@ -192,5 +177,171 @@ def interpolate_property(
     if force_lookup or incr == 0 or len(temp_array) < temp_array_limit:
         return interpolate_lookup(T, temp_array, prop_array)
     else:
-        return interpolate_equidistant(
-            T, float(temp_array[0]), incr, prop_array)
+        return interpolate_equidistant(T, float(temp_array[0]), incr, prop_array)
+
+
+# Moved from models.py to interpolators.py
+def temperature_from_energy_density(
+        T: sp.Expr,
+        temperature_array: np.ndarray,
+        h_in: float,
+        energy_density: MaterialProperty) -> float:
+    """
+    Compute the temperature for energy density using linear interpolation.
+    Args:
+        T: Symbol for temperature in material property.
+        temperature_array: Array of temperature values.
+        h_in: Target property value.
+        energy_density: Material property for energy_density.
+    Returns:
+        Corresponding temperature(s) for the input energy density value(s).
+    """
+    T_min, T_max = np.min(temperature_array), np.max(temperature_array)
+    h_min, h_max = energy_density.evalf(T, T_min), energy_density.evalf(T, T_max)
+
+    if h_in < h_min or h_in > h_max:
+        raise ValueError(f"The input energy density value of {h_in} is outside the computed range {h_min, h_max}.")
+
+    tolerance: float = 5e-6
+    max_iterations: int = 5000
+
+    iteration_count = 0
+
+    for _ in range(max_iterations):
+        iteration_count += 1
+        # Linear interpolation to find T_1
+        T_1 = T_min + (h_in - h_min) * (T_max - T_min) / (h_max - h_min)
+        # Evaluate h_1 at T_1
+        h_1 = energy_density.evalf(T, T_1)
+
+        if abs(h_1 - h_in) < tolerance:
+            # print(f"Linear interpolation converged in {iteration_count} iterations.")
+            return T_1
+
+        if h_1 < h_in:
+            T_min, h_min = T_1, h_1
+        else:
+            T_max, h_max = T_1, h_1
+
+    raise RuntimeError(f"Linear interpolation did not converge within {max_iterations} iterations.")
+
+
+# Moved from models.py to interpolators.py
+def interpolate_binary_search(
+        temperature_array: np.ndarray,
+        h_in: float,
+        energy_density_array: np.ndarray,
+        epsilon: float = 1e-6) -> float:
+
+    # Input validation
+    if len(temperature_array) != len(energy_density_array):
+        raise ValueError("temperature_array and energy_density_array must have the same length.")
+
+    n = len(temperature_array)
+    is_ascending = temperature_array[0] < temperature_array[-1]
+
+    # Critical boundary indices
+    start_idx = 0 if is_ascending else n - 1
+    end_idx = n - 1 if is_ascending else 0
+
+    # Boundary checks
+    if h_in <= energy_density_array[start_idx]:
+        return float(temperature_array[start_idx])
+    if h_in >= energy_density_array[end_idx]:
+        return float(temperature_array[end_idx])
+
+    # Binary search
+    left, right = 0, n - 1
+    while left <= right:
+        mid = (left + right) // 2
+        mid_val = energy_density_array[mid]
+
+        if abs(mid_val - h_in) < epsilon:
+            return float(temperature_array[mid])
+
+        if (mid_val > h_in) == is_ascending:
+            right = mid - 1
+        else:
+            left = mid + 1
+
+    # Linear interpolation
+    x0 = energy_density_array[right]
+    x1 = energy_density_array[left]
+    y0 = temperature_array[right]
+    y1 = temperature_array[left]
+
+    return float(y0 + (y1 - y0) * (h_in - x0) / (x1 - x0))
+
+
+def E_eq_from_E_neq(E_neq: np.ndarray) -> np.ndarray:
+    # delta_E_neq = np.diff(E_neq)
+    delta_min: float = np.min(np.diff(E_neq))
+    if delta_min < 1.:
+        raise ValueError(f"Energy density array points are very closely spaced, delta = {delta_min}")
+    delta_E_eq = max(np.floor(delta_min * 0.95), 1.)
+    E_eq = np.arange(E_neq[0], E_neq[-1] + delta_E_eq, delta_E_eq, dtype=np.float64)
+
+    return E_eq
+
+
+def create_idx_mapping(E_neq: np.ndarray, E_eq: np.ndarray) -> np.ndarray:
+    """idx_map = np.zeros(len(E_eq), dtype=int)
+    for i, e in enumerate(E_eq):
+        idx = int(np.searchsorted(E_neq, e) - 1)
+        idx = max(0, min(idx, len(E_neq) - 2))  # Bound check
+        idx_map[i] = idx"""
+    # idx_map = np.searchsorted(E_neq, E_eq) - 1
+    idx_map = np.searchsorted(E_neq, E_eq, side='right') - 1
+    idx_map = np.clip(idx_map, 0, len(E_neq) - 2)
+
+    return idx_map.astype(np.int32)
+
+
+def prepare_interpolation_arrays(temperature_array: np.ndarray, energy_density_array: np.ndarray)\
+        -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+
+    # Input validation
+    if len(temperature_array) != len(energy_density_array):
+        raise ValueError("temperature_array and energy_density_array must have the same length.")
+    T_incr = check_equidistant(temperature_array)
+
+    if T_incr == 0.0:
+        raise ValueError("Temperature array must be equidistant")
+
+    # Convert to numpy arrays if not already
+    T_eq = np.asarray(temperature_array)
+    E_neq = np.asarray(energy_density_array)
+
+    # Flip arrays if temperature increment is negative
+    if T_incr < 0.0:
+        T_eq = np.flip(T_eq)
+        E_neq = np.flip(E_neq)
+
+    if E_neq[0] >= E_neq[-1]:
+        raise ValueError("Energy density must increase with temperature")
+
+    # Create equidistant energy array and index mapping
+    E_eq = E_eq_from_E_neq(E_neq)
+    idx_mapping = create_idx_mapping(E_neq, E_eq)
+
+    return T_eq, E_neq, E_eq, idx_mapping
+
+
+def interpolate_double_lookup(E_target, T_eq, E_neq, E_eq, idx_map) -> float:
+
+    if E_target <= E_neq[0]:
+        return T_eq[0]
+    if E_target >= E_neq[-1]:
+        return T_eq[-1]
+
+    idx_E_eq = int((E_target-E_eq[0]) / (E_eq[1] - E_eq[0]))
+    idx_E_eq = min(idx_E_eq, len(idx_map) - 1)
+
+    idx_E_neq = idx_map[idx_E_eq]
+    if E_neq[idx_E_neq + 1] < E_target:
+        idx_E_neq += 1
+
+    E1, E2 = E_neq[idx_E_neq], E_neq[idx_E_neq + 1]
+    T1, T2 = T_eq[idx_E_neq], T_eq[idx_E_neq + 1]
+
+    return T1 + (T2 - T1) * (E_target - E1) / (E2 - E1)
