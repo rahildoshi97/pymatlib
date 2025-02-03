@@ -20,8 +20,8 @@ def generate_target_points(E_min: float, E_max: float, num_points: int) -> np.nd
     boundary_count = int(num_points * 0.05)  # 5% boundary points
     inside_count = num_points - (below_count + above_count + boundary_count)
 
-    below_points = np.random.uniform(E_min - 5_000_000, E_min, size=below_count)
-    above_points = np.random.uniform(E_max, E_max + 5_000_000, size=above_count)
+    below_points = np.random.uniform(E_min - 1_000_000, E_min, size=below_count)
+    above_points = np.random.uniform(E_max, E_max + 1_000_000, size=above_count)
     boundary_points = np.array([E_min, E_max] * (boundary_count // 2), dtype=np.float64)
     inside_points = np.random.uniform(E_min, E_max, size=inside_count)
 
@@ -35,21 +35,21 @@ def generate_target_points(E_min: float, E_max: float, num_points: int) -> np.nd
     return points
 
 
-def compare_interpolation_methods(T_eq: np.ndarray, E_neq: np.ndarray, E_target: np.ndarray, label: str = "") -> None:
+def compare_interpolation_methods(E_target: np.ndarray, T_eq: np.ndarray, E_neq: np.ndarray, E_eq: np.ndarray, inv_delta_E_eq: float, idx_mapping: np.ndarray, label: str = "") -> None:
     """Compare binary search and double lookup interpolation methods."""
-    E_eq = E_eq_from_E_neq(E_neq)
-    idx_mapping = create_idx_mapping(E_neq, E_eq)
+    # E_eq = E_eq_from_E_neq(E_neq)
+    # idx_mapping = create_idx_mapping(E_neq, E_eq)
 
     # Time binary search method
-    start_time = time.perf_counter()
+    start_time_1 = time.perf_counter()
     T_binary = [interpolate_binary_search(T_eq, float(E), E_neq) for E in E_target]
-    binary_time = time.perf_counter() - start_time
+    binary_time = time.perf_counter() - start_time_1
 
     # Time double lookup method
-    start_time = time.perf_counter()
-    T_double = [interpolate_double_lookup(float(E), T_eq, E_neq, E_eq, idx_mapping)
+    start_time_2 = time.perf_counter()
+    T_double = [interpolate_double_lookup(float(E), T_eq, E_neq, E_eq, inv_delta_E_eq, idx_mapping)
                 for E in E_target]
-    double_time = time.perf_counter() - start_time
+    double_time = time.perf_counter() - start_time_2
 
     print(f"\nResults for {label}:")
     print(f"Binary search time: {binary_time:.8f} s")
@@ -120,7 +120,7 @@ def create_alloy(T: Union[float, sp.Symbol]) -> Alloy:
     # print(alloy.energy_density_array)
     # plot_arrays(alloy.temperature_array, alloy.energy_density_array, "Temperature (K)", "Energy Density (J/m^3)")
 
-    T_eq, E_neq, E_eq, idx_map = prepare_interpolation_arrays(
+    T_eq, E_neq, E_eq, inv_delta_E_eq, idx_map = prepare_interpolation_arrays(
         alloy.temperature_array,
         alloy.energy_density_array
     )
@@ -147,7 +147,7 @@ def create_alloy(T: Union[float, sp.Symbol]) -> Alloy:
     print(f"Execution time: {execution_time2:.8f} seconds")
 
     start_time3 = time.perf_counter()
-    T_interpolate3 = interpolate_double_lookup(E, T_eq, E_neq, E_eq, idx_map)
+    T_interpolate3 = interpolate_double_lookup(E, T_eq, E_neq, E_eq, inv_delta_E_eq, idx_map)
     execution_time3 = time.perf_counter() - start_time3
     print(f"Interpolated temperature: {T_interpolate3}")
     print(f"Execution time: {execution_time3:.8f} seconds")
@@ -155,6 +155,8 @@ def create_alloy(T: Union[float, sp.Symbol]) -> Alloy:
     if not (T_interpolate1 == T_interpolate2 == T_interpolate3):
         raise ValueError(f"Mismatch value. Temperature value should be {alloy.temperature_liquidus}")
 
+    E_target_alloy = generate_target_points(float(alloy.energy_density_array[0]), float(alloy.energy_density_array[-1]), 1_000)
+    compare_interpolation_methods(E_target_alloy, T_eq, E_neq, E_eq, inv_delta_E_eq, idx_map, 'SS316L')
 
     def measure_performance(iterations=1):
         all_execution_times = np.zeros(iterations)
@@ -162,15 +164,15 @@ def create_alloy(T: Union[float, sp.Symbol]) -> Alloy:
         for i in range(iterations):
             start_measure_performance = time.perf_counter()
 
-            results = [interpolate_binary_search(T_eq, E, E_neq) for E in E_neq]
-            # results = [interpolate_double_lookup(E, T_eq, E_neq, E_eq, idx_map) for E in E_neq]
+            # results = [interpolate_binary_search(T_eq, E, E_neq) for E in E_target_alloy]
+            results = [interpolate_double_lookup(E, T_eq, E_neq, E_eq, inv_delta_E_eq, idx_map) for E in E_target_alloy]
 
             all_execution_times[i] = time.perf_counter() - start_measure_performance
 
         # Calculate statistics using numpy
         total_time = np.sum(all_execution_times)
         avg_time = np.mean(all_execution_times)
-        avg_per_iteration = avg_time / len(E_neq)
+        avg_per_iteration = avg_time / len(E_target_alloy)
 
         print(f"Total execution time ({iterations} runs): {total_time:.8f} seconds")
         print(f"Average execution time per run: {avg_time:.8f} seconds")
@@ -178,9 +180,6 @@ def create_alloy(T: Union[float, sp.Symbol]) -> Alloy:
 
     # Run the performance test
     measure_performance(iterations=10_000)
-
-    E_target = generate_target_points(float(E_neq[0]), float(E_neq[-1]), 100)
-    compare_interpolation_methods(T_eq, E_neq, E_target, "Alloy Dataset")
 
     return alloy
 
@@ -195,41 +194,41 @@ if __name__ == '__main__':
                                  #  0      1      2      3      4      5      6      7      8      9
 
     # Equidistant energy array with delta_E_eq = 200 (smaller than min_delta = 220)
-    E_eq_small = E_eq_from_E_neq(E_neq_small)
+    E_eq_small, inv_delta_E_eq_small = E_eq_from_E_neq(E_neq_small)
     # E_eq = np.array([1000., 1209., 1418., 1627., 1836., 2045., 2254., 2463., 2672.,
     #                  2881., 3090., 3299., 3508., 3717., 3926., 4135., 4344.])
 
     # Index mapping array
-    idx_mapping = create_idx_mapping(E_neq_small, E_eq_small)
+    idx_mapping_small = create_idx_mapping(E_neq_small, E_eq_small)
     # idx_map = np.array([0, 0, 1, 1, 2, 3, 3, 4, 5, 5, 6, 6, 6, 7, 7, 8, 8])
 
     # Test target energy values
-    E_target = 1.*np.array([1000, 1585, 2688, 3960, 4210])
+    E_target = 1.005*np.array([1000, 1585, 2688, 3960, 4210])
     print(E_target)
     for target in E_target:
         T_star = interpolate_binary_search(T_eq_small, target, E_neq_small)
         #print(T_star)
-        T_interpolate_double_lookup = interpolate_double_lookup(target, T_eq_small, E_neq_small, E_eq_small, idx_mapping)
+        T_interpolate_double_lookup = interpolate_double_lookup(target, T_eq_small, E_neq_small, E_eq_small, inv_delta_E_eq_small, idx_mapping_small)
         #print(T_interpolate_double_lookup)
         if T_star != T_interpolate_double_lookup:
             raise ValueError(f"Value Mismatch. {T_star} != {T_interpolate_double_lookup}")
 
     E_target_small = generate_target_points(float(E_neq_small[0]), float(E_neq_small[-1]), 100)
 
-    compare_interpolation_methods(T_eq_small, E_neq_small, E_target_small, "Small Dataset")
+    compare_interpolation_methods(E_target_small, T_eq_small, E_neq_small, E_eq_small, inv_delta_E_eq_small, idx_mapping_small, "Small Dataset")
 
 
     # Create larger test arrays
-    size = 5_000_000
-    T_eq_large = np.linspace(0.0, 5_000_000.0, size, dtype=np.float64)  # Equidistant temperature values
+    size = 1_000_000
+    T_eq_large = np.linspace(0.0, 1_000_000.0, size, dtype=np.float64)  # Equidistant temperature values
     # Generate non-equidistant energy density array
     # Using cumsum of random values ensures monotonically increasing values
-    E_neq_large = np.cumsum(np.random.uniform(1, 10, size)) + 5_000_000.0
+    E_neq_large = np.cumsum(np.random.uniform(1, 1_000, size)) + 1_000_000.0
 
-    E_eq_large = E_eq_from_E_neq(E_neq_large)
+    E_eq_large, inv_delta_E_eq_large = E_eq_from_E_neq(E_neq_large)
 
     idx_mapping_large = create_idx_mapping(E_neq_large, E_eq_large)
 
     E_target_large = generate_target_points(float(E_neq_large[0]), float(E_neq_large[-1]), 1_000_000)
 
-    compare_interpolation_methods(T_eq_small, E_neq_small, E_target_small, "Large Dataset")
+    compare_interpolation_methods(E_target_large, T_eq_large, E_neq_large, E_eq_large, inv_delta_E_eq_large, idx_mapping_large, "Large Dataset")
