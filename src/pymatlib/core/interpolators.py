@@ -1,5 +1,8 @@
+import time
 import numpy as np
 import sympy as sp
+from numba import jit, float64
+from scipy.interpolate import UnivariateSpline
 from typing import Union, List, Tuple
 from pymatlib.core.models import wrapper, material_property_wrapper
 from pymatlib.core.typedefs import Assignment, ArrayTypes, MaterialProperty
@@ -392,3 +395,88 @@ def interpolate_double_lookup(E_target: float, T_eq: np.ndarray, E_neq: np.ndarr
     result = float(T1 + (T2 - T1) * (E_target - E1) / (E2 - E1))
     print(f"Final result: {result}")
     return result
+
+
+class FastInterpolator:
+    def __init__(self, T_array, E_array):
+        """Initialize with temperature and energy density arrays
+        T_array: Temperature array (equidistant)
+        E_array: Energy density array (non-equidistant)
+        """
+        self.T = T_array
+        self.E = E_array
+        self.dE = np.diff(E_array)
+        # Store bounds for quick checking
+        self.E_min = E_array[0]
+        self.E_max = E_array[-1]
+
+    @staticmethod
+    @jit(float64[:](float64[:], float64[:], float64[:], float64[:], float64, float64))
+    def _interpolate_numba(E_target, T, E, dE, E_min, E_max):
+        results = np.empty_like(E_target)
+        for i in range(len(E_target)):
+            if E_target[i] < E_min or E_target[i] >= E_max:
+                results[i] = T[0] if E_target[i] < E_min else T[-1]
+                continue
+
+            idx = np.searchsorted(E, E_target[i], 'right') - 1
+            # Ensure index is within bounds
+            '''if idx < 0:
+                idx = 0
+            elif idx >= len(E) - 1:
+                idx = len(E) - 2'''
+
+            results[i] = T[idx] + (E_target[i] - E[idx]) / dE[idx] * (T[idx + 1] - T[idx])
+
+        return results
+
+    def get_temperatures(self, E_target):
+        """Get interpolated temperatures for target energy densities"""
+        # Convert single value to numpy array if needed
+        if isinstance(E_target, (float, int)):
+            E_target = np.array([float(E_target)])
+        return self._interpolate_numba(E_target, self.T, self.E, self.dE,
+                                       self.E_min, self.E_max)
+
+
+# Add debug function to help identify issues
+def debug_interpolation(E_target_sample, T_eq, E_neq, fast_interpolator):
+    """Debug interpolation results for a sample of points"""
+    print("\nDebugging Interpolation:")
+    print(f"E_neq range: [{E_neq[0]:.2f}, {E_neq[-1]:.2f}]")
+    print(f"T_eq range: [{T_eq[0]:.2f}, {T_eq[-1]:.2f}]")
+
+    T_fast = fast_interpolator.get_temperatures(E_target_sample)
+
+    print("\nSample points:")
+    for E, T in zip(E_target_sample, T_fast):
+        print(f"E={E:.2f} -> T={T:.2f}")
+        # Find closest E_neq values for verification
+        idx = np.searchsorted(E_neq, E)
+        if 0 < idx < len(E_neq):
+            print(f"  Nearest E_neq: {E_neq[idx-1]:.2f} -> T: {T_eq[idx-1]:.2f}")
+            print(f"                 {E_neq[idx]:.2f} -> T: {T_eq[idx]:.2f}")
+
+
+# Test the implementation
+if __name__ == "__main__":
+    # Your input arrays
+    size = 1_000_000
+    T_eq_large = np.linspace(0.0, 1_000_000.0, size, dtype=np.float64)
+    E_neq_large = np.cumsum(np.random.uniform(1, 1_000, size)) + 1_000_000.0
+    E_target_large = np.linspace(float(E_neq_large[0]), float(E_neq_large[-1]), 1_000_000)
+
+    # Initialize interpolator
+    interpolator = FastInterpolator(T_eq_large, E_neq_large)
+
+    # Measure performance
+    start_time = time.time()
+    T_interpolated = interpolator.get_temperatures(E_target_large)
+    elapsed = time.time() - start_time
+
+    print(f"Interpolated {len(E_target_large)} temperatures in {elapsed:.4f} seconds")
+
+    # Verify results (first few values)
+    print("\nFirst few interpolated temperatures:")
+    for i in range(5):
+        print(f"E_target: {E_target_large[i]:.2f} -> T: {T_interpolated[i]:.2f}")
