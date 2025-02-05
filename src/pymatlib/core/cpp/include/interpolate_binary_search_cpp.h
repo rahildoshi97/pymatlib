@@ -54,29 +54,19 @@ double interpolate_binary_search_cpp(
             return temperature_array[mid];
         }
 
-        if (mid_val > h_in) {
-            if (is_ascending) {
-                right = mid - 1;
-            } else {
-                left = mid + 1;
-            }
+        const bool go_left = (mid_val > h_in) == is_ascending;
+        if (go_left) {
+            right = mid - 1;
         } else {
-            if (is_ascending) {
-                left = mid + 1;
-            } else {
-                right = mid - 1;
-            }
+            left = mid + 1;
         }
     }
 
     // Linear interpolation
-    const size_t idx1 = is_ascending ? right : left;
-    const size_t idx2 = is_ascending ? left : right;
-
-    const double x0 = energy_density_array[idx1];
-    const double x1 = energy_density_array[idx2];
-    const double y0 = temperature_array[idx1];
-    const double y1 = temperature_array[idx2];
+    const double x0 = energy_density_array[right];
+    const double x1 = energy_density_array[left];
+    const double y0 = temperature_array[right];
+    const double y1 = temperature_array[left];
 
     const double slope = (y1 - y0) / (x1 - x0);
     return y0 + slope * (h_in - x0);

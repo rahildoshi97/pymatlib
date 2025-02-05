@@ -22,5 +22,6 @@ PYBIND11_MODULE(fast_interpolation, m) {
           py::arg("T_eq"),
           py::arg("E_neq"),
           py::arg("E_eq"),
+          py::arg("inv_delta_E_eq"),
           py::arg("idx_map"));
 }

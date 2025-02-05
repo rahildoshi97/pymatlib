@@ -1,9 +1,12 @@
+import time
 import numpy as np
 import sympy as sp
+from numba import jit, float64
+from scipy.interpolate import UnivariateSpline
 from typing import Union, List, Tuple
 from pymatlib.core.models import wrapper, material_property_wrapper
 from pymatlib.core.typedefs import Assignment, ArrayTypes, MaterialProperty
-from pymatlib.core.data_handler import check_equidistant
+from pymatlib.core.data_handler import check_equidistant, check_strictly_increasing
 
 COUNT = 0
 
@@ -177,6 +180,7 @@ def interpolate_property(
     if force_lookup or incr == 0 or len(temp_array) < temp_array_limit:
         return interpolate_lookup(T, temp_array, prop_array)
     else:
+        print('interpolate_equidistant')
         return interpolate_equidistant(T, float(temp_array[0]), incr, prop_array)
 
 
@@ -263,6 +267,11 @@ def interpolate_binary_search(
             right = mid - 1
         else:
             left = mid + 1
+        print(f"Python - left: {left}, right: {right}")
+
+    print(f"Python - Final indices - left: {left}, right: {right}")
+    print(f"Python - Interpolating between T[{right}]={temperature_array[right]} and T[{left}]={temperature_array[left]}")
+    print(f"Python - Interpolating between E[{right}]={energy_density_array[right]} and E[{left}]={energy_density_array[left]}")
 
     # Linear interpolation
     x0 = energy_density_array[right]
@@ -273,15 +282,15 @@ def interpolate_binary_search(
     return float(y0 + (y1 - y0) * (h_in - x0) / (x1 - x0))
 
 
-def E_eq_from_E_neq(E_neq: np.ndarray) -> np.ndarray:
+def E_eq_from_E_neq(E_neq: np.ndarray) -> Tuple[np.ndarray, float]:
     # delta_E_neq = np.diff(E_neq)
     delta_min: float = np.min(np.diff(E_neq))
     if delta_min < 1.:
         raise ValueError(f"Energy density array points are very closely spaced, delta = {delta_min}")
     delta_E_eq = max(np.floor(delta_min * 0.95), 1.)
     E_eq = np.arange(E_neq[0], E_neq[-1] + delta_E_eq, delta_E_eq, dtype=np.float64)
-
-    return E_eq
+    inv_delta_E_eq: float = float(1. / (E_eq[1] - E_eq[0]))
+    return E_eq, inv_delta_E_eq
 
 
 def create_idx_mapping(E_neq: np.ndarray, E_eq: np.ndarray) -> np.ndarray:
@@ -293,55 +302,142 @@ def create_idx_mapping(E_neq: np.ndarray, E_eq: np.ndarray) -> np.ndarray:
     # idx_map = np.searchsorted(E_neq, E_eq) - 1
     idx_map = np.searchsorted(E_neq, E_eq, side='right') - 1
     idx_map = np.clip(idx_map, 0, len(E_neq) - 2)
-
     return idx_map.astype(np.int32)
 
 
-def prepare_interpolation_arrays(temperature_array: np.ndarray, energy_density_array: np.ndarray)\
-        -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+def prepare_interpolation_arrays(T_eq: np.ndarray, E_neq: np.ndarray)\
+        -> Tuple[np.ndarray, np.ndarray, np.ndarray, float, np.ndarray]:
 
     # Input validation
-    if len(temperature_array) != len(energy_density_array):
-        raise ValueError("temperature_array and energy_density_array must have the same length.")
-    T_incr = check_equidistant(temperature_array)
+    if len(T_eq) != len(E_neq):
+        raise ValueError("T_eq and E_neq must have the same length.")
 
+    T_incr = check_equidistant(T_eq)
     if T_incr == 0.0:
         raise ValueError("Temperature array must be equidistant")
 
     # Convert to numpy arrays if not already
-    T_eq = np.asarray(temperature_array)
-    E_neq = np.asarray(energy_density_array)
+    T_eq = np.asarray(T_eq)
+    E_neq = np.asarray(E_neq)
 
     # Flip arrays if temperature increment is negative
     if T_incr < 0.0:
         T_eq = np.flip(T_eq)
         E_neq = np.flip(E_neq)
 
+    check_strictly_increasing(T_eq, "T_eq")
+    check_strictly_increasing(E_neq, "E_neq")
+
     if E_neq[0] >= E_neq[-1]:
         raise ValueError("Energy density must increase with temperature")
 
     # Create equidistant energy array and index mapping
-    E_eq = E_eq_from_E_neq(E_neq)
+    E_eq, inv_delta_E_eq = E_eq_from_E_neq(E_neq)
     idx_mapping = create_idx_mapping(E_neq, E_eq)
 
-    return T_eq, E_neq, E_eq, idx_mapping
+    return T_eq, E_neq, E_eq, inv_delta_E_eq, idx_mapping
 
 
-def interpolate_double_lookup(E_target, T_eq, E_neq, E_eq, idx_map) -> float:
+def interpolate_double_lookup(E_target: float, T_eq: np.ndarray, E_neq: np.ndarray, E_eq: np.ndarray, inv_delta_E_eq: float, idx_map: np.ndarray) -> float:
 
     if E_target <= E_neq[0]:
-        return T_eq[0]
+        return float(T_eq[0])
     if E_target >= E_neq[-1]:
-        return T_eq[-1]
+        return float(T_eq[-1])
 
-    idx_E_eq = int((E_target-E_eq[0]) / (E_eq[1] - E_eq[0]))
+    idx_E_eq = int((E_target - E_eq[0]) * inv_delta_E_eq)
     idx_E_eq = min(idx_E_eq, len(idx_map) - 1)
 
     idx_E_neq = idx_map[idx_E_eq]
-    if E_neq[idx_E_neq + 1] < E_target:
+    if E_neq[idx_E_neq + 1] < E_target and idx_E_neq + 1 < len(E_neq):
         idx_E_neq += 1
 
     E1, E2 = E_neq[idx_E_neq], E_neq[idx_E_neq + 1]
     T1, T2 = T_eq[idx_E_neq], T_eq[idx_E_neq + 1]
 
-    return T1 + (T2 - T1) * (E_target - E1) / (E2 - E1)
+    return float(T1 + (T2 - T1) * (E_target - E1) / (E2 - E1))
+
+
+class FastInterpolator:
+    def __init__(self, T_array, E_array):
+        """Initialize with temperature and energy density arrays
+        T_array: Temperature array (equidistant)
+        E_array: Energy density array (non-equidistant)
+        """
+        self.T = T_array
+        self.E = E_array
+        self.dE = np.diff(E_array)
+        # Store bounds for quick checking
+        self.E_min = E_array[0]
+        self.E_max = E_array[-1]
+
+    @staticmethod
+    @jit(float64[:](float64[:], float64[:], float64[:], float64[:], float64, float64))
+    def _interpolate_numba(E_target, T, E, dE, E_min, E_max):
+        results = np.empty_like(E_target)
+        for i in range(len(E_target)):
+            if E_target[i] < E_min or E_target[i] >= E_max:
+                results[i] = T[0] if E_target[i] < E_min else T[-1]
+                continue
+
+            idx = np.searchsorted(E, E_target[i], 'right') - 1
+            # Ensure index is within bounds
+            '''if idx < 0:
+                idx = 0
+            elif idx >= len(E) - 1:
+                idx = len(E) - 2'''
+
+            results[i] = T[idx] + (E_target[i] - E[idx]) / dE[idx] * (T[idx + 1] - T[idx])
+
+        return results
+
+    def get_temperatures(self, E_target):
+        """Get interpolated temperatures for target energy densities"""
+        # Convert single value to numpy array if needed
+        if isinstance(E_target, (float, int)):
+            E_target = np.array([float(E_target)])
+        return self._interpolate_numba(E_target, self.T, self.E, self.dE,
+                                       self.E_min, self.E_max)
+
+
+# Add debug function to help identify issues
+def debug_interpolation(E_target_sample, T_eq, E_neq, fast_interpolator):
+    """Debug interpolation results for a sample of points"""
+    print("\nDebugging Interpolation:")
+    print(f"E_neq range: [{E_neq[0]:.2f}, {E_neq[-1]:.2f}]")
+    print(f"T_eq range: [{T_eq[0]:.2f}, {T_eq[-1]:.2f}]")
+
+    T_fast = fast_interpolator.get_temperatures(E_target_sample)
+
+    print("\nSample points:")
+    for E, T in zip(E_target_sample, T_fast):
+        print(f"E={E:.2f} -> T={T:.2f}")
+        # Find closest E_neq values for verification
+        idx = np.searchsorted(E_neq, E)
+        if 0 < idx < len(E_neq):
+            print(f"  Nearest E_neq: {E_neq[idx-1]:.2f} -> T: {T_eq[idx-1]:.2f}")
+            print(f"                 {E_neq[idx]:.2f} -> T: {T_eq[idx]:.2f}")
+
+
+# Test the implementation
+if __name__ == "__main__":
+    # Your input arrays
+    size = 1_000_000
+    T_eq_large = np.linspace(0.0, 1_000_000.0, size, dtype=np.float64)
+    E_neq_large = np.cumsum(np.random.uniform(1, 1_000, size)) + 1_000_000.0
+    E_target_large = np.linspace(float(E_neq_large[0]), float(E_neq_large[-1]), 1_000_000)
+
+    # Initialize interpolator
+    interpolator = FastInterpolator(T_eq_large, E_neq_large)
+
+    # Measure performance
+    start_time = time.time()
+    T_interpolated = interpolator.get_temperatures(E_target_large)
+    elapsed = time.time() - start_time
+
+    print(f"Interpolated {len(E_target_large)} temperatures in {elapsed:.4f} seconds")
+
+    # Verify results (first few values)
+    print("\nFirst few interpolated temperatures:")
+    for i in range(5):
+        print(f"E_target: {E_target_large[i]:.2f} -> T: {T_interpolated[i]:.2f}")

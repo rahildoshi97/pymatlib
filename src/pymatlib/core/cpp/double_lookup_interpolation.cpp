@@ -8,6 +8,7 @@ double interpolate_double_lookup(
     const py::array_t<double>& T_eq,
     const py::array_t<double>& E_neq,
     const py::array_t<double>& E_eq,
+    double inv_delta_E_eq,
     const py::array_t<int32_t>& idx_map) {
 
     // Get array views with bounds checking disabled for performance
@@ -16,36 +17,23 @@ double interpolate_double_lookup(
     auto E_eq_arr = E_eq.unchecked<1>();
     auto idx_map_arr = idx_map.unchecked<1>();
 
-    // Cache frequently accessed values
-    const size_t last_idx = E_neq_arr.shape(0) - 1;
-    const double first_e = E_neq_arr(0);
-    const double last_e = E_neq_arr(last_idx);
+    // Cache array size
+    const size_t n = T_eq_arr.shape(0);
 
     // Quick boundary checks with cached values
-    if (E_target <= first_e) {
+    if (E_target <= E_neq_arr(0)) {
         return T_eq_arr(0);
     }
 
-    if (E_target >= last_e) {
-        return T_eq_arr(last_idx);
+    if (E_target >= E_neq_arr(n-1)) {
+        return T_eq_arr(n-1);
     }
 
-    // Precompute and cache interpolation parameters
-    const double E_eq_start = E_eq_arr(0);
-    const double delta_E = E_eq_arr(1) - E_eq_start;
-    const double inv_delta_E = 1.0 / delta_E;
-
-    const int idx_E_eq = std::min(
-        static_cast<int>((E_target - E_eq_start) * inv_delta_E),
-        static_cast<int>(idx_map_arr.shape(0) - 1)
-    );
-    //std::cout << "idx_E_eq: " << idx_E_eq << std::endl;
+    const int idx_E_eq = static_cast<int>((E_target - E_eq_arr(0)) * inv_delta_E_eq);
 
     int idx_E_neq = idx_map_arr(idx_E_eq);
 
-    if (E_neq_arr(idx_E_neq + 1) < E_target) {
-        ++idx_E_neq;
-    }
+    idx_E_neq += E_neq_arr(idx_E_neq + 1) < E_target;
 
     // Get interpolation index
     const double E1 = E_neq_arr(idx_E_neq);
@@ -54,7 +42,6 @@ double interpolate_double_lookup(
     const double T2 = T_eq_arr(idx_E_neq + 1);
 
     // Optimized linear interpolation
-    const double inv_dE = 1.0 / (E2 - E1);
-
-    return T1 + (T2 - T1) * (E_target - E1) * inv_dE;
+    const double slope = (T2 - T1) / (E2 - E1);
+    return T1 + slope * (E_target - E1);
 }
