@@ -170,11 +170,11 @@ def create_SS316L(T: Union[float, sp.Symbol]) -> Alloy:
     print(f"Execution time: {time_2:.6f} seconds\n")
 
     E = SS316L.energy_density.evalf(T, SS316L.temperature_liquidus)
-    T_eq, E_neq, E_eq, idx_map = prepare_interpolation_arrays(
+    T_eq, E_neq, E_eq, inv_delta_E_eq, idx_map = prepare_interpolation_arrays(
         SS316L.temperature_array,
         SS316L.energy_density_array
     )
-    args3 = (E, T_eq, E_neq, E_eq, idx_map)
+    args3 = (E, T_eq, E_neq, E_eq, inv_delta_E_eq, idx_map)
 
     start_time3 = time.perf_counter()
     T_interpolate3 = interpolate_double_lookup(*args3)
