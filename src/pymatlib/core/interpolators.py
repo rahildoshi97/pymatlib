@@ -7,8 +7,53 @@ from typing import Union, List, Tuple
 from pymatlib.core.models import wrapper, material_property_wrapper
 from pymatlib.core.typedefs import Assignment, ArrayTypes, MaterialProperty
 from pymatlib.core.data_handler import check_equidistant, check_strictly_increasing
+from pystencils.types import PsCustomType
+from pystencilssfg import SfgComposer
+from pystencilssfg.composer.custom import CustomGenerator
+
 
 COUNT = 0
+
+
+class DoubleLookupArrayContainer(CustomGenerator):
+    def __init__(self, name: str, temperature_array: np.ndarray, energy_density_array: np.ndarray):
+        super().__init__()
+        self.name = name
+        self.T_eq = temperature_array
+        self.E_neq = energy_density_array
+
+        self.T_eq, self.E_neq, self.E_eq, self.inv_delta_E_eq, self.idx_mapping = \
+            prepare_interpolation_arrays(self.T_eq, self.E_neq)
+
+    @classmethod
+    def from_material(cls, name: str, material):
+        return cls(name, material.temperature_array, material.energy_density_array)
+
+    def generate(self, sfg: SfgComposer):
+        sfg.include("<array>")
+        sfg.include("interpolate_double_lookup_cpp.h")
+
+        T_eq_arr_values = ", ".join(str(v) for v in self.T_eq)
+        E_neq_arr_values = ", ".join(str(v) for v in self.E_neq)
+        E_eq_arr_values = ", ".join(str(v) for v in self.E_eq)
+        idx_mapping_arr_values = ", ".join(str(v) for v in self.idx_mapping)
+
+        E_target = sfg.var("E_target", "double")
+
+        sfg.klass(self.name)(
+
+            sfg.public(
+                f"static constexpr std::array< double, {self.T_eq.shape[0]} > T_eq = {{ {T_eq_arr_values} }}; \n"
+                f"static constexpr std::array< double, {self.E_neq.shape[0]} > E_neq = {{ {E_neq_arr_values} }}; \n"
+                f"static constexpr std::array< double, {self.E_eq.shape[0]} > E_eq = {{ {E_eq_arr_values} }}; \n"
+                f"static constexpr double inv_delta_E_eq = {self.inv_delta_E_eq}; \n"
+                f"static constexpr std::array< int, {self.idx_mapping.shape[0]} > idx_map = {{ {idx_mapping_arr_values} }}; \n",
+
+                sfg.method("interpolateDL", returns=PsCustomType("double"), inline=True, const=True)(
+                    sfg.expr("return interpolate_double_lookup_cpp({}, *this);", E_target)
+                )
+            )
+        )
 
 
 def interpolate_equidistant(
@@ -180,7 +225,6 @@ def interpolate_property(
     if force_lookup or incr == 0 or len(temp_array) < temp_array_limit:
         return interpolate_lookup(T, temp_array, prop_array)
     else:
-        print('interpolate_equidistant')
         return interpolate_equidistant(T, float(temp_array[0]), incr, prop_array)
 
 
@@ -267,11 +311,11 @@ def interpolate_binary_search(
             right = mid - 1
         else:
             left = mid + 1
-        print(f"Python - left: {left}, right: {right}")
+        # print(f"Python - left: {left}, right: {right}")
 
-    print(f"Python - Final indices - left: {left}, right: {right}")
-    print(f"Python - Interpolating between T[{right}]={temperature_array[right]} and T[{left}]={temperature_array[left]}")
-    print(f"Python - Interpolating between E[{right}]={energy_density_array[right]} and E[{left}]={energy_density_array[left]}")
+    # print(f"Python - Final indices - left: {left}, right: {right}")
+    # print(f"Python - Interpolating between T[{right}]={temperature_array[right]} and T[{left}]={temperature_array[left]}")
+    # print(f"Python - Interpolating between E[{right}]={energy_density_array[right]} and E[{left}]={energy_density_array[left]}")
 
     # Linear interpolation
     x0 = energy_density_array[right]

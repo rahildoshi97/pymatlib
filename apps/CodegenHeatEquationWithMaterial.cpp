@@ -21,7 +21,7 @@
 
 #include "timeloop/SweepTimeloop.h"
 
-#include "gen/HeatEquationWithMaterial/HeatEquationKernelWithMaterial.h"
+#include "gen/HeatEquationKernelWithMaterial.hpp"
 
 namespace walberla
 {

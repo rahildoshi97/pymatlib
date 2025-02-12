@@ -7,6 +7,7 @@
 #include <iomanip>
 #include <cassert>
 #include <iostream>
+#include "TestArrayContainer.hpp"
 
 
 // Helper function to compare floating point numbers
@@ -45,22 +46,13 @@ void test_basic_functionality() {
     // Double Lookup Tests
     {
         // Setup double lookup specific data
-        std::vector<double> E_eq_vec = {1.68e10, 1.69e10, 1.70e10, 1.71e10};
         std::array<double, 4> E_eq_arr = {1.68e10, 1.69e10, 1.70e10, 1.71e10};
-        std::vector<double> idx_map_vec = {0, 1, 2, 3};
         std::array<double, 4> idx_map_arr = {0, 1, 2, 3};
         const double inv_delta_E_eq = 1.0 / (1e9);
 
-        double result_vec = interpolate_double_lookup_cpp(
-            test_E, T_vec, E_vec, E_eq_vec, inv_delta_E_eq, idx_map_vec);
-        assert(is_equal(result_vec, expected_T));
-
-        double result_arr = interpolate_double_lookup_cpp(
-            test_E, T_arr, E_arr, E_eq_arr, inv_delta_E_eq, idx_map_arr);
+        DoubleLookupTests tests;
+        double result_arr = tests.interpolateDL(test_E);
         assert(is_equal(result_arr, expected_T));
-
-        // Verify vector and array results match
-        assert(is_equal(result_vec, result_arr));
     }
 }
 
@@ -126,14 +118,9 @@ void test_edge_cases_and_errors() {
         std::array<double, 4> idx_map_arr = {0, 1, 2, 3};
         const double inv_delta_E_eq = 1.0 / (1e9);
 
-        // Vector tests
-        double result_vec_min = interpolate_double_lookup_cpp(
-            1.67e10, T_vec, E_vec, E_eq_vec, inv_delta_E_eq, idx_map_vec);
-        assert(is_equal(result_vec_min, 3243.15));
-
         // Array tests
-        double result_arr_min = interpolate_double_lookup_cpp(
-            1.67e10, T_arr, E_arr, E_eq_arr, inv_delta_E_eq, idx_map_arr);
+        DoubleLookupTests tests;
+        double result_arr_min = tests.interpolateDL(1.67e10);
         assert(is_equal(result_arr_min, 3243.15));
     }
 }
@@ -202,14 +189,9 @@ void test_interpolation_accuracy() {
         assert(is_equal(result_bin_vec, result_bin_arr, test.tolerance));
 
         // Double Lookup Tests
-        double result_dl_vec = interpolate_double_lookup_cpp(
-            test.input_E, T_vec, E_vec, E_eq_vec, inv_delta_E_eq, idx_map_vec);
-        double result_dl_arr = interpolate_double_lookup_cpp(
-            test.input_E, T_arr, E_arr, E_eq_arr, inv_delta_E_eq, idx_map_arr);
-
-        assert(is_equal(result_dl_vec, test.expected_T, test.tolerance));
+        DoubleLookupTests tests;
+        double result_dl_arr = tests.interpolateDL(test.input_E);
         assert(is_equal(result_dl_arr, test.expected_T, test.tolerance));
-        assert(is_equal(result_dl_vec, result_dl_arr, test.tolerance));
     }
 }
 
@@ -300,8 +282,8 @@ void test_performance() {
         {
             auto start = std::chrono::high_resolution_clock::now();
             for (const double& E : test_points) {
-                volatile double result = interpolate_double_lookup_cpp(
-                    E, T_vec, E_vec, E_eq_vec, inv_delta_E_eq, idx_map_vec);
+                DoubleLookupTests tests;
+                volatile double result = tests.interpolateDL(E);
             }
             auto end = std::chrono::high_resolution_clock::now();
             auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(
@@ -312,8 +294,8 @@ void test_performance() {
         {
             auto start = std::chrono::high_resolution_clock::now();
             for (const double& E : test_points) {
-                volatile double result = interpolate_double_lookup_cpp(
-                    E, T_arr, E_arr, E_eq_arr, inv_delta_E_eq, idx_map_arr);
+                DoubleLookupTests tests;
+                volatile double result = tests.interpolateDL(E);
             }
             auto end = std::chrono::high_resolution_clock::now();
             auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(

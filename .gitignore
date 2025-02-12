@@ -36,3 +36,5 @@ src/pymatlib/core/cpp/*.so
 test_output/
 coverage/
 *.coverage
+TestArrayContainer.cpp
+TestArrayContainer.hpp
