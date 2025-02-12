@@ -9,6 +9,7 @@ from sfg_walberla import Sweep
 from pymatlib.data.alloys import Ti6Al4V
 from pymatlib.data.alloys.SS316L import SS316L
 from pymatlib.core.assignment_converter import assignment_converter
+from pymatlib.core.interpolators import DoubleLookupArrayContainer
 
 with SourceFileGenerator() as sfg:
     data_type = "float64"  # if ctx.double_accuracy else "float32"
@@ -26,6 +27,9 @@ with SourceFileGenerator() as sfg:
 
     # mat = Ti6Al4V.create_Ti6Al4V(u.center())
     mat = SS316L.create_SS316L(u.center())
+    # arr_container = DoubleLookupArrayContainer("SS316L", mat.temperature_array, mat.energy_density_array)
+    arr_container = DoubleLookupArrayContainer.from_material("SS316L", mat)
+    sfg.generate(arr_container)
 
     # Convert assignments to pystencils format
     print("Print statements")
