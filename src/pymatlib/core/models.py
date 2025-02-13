@@ -11,7 +11,7 @@ ABSOLUTE_ZERO = 0.0  # Kelvin
 DEFAULT_TOLERANCE = 1e-10
 
 
-def wrapper(value: Union[sp.Expr, NumericType, ArrayTypes]) \
+def wrapper(value: Union[sp.Expr, NumericType, ArrayTypes, MaterialProperty]) \
         -> Union[sp.Expr, List[sp.Expr]]:
     """
     Wraps various input types into sympy expressions.
@@ -22,6 +22,8 @@ def wrapper(value: Union[sp.Expr, NumericType, ArrayTypes]) \
     Raises:
         ValueError: If the input type is unsupported.
     """
+    if isinstance(value, MaterialProperty):
+        return value.expr
     if isinstance(value, sp.Expr):
         return sp.simplify(value)
     if isinstance(value, (float, np.float32, np.float64)):  # np.floating
@@ -50,7 +52,7 @@ def material_property_wrapper(value: Union[sp.Expr, NumericType, ArrayTypes]) \
 
 
 def density_by_thermal_expansion(
-        temperature: Union[float, sp.Expr],
+        temperature: Union[float, sp.Symbol],
         temperature_base: float,
         density_base: float,
         thermal_expansion_coefficient: Union[float, MaterialProperty]) \
@@ -138,7 +140,7 @@ def thermal_diffusivity_by_heat_conductivity(
 
 
 def energy_density(
-        temperature: Union[float, sp.Expr],
+        temperature: Union[float, sp.Symbol],
         density: Union[float, MaterialProperty],
         heat_capacity: Union[float, MaterialProperty],
         latent_heat: Union[float, MaterialProperty]) \
