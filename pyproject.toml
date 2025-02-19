@@ -8,7 +8,6 @@ authors = [
 dependencies = [
     "numpy>=1.18.0",
     "pystencils>=2.0.dev0",
-    "numba",
     "scipy",
     "matplotlib",
 ]
