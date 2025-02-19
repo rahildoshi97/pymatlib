@@ -27,7 +27,7 @@ walberla_codegen_venv_install(
 
 add_executable ( HeatEquationWithMaterial )
 target_sources( HeatEquationWithMaterial PRIVATE CodegenHeatEquationWithMaterial.cpp )
-target_link_libraries( HeatEquationWithMaterial PRIVATE blockforest core field stencil timeloop vtk pde )
+target_link_libraries( HeatEquationWithMaterial PRIVATE walberla::blockforest walberla::core walberla::field walberla::stencil walberla::timeloop walberla::vtk walberla::pde )
 target_link_libraries( HeatEquationWithMaterial PRIVATE interpolation_template )
 
 pystencilssfg_generate_target_sources( HeatEquationWithMaterial
