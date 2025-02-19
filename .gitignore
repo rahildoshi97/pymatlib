@@ -38,3 +38,5 @@ coverage/
 *.coverage
 TestArrayContainer.cpp
 TestArrayContainer.hpp
+test_yaml_config.cpp
+test_yaml_config.hpp
