@@ -1,0 +1,83 @@
+# The general convention in this file are SI units m, s, kg, A, V, K, etc.
+
+name: SS304L
+
+composition:
+  Fe: 0.675
+  Cr: 0.170
+  Ni: 0.120
+  Mo: 0.025
+  Mn: 0.010
+
+
+solidus_temperature: 1653.15
+liquidus_temperature: 1723.15
+
+
+properties:
+  # energy_density:
+    # key: (500, 20)
+    # val: [...]
+  #OR
+  energy_density: compute
+  # save the energy_density and temperature as arrays always.
+
+
+  # density: 7950
+  #OR
+  #density: compute  # computed by thermal expansion coefficient, should be acceptable even if TEC is defined later in the file
+  base_temperature: 2273
+  base_density: 6.591878918e3
+  #OR
+  density: density_temperature_edited.txt
+
+
+  heat_conductivity: ./heat_conductivity_temperature.txt
+
+
+  heat_capacity: heat_capacity_temperature_edited.txt
+
+
+  thermal_expansion_coefficient: 16.3e-6
+
+
+  latent_heat_of_fusion:
+    key: [solidus_temperature, liquidus_temperature]
+    val: [0, 260000]
+
+
+  # heat_conductivity:
+    # key: [1200, 1800, 2200, 2400]  # temperature values
+    # val: [25, 30, 33, 35]  # corresponding heat_conductivity values
+
+
+  # heat_capacity:
+    # key: [solidus_temperature, liquidus_temperature]
+    # val: [600, 800]
+  #OR
+  # heat_capacity:
+    # key: (1000, 200)  # generates equidistant values starting 1000 with an increment of 200 until the length of val
+    # [1000, 1200, 1400, 1600, 1800, 2000, 2200, 2400, 2600, 2800, 3000, 3200]
+    # val: [580, 590, 600, 600, 600, 610, 620, 630, 660, 700, 750, 750]
+  #OR
+  # heat_capacity:
+    # key: [1000, 1200, 1400, 1600, ...]
+    # val: [580, 590, 600, 600, 600, 610, 620, 630, 660, 700, 750, 780, 789, 799, 800, 800, 800, ...]
+  #OR
+  # heat_capacity: file.txt #file with 2 columns of data
+
+
+  thermal_diffusivity: compute   # use implemented function: heat_conductivity / (density * heat_capacity)
+
+  # electrical_conductivity: compute    # use implemented function: heat_conductivity / (LorenzNumber * temperature)
+
+
+  # heat_capacity: compute  # check dependency circles -> here throw an error!!!
+
+
+# all properties should be computed even if the order in the file is not ideal as shown in density: compute which needs the thermal_expansion_coefficient which is defined later.
+# if a material property has 'compute' then it should be computed by the predefined method.
+# user can input the property data as just float, arrays of temperature and property, as tuple, or file.txt (see heat_capacity example)
+# compute method uses the methods from models.py
+# all other inputs should always use the interpolate_property from interpolators.py
+# to get temperature from energy_density, use the interpolate_double_lookup_cpp method which would first need the generated class from DoubleLookupArrayContainer named after the name of the alloy.
