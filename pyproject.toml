@@ -10,6 +10,8 @@ dependencies = [
     "pystencils>=2.0.dev0",
     "scipy",
     "matplotlib",
+    "ruamel.yaml>=0.15.70",
+    "PyYAML",
 ]
 requires-python = ">=3.10"
 readme = "README.md"
@@ -39,6 +41,8 @@ requires = [
     "setuptools>=69",
     "wheel",
     "pybind11",
+    "ruamel.yaml>=0.15.70",
+    "PyYAML",
 ]
 build-backend = "setuptools.build_meta"
 
