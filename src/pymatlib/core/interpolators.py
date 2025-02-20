@@ -24,7 +24,7 @@ class DoubleLookupArrayContainer(CustomGenerator):
 
     @classmethod
     def from_material(cls, name: str, material):
-        return cls(name, material.temperature_array, material.energy_density_array)
+        return cls(name, material.energy_density_temperature_array, material.energy_density_array)
 
     def generate(self, sfg: SfgComposer):
         sfg.include("<array>")
