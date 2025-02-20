@@ -20,12 +20,12 @@ def print_results(file_path: str, temperatures: np.ndarray, material_property: n
     print("-" * 40)
 
 
-def read_data(file_path: str, header: bool = True) -> Tuple[np.ndarray, np.ndarray]:
+def read_data_from_txt(file_path: str, header: bool = True) -> Tuple[np.ndarray, np.ndarray]:
     """
-    Reads temperature and property data from a file.
+    Reads temperature and property data from a txt file.
 
     Args:
-        file_path (str): The path to the data file.
+        file_path (str): The path to the txt file.
         header (bool): Indicates if the file contains a header row.
 
     Returns:
@@ -37,7 +37,7 @@ def read_data(file_path: str, header: bool = True) -> Tuple[np.ndarray, np.ndarr
             - Data contains NaN values
             - Data contains duplicate temperature entries
     """
-    print(f"Reading data from file: {file_path}")
+    print(f"Reading data from txt file: {file_path}")
     data = np.loadtxt(file_path, dtype=float, skiprows=1 if header else 0)
 
     if data.ndim != 2 or data.shape[1] != 2:

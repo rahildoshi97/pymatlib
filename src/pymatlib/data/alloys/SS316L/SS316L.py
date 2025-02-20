@@ -7,7 +7,7 @@ from matplotlib import pyplot as plt
 from pymatlib.core.alloy import Alloy
 from pymatlib.data.element_data import Fe, Cr, Ni, Mo, Mn
 from pymatlib.core.models import thermal_diffusivity_by_heat_conductivity, density_by_thermal_expansion, energy_density
-from pymatlib.core.data_handler import read_data, celsius_to_kelvin, thousand_times
+from pymatlib.core.data_handler import read_data_from_txt, celsius_to_kelvin, thousand_times
 from pymatlib.core.interpolators import interpolate_property, prepare_interpolation_arrays#, interpolate_binary_search
 from pymatlib.core.cpp.fast_interpolation import interpolate_binary_search, interpolate_double_lookup
 
@@ -67,9 +67,9 @@ def create_SS316L(T: Union[float, sp.Symbol]) -> Alloy:
     heat_conductivity_data_file_path = str(base_dir / '..' / 'SS316L' / 'heat_conductivity_temperature.txt')
 
     # Read temperature and material property data from the files
-    density_temp_array, density_array = read_data(density_data_file_path)
-    heat_capacity_temp_array, heat_capacity_array = read_data(heat_capacity_data_file_path)
-    heat_conductivity_temp_array, heat_conductivity_array = read_data(heat_conductivity_data_file_path)
+    density_temp_array, density_array = read_data_from_txt(density_data_file_path)
+    heat_capacity_temp_array, heat_capacity_array = read_data_from_txt(heat_capacity_data_file_path)
+    heat_conductivity_temp_array, heat_conductivity_array = read_data_from_txt(heat_conductivity_data_file_path)
 
     # Ensure the data was loaded correctly
     if any(arr.size == 0 for arr in [density_temp_array, density_array, heat_capacity_temp_array, heat_capacity_array,
