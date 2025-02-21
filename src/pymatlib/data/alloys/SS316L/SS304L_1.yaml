@@ -10,8 +10,8 @@ composition:
   Mn: 0.010
 
 
-solidus_temperature: 1653.15
-liquidus_temperature: 1723.15
+solidus_temperature: 1605
+liquidus_temperature: 1735
 
 
 properties:
@@ -20,7 +20,10 @@ properties:
     # val: [...]
   #OR
   energy_density: compute
-  edta: (start, end, no of points)  # (0, 100)
+  # User can specify either:
+  energy_density_temperature_array: (300, 3000, 540)    # int for number of points
+  # OR
+  #energy_density_temperature_array: (300, 3000, 5.0)   # float for delta (increment)
   # save the energy_density and temperature as arrays always.
 
 

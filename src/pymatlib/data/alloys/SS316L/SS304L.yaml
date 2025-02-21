@@ -10,8 +10,8 @@ composition:
   Mn: 0.010
 
 
-solidus_temperature: 1653.15
-liquidus_temperature: 1723.15
+solidus_temperature: 1605  # highest temperature at which an alloy is solid – where melting begins.
+liquidus_temperature: 1735  # temperature at which an alloy is completely melted
 
 
 properties:
@@ -20,6 +20,10 @@ properties:
     # val: [...]
   #OR
   energy_density: compute
+  # User can specify either:
+  energy_density_temperature_array: (300, 3000, 540)    # int for number of points
+  # OR
+  #energy_density_temperature_array: (300, 3000, 5.0)   # float for delta (increment)
   # save the energy_density and temperature as arrays always.
 
 
@@ -29,14 +33,22 @@ properties:
   base_temperature: 2273
   base_density: 6.591878918e3
   #OR
-  density: density_temperature_edited.txt
+  density:
+    file: ./304L_Erstarrungsdaten_edited.xlsx
+    temp_col: T (K)
+    prop_col: Density (kg/(m)^3)
 
 
-  heat_conductivity: ./heat_conductivity_temperature.txt
+  heat_conductivity:
+    file: ./304L_Erstarrungsdaten_edited.xlsx
+    temp_col: T (K)
+    prop_col: Thermal conductivity (W/(m*K))-TOTAL-10000.0(K/s)
 
 
-  heat_capacity: heat_capacity_temperature_edited.txt
-
+  heat_capacity:
+    file: ./304L_Erstarrungsdaten_edited.xlsx
+    temp_col: T (K)
+    prop_col: Specific heat (J/(Kg K))
 
   thermal_expansion_coefficient: 16.3e-6
 
@@ -44,6 +56,11 @@ properties:
   latent_heat_of_fusion:
     key: [solidus_temperature, liquidus_temperature]
     val: [0, 260000]
+  #OR
+  # latent_heat_of_fusion:
+    # file: ./304L_Erstarrungsdaten_edited.xlsx
+    # temp_col: T (K)
+    # prop_col: Latent heat (J/g)-SOLID-10000.0(K/s)
 
 
   # heat_conductivity:
