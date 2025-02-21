@@ -347,8 +347,7 @@ def interpolate_binary_search(
 
 
 def E_eq_from_E_neq(E_neq: np.ndarray) -> Tuple[np.ndarray, float]:
-    # delta_E_neq = np.diff(E_neq)
-    delta_min: float = np.min(np.diff(E_neq))
+    delta_min: float = np.min(np.abs(np.diff(E_neq)))
     if delta_min < 1.:
         raise ValueError(f"Energy density array points are very closely spaced, delta = {delta_min}")
     print(f"delta_min:", delta_min)
