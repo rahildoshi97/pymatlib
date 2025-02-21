@@ -22,6 +22,7 @@
 #include "timeloop/SweepTimeloop.h"
 
 #include "gen/HeatEquationKernelWithMaterial.hpp"
+#include "interpolate_binary_search_cpp.h"
 
 namespace walberla
 {
@@ -164,4 +165,115 @@ int main(int argc, char** argv)
 }
 }
 
-int main(int argc, char** argv) { walberla::main(argc, argv); }
+
+void test_performance() {
+    // Configuration parameters
+    constexpr int warmupSteps = 2;
+    constexpr int outerIterations = 5;
+    constexpr int numCells = 64*64*64;
+
+    // Setup test data
+    SS316L test;
+    std::vector<double> random_energies(numCells);
+
+    // Generate random values
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    const double E_min = SS316L::E_neq.front() * 0.8;
+    const double E_max = SS316L::E_neq.back() * 1.2;
+    std::uniform_real_distribution<double> dist(E_min, E_max);
+
+    // Fill random energies
+    for(auto& E : random_energies) {
+        E = dist(gen);
+    }
+
+    // Warmup runs
+    std::cout << "Performing warmup steps..." << std::endl;
+    for(int i = 0; i < warmupSteps; ++i) {
+        for(const double& E : random_energies) {
+            volatile double result = test.interpolateDL(E);
+        }
+    }
+    for(int i = 0; i < warmupSteps; ++i) {
+        for(const double& E : random_energies) {
+            volatile double result = interpolate_binary_search_cpp(
+                    SS316L::T_eq, E, SS316L::E_neq);
+        }
+    }
+
+    // Performance measurement
+    std::cout << "\nStarting performance measurement..." << std::endl;
+    std::vector<double> timings_binary;
+    std::vector<double> timings_double_lookup;
+
+    for(int iter = 0; iter < outerIterations; ++iter) {
+        std::cout << "\nIteration " << iter + 1 << "/" << outerIterations << std::endl;
+
+        // Double Lookup timing
+        {
+            const auto start1 = std::chrono::high_resolution_clock::now();
+            for(const double& E : random_energies) {
+                volatile double result = test.interpolateDL(E);
+            }
+            const auto end1 = std::chrono::high_resolution_clock::now();
+            const auto duration1 = std::chrono::duration_cast<std::chrono::microseconds>(
+                end1 - start1).count();
+            timings_double_lookup.push_back(static_cast<double>(duration1));
+
+            std::cout << "Double Lookup - Iteration time: " << duration1 << " μs" << std::endl;
+        }
+
+        // Binary Search timing
+        {
+            const auto start2 = std::chrono::high_resolution_clock::now();
+            for(const double& E : random_energies) {
+                volatile double result = interpolate_binary_search_cpp(
+                    SS316L::T_eq, E, SS316L::E_neq);
+            }
+            const auto end2 = std::chrono::high_resolution_clock::now();
+            const auto duration2 = std::chrono::duration_cast<std::chrono::microseconds>(
+                end2 - start2).count();
+            timings_binary.push_back(static_cast<double>(duration2));
+
+            std::cout << "Binary Search - Iteration time: " << duration2 << " μs" << std::endl;
+        }
+    }
+
+    // Calculate and print statistics
+    auto calc_stats = [](const std::vector<double>& timings) {
+        double sum = std::accumulate(timings.begin(), timings.end(), 0.0);
+        double mean = sum / static_cast<double>(timings.size());
+        double sq_sum = std::inner_product(timings.begin(), timings.end(),
+                                         timings.begin(), 0.0);
+        double stdev = std::sqrt(sq_sum / static_cast<double>(timings.size()) - mean * mean);
+        return std::make_pair(mean, stdev);
+    };
+
+    auto [binary_mean, binary_stdev] = calc_stats(timings_binary);
+    auto [lookup_mean, lookup_stdev] = calc_stats(timings_double_lookup);
+
+    std::cout << "\nPerformance Results (" << numCells << " cells, "
+              << outerIterations << " iterations):" << std::endl;
+    std::cout << "Binary Search:" << std::endl;
+    std::cout << "  Mean time: " << binary_mean << " ± " << binary_stdev << " μs" << std::endl;
+    std::cout << "  Per cell: " << binary_mean/numCells << " μs" << std::endl;
+
+    std::cout << "Double Lookup:" << std::endl;
+    std::cout << "  Mean time: " << lookup_mean << " ± " << lookup_stdev << " μs" << std::endl;
+    std::cout << "  Per cell: " << lookup_mean/numCells << " μs" << std::endl;
+}
+
+
+int main(int argc, char** argv)
+{
+   walberla::main(argc, argv);
+
+   constexpr SS316L_1 test_1;
+   const double result_1 = test_1.interpolateDL(7.88552550e+09);
+   const double result_2 = test_1.interpolateDL(1.02864255e+10);
+   std::cout << result_1 << std::endl;
+   std::cout << result_2 << std::endl;;
+
+   test_performance();
+}

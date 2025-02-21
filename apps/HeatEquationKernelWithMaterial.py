@@ -6,10 +6,10 @@ import pystencils as ps
 # sys.path.append(walberla_dir)
 from pystencilssfg import SourceFileGenerator
 from sfg_walberla import Sweep
-from pymatlib.data.alloys import Ti6Al4V
 from pymatlib.data.alloys.SS316L import SS316L
 from pymatlib.core.assignment_converter import assignment_converter
 from pymatlib.core.interpolators import DoubleLookupArrayContainer
+from pymatlib.core.yaml_parser import create_alloy_from_yaml
 
 with SourceFileGenerator() as sfg:
     data_type = "float64"  # if ctx.double_accuracy else "float32"
@@ -25,10 +25,23 @@ with SourceFileGenerator() as sfg:
     heat_pde_discretized = discretize(heat_pde)
     heat_pde_discretized = heat_pde_discretized.args[1] + heat_pde_discretized.args[0].simplify()
 
-    # mat = Ti6Al4V.create_Ti6Al4V(u.center())
-    mat = SS316L.create_SS316L(u.center())
+    # mat = SS316L.create_SS316L(u.center())
+
+    from pathlib import Path
+    # Relative path to the package
+    #yaml_path = Path(__file__).parent.parent / "src" / "pymatlib" / "data" / "alloys" / "SS316L" / "SS304L.yaml"
+
+    from importlib.resources import files
+    # Access the YAML file as a package resource
+    yaml_path = files('pymatlib.data.alloys.SS316L').joinpath('SS304L.yaml')
+    mat = create_alloy_from_yaml(str(yaml_path), u.center())
+    yaml_path_1 = files('pymatlib.data.alloys.SS316L').joinpath('SS304L_1.yaml')
+    mat1 = create_alloy_from_yaml(str(yaml_path_1), u.center())
+
     # arr_container = DoubleLookupArrayContainer("SS316L", mat.temperature_array, mat.energy_density_array)
     arr_container = DoubleLookupArrayContainer.from_material("SS316L", mat)
+    sfg.generate(arr_container)
+    arr_container = DoubleLookupArrayContainer.from_material("SS316L_1", mat1)
     sfg.generate(arr_container)
 
     # Convert assignments to pystencils format
