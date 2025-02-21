@@ -1,8 +1,9 @@
 import os
 import numpy as np
 from pathlib import Path
-from typing import Union, Tuple
+from typing import Union, Tuple, Dict, Any
 from matplotlib import pyplot as plt
+import pandas as pd
 
 
 def print_results(file_path: str, temperatures: np.ndarray, material_property: np.ndarray) -> None:
@@ -60,6 +61,93 @@ def read_data_from_txt(file_path: str, header: bool = True) -> Tuple[np.ndarray,
 
     return temp, prop
 
+def read_data_from_excel(file_path: str, temp_col: str, prop_col: str) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    Reads temperature and property data from specific columns in an Excel file.
+
+    Args:
+        file_path (str): Path to the Excel file
+        temp_col (str): Column name/letter for temperature data
+        prop_col (str): Column name/letter for property data
+
+    Returns:
+        Tuple[np.ndarray, np.ndarray]: Temperature and property arrays
+
+    Raises:
+        ValueError: If:
+            - Required columns are not found
+            - Data contains NaN values
+            - Data contains duplicate temperature entries
+    """
+    print(f"Reading data from Excel file: {file_path}")
+
+    # Read specific columns from Excel
+    df = pd.read_excel(file_path)
+
+    # Convert to numpy arrays
+    temp = df[temp_col].to_numpy()
+    prop = df[prop_col].to_numpy()
+
+    # Check for NaN values
+    if np.any(np.isnan(temp)) or np.any(np.isnan(prop)):
+        nan_rows = np.where(np.isnan(temp) | np.isnan(prop))[0] + 1
+        raise ValueError(f"Data contains NaN values in rows: {', '.join(map(str, nan_rows))}")
+
+    # Check for duplicate temperatures
+    unique_temp, counts = np.unique(temp, return_counts=True)
+    duplicates = unique_temp[counts > 1]
+    if len(duplicates) > 0:
+        duplicate_rows = [str(idx + 1) for idx, value in enumerate(temp) if value in duplicates]
+        raise ValueError(f"Duplicate temperature entries found in rows: {', '.join(duplicate_rows)}")
+
+    return temp, prop
+
+def read_data_from_file(file_config: Dict[str, Any], header: bool = True) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    Reads temperature and property data from a file based on configuration.
+
+    Args:
+        file_config (Dict[str, Any]): Dictionary containing file configuration
+            Required keys:
+                - file: Path to data file
+                - temp_col: Temperature column name/index
+                - prop_col: Property column name/index
+        header (bool): Indicates if the file contains a header row.
+
+    Returns:
+        Tuple[np.ndarray, np.ndarray]: Temperature and property arrays
+    """
+    file_path = file_config['file']
+    temp_col = file_config['temp_col']
+    prop_col = file_config['prop_col']
+
+    print(f"Reading data from file: {file_path}")
+
+    if file_path.endswith('.xlsx'):
+        df = pd.read_excel(file_path)
+        temp = df[temp_col].to_numpy()
+        prop = df[prop_col].to_numpy()
+    else:
+        # For txt files, assume columns are space/tab separated
+        data = np.loadtxt(file_path, dtype=float, skiprows=1 if header else 0)
+        if data.ndim != 2:
+            raise ValueError("Data should be two-dimensional")
+        temp = data[:, 0]
+        prop = data[:, 1]
+
+    # Check for NaN values
+    if np.any(np.isnan(temp)) or np.any(np.isnan(prop)):
+        nan_rows = np.where(np.isnan(temp) | np.isnan(prop))[0] + 1
+        raise ValueError(f"Data contains NaN values in rows: {', '.join(map(str, nan_rows))}")
+
+    # Check for duplicate temperatures
+    unique_temp, counts = np.unique(temp, return_counts=True)
+    duplicates = unique_temp[counts > 1]
+    if len(duplicates) > 0:
+        duplicate_rows = [str(idx + 1) for idx, value in enumerate(temp) if value in duplicates]
+        raise ValueError(f"Duplicate temperature entries found in rows: {', '.join(duplicate_rows)}")
+
+    return temp, prop
 
 def celsius_to_kelvin(temp: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
     """
