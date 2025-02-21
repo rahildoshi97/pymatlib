@@ -7,7 +7,7 @@ from matplotlib import pyplot as plt
 from pymatlib.core.alloy import Alloy
 from pymatlib.data.element_data import Fe, Cr, Ni, Mo, Mn
 from pymatlib.core.models import thermal_diffusivity_by_heat_conductivity, density_by_thermal_expansion, energy_density
-from pymatlib.core.data_handler import read_data_from_txt, celsius_to_kelvin, thousand_times
+from pymatlib.core.data_handler import read_data_from_txt, celsius_to_kelvin, thousand_times, read_data_from_excel, read_data_from_file, plot_arrays
 from pymatlib.core.interpolators import interpolate_property, prepare_interpolation_arrays#, interpolate_binary_search
 from pymatlib.core.cpp.fast_interpolation import interpolate_binary_search, interpolate_double_lookup
 
@@ -53,8 +53,8 @@ def create_SS316L(T: Union[float, sp.Symbol]) -> Alloy:
     SS316L = Alloy(
         elements=[Fe, Cr, Ni, Mo, Mn],
         composition=[0.675, 0.17, 0.12, 0.025, 0.01],  # Fe: 67.5%, Cr: 17%, Ni: 12%, Mo: 2.5%, Mn: 1%
-        temperature_solidus=1653.15,  # Solidus temperature in Kelvin (test at 1653.15 K = 1380 C)
-        temperature_liquidus=1723.15,  # Liquidus temperature in Kelvin (test at 1723.15 K = 1450 C)
+        temperature_solidus=1605.,  # Solidus temperature in Kelvin (test at 1653.15 K = 1380 C)
+        temperature_liquidus=1735.,  # Liquidus temperature in Kelvin (test at 1723.15 K = 1450 C)
         thermal_expansion_coefficient=16.3e-6  # in 1/K
     )
     # density_data_file_path = "/local/ca00xebo/repos/pymatlib/src/pymatlib/data/alloys/SS316L/density_temperature.txt"
@@ -62,14 +62,18 @@ def create_SS316L(T: Union[float, sp.Symbol]) -> Alloy:
     base_dir = Path(__file__).parent  # Directory of the current file
 
     # Paths to data files using relative paths
-    density_data_file_path = str(base_dir / 'density_temperature_edited.txt')
-    heat_capacity_data_file_path = str(base_dir / 'heat_capacity_temperature_edited.txt')
-    heat_conductivity_data_file_path = str(base_dir / '..' / 'SS316L' / 'heat_conductivity_temperature.txt')
+    # density_data_file_path = str(base_dir / 'density_temperature_edited.txt')
+    density_data_file_path = str(base_dir / '304L_Erstarrungsdaten_edited.xlsx')
+    # heat_capacity_data_file_path = str(base_dir / 'heat_capacity_temperature_edited.txt')
+    heat_capacity_data_file_path = str(base_dir / '304L_Erstarrungsdaten_edited.xlsx')
+    heat_conductivity_data_file_path = str(base_dir / '..' / 'SS316L' / '304L_Erstarrungsdaten_edited.xlsx')
 
     # Read temperature and material property data from the files
-    density_temp_array, density_array = read_data_from_txt(density_data_file_path)
-    heat_capacity_temp_array, heat_capacity_array = read_data_from_txt(heat_capacity_data_file_path)
-    heat_conductivity_temp_array, heat_conductivity_array = read_data_from_txt(heat_conductivity_data_file_path)
+    # density_temp_array, density_array = read_data_from_txt(density_data_file_path)
+    density_temp_array, density_array = read_data_from_excel(density_data_file_path, temp_col="T (K)", prop_col="Density (kg/(m)^3)")
+    # heat_capacity_temp_array, heat_capacity_array = read_data_from_txt(heat_capacity_data_file_path)
+    heat_capacity_temp_array, heat_capacity_array = read_data_from_excel(heat_capacity_data_file_path, temp_col="T (K)", prop_col="Specific heat (J/(Kg K))")
+    heat_conductivity_temp_array, heat_conductivity_array = read_data_from_excel(heat_conductivity_data_file_path, temp_col="T (K)", prop_col="Thermal conductivity (W/(m*K))-TOTAL-10000.0(K/s)")
 
     # Ensure the data was loaded correctly
     if any(arr.size == 0 for arr in [density_temp_array, density_array, heat_capacity_temp_array, heat_capacity_array,
@@ -77,13 +81,13 @@ def create_SS316L(T: Union[float, sp.Symbol]) -> Alloy:
         raise ValueError("Failed to load temperature or material data from the file.")
 
     # Conversion: temperature to K and/or other material properties to SI units if necessary
-    density_temp_array = celsius_to_kelvin(density_temp_array)
+    '''density_temp_array = celsius_to_kelvin(density_temp_array)
     density_array = thousand_times(density_array)  # Density in kg/m³ # gm/cm³ -> kg/m³
 
     heat_capacity_temp_array = celsius_to_kelvin(heat_capacity_temp_array)
     heat_capacity_array = thousand_times(heat_capacity_array)  # Specific heat capacity in J/(kg·K) # J/g-K -> J/kg-K
 
-    heat_conductivity_temp_array = celsius_to_kelvin(heat_conductivity_temp_array)
+    heat_conductivity_temp_array = celsius_to_kelvin(heat_conductivity_temp_array)'''
 
     SS316L.heat_conductivity = interpolate_property(T, heat_conductivity_temp_array, heat_conductivity_array)
     SS316L.density = interpolate_property(T, density_temp_array, density_array)
@@ -124,16 +128,10 @@ def create_SS316L(T: Union[float, sp.Symbol]) -> Alloy:
     ])
 
     # Create the plot
-    """plt.figure(figsize=(10, 6))
-    plt.plot(density_temp_array, energy_density_array, 'b-', linewidth=1)
-    plt.xlabel('Temperature (K)')
-    plt.ylabel('Energy Density (J/m³)')
-    plt.title('Energy Density vs Temperature')
-    plt.grid(True)
-
-    # Save the plot
-    plt.savefig('energy_density_vs_temperature.png', dpi=300, bbox_inches='tight')
-    plt.show()"""
+    plot_arrays(density_temp_array, density_array, "T (K)", "Density (kg/(m)^3)")
+    plot_arrays(heat_capacity_temp_array, heat_capacity_array, "T (K)", "Specific heat (J/(Kg K))")
+    plot_arrays(heat_conductivity_temp_array, heat_conductivity_array, "T (K)", "Thermal conductivity (W/(m*K))")
+    plot_arrays(density_temp_array, SS316L.energy_density_array, "T (K)", "Energy Density (J/(m)^3)")
 
     print("----------" * 10)
 
