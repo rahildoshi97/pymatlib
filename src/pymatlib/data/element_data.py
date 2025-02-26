@@ -84,3 +84,16 @@ Mo = ChemicalElement(
     latent_heat_of_fusion=37480,  # Latent heat of fusion = 37.48 kJ/mol
     latent_heat_of_vaporization=598000  # Latent heat of vaporization = 598 kJ/mol
 )
+
+# This dictionary maps chemical symbols (strings) to their corresponding ChemicalElement instances,
+# allowing the parser to convert composition keys from the YAML file (like 'Fe': 0.675) to actual ChemicalElement objects needed by the Alloy class.
+element_map = {
+    'Ti': Ti,
+    'Al': Al,
+    'V': V,
+    'Fe': Fe,
+    'Cr': Cr,
+    'Mn': Mn,
+    'Ni': Ni,
+    'Mo': Mo
+}
