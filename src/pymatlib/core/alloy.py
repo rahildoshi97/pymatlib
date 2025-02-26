@@ -107,6 +107,7 @@ class Alloy:
     kinematic_viscosity: PropertyTypes = None
     latent_heat_of_fusion: PropertyTypes = None
     latent_heat_of_vaporization: PropertyTypes = None
+    specific_enthalpy: PropertyTypes = None
     surface_tension: PropertyTypes = None
     temperature_array: np.ndarray = field(default_factory=lambda: np.array([]))
     thermal_diffusivity: PropertyTypes = None
