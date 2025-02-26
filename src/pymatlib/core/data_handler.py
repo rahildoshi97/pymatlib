@@ -1,8 +1,9 @@
 import os
 import numpy as np
 from pathlib import Path
-from typing import Union, Tuple
+from typing import Union, Tuple, Dict, Any
 from matplotlib import pyplot as plt
+import pandas as pd
 
 
 def print_results(file_path: str, temperatures: np.ndarray, material_property: np.ndarray) -> None:
@@ -20,12 +21,12 @@ def print_results(file_path: str, temperatures: np.ndarray, material_property: n
     print("-" * 40)
 
 
-def read_data(file_path: str, header: bool = True) -> Tuple[np.ndarray, np.ndarray]:
+def read_data_from_txt(file_path: str, header: bool = True) -> Tuple[np.ndarray, np.ndarray]:
     """
-    Reads temperature and property data from a file.
+    Reads temperature and property data from a txt file.
 
     Args:
-        file_path (str): The path to the data file.
+        file_path (str): The path to the txt file.
         header (bool): Indicates if the file contains a header row.
 
     Returns:
@@ -37,7 +38,7 @@ def read_data(file_path: str, header: bool = True) -> Tuple[np.ndarray, np.ndarr
             - Data contains NaN values
             - Data contains duplicate temperature entries
     """
-    print(f"Reading data from file: {file_path}")
+    print(f"Reading data from txt file: {file_path}")
     data = np.loadtxt(file_path, dtype=float, skiprows=1 if header else 0)
 
     if data.ndim != 2 or data.shape[1] != 2:
@@ -45,6 +46,128 @@ def read_data(file_path: str, header: bool = True) -> Tuple[np.ndarray, np.ndarr
 
     temp = data[:, 0]
     prop = data[:, 1]
+
+    # Check for NaN values
+    if np.any(np.isnan(temp)) or np.any(np.isnan(prop)):
+        nan_rows = np.where(np.isnan(temp) | np.isnan(prop))[0] + 1
+        raise ValueError(f"Data contains NaN values in rows: {', '.join(map(str, nan_rows))}")
+
+    # Check for duplicate temperatures
+    unique_temp, counts = np.unique(temp, return_counts=True)
+    duplicates = unique_temp[counts > 1]
+    if len(duplicates) > 0:
+        duplicate_rows = [str(idx + 1) for idx, value in enumerate(temp) if value in duplicates]
+        raise ValueError(f"Duplicate temperature entries found in rows: {', '.join(duplicate_rows)}")
+
+    return temp, prop
+
+def read_data_from_excel(file_path: str, temp_col: str, prop_col: str) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    Reads temperature and property data from specific columns in an Excel file.
+
+    Args:
+        file_path (str): Path to the Excel file
+        temp_col (str): Column name/letter for temperature data
+        prop_col (str): Column name/letter for property data
+
+    Returns:
+        Tuple[np.ndarray, np.ndarray]: Temperature and property arrays
+
+    Raises:
+        ValueError: If:
+            - Required columns are not found
+            - Data contains NaN values
+            - Data contains duplicate temperature entries
+    """
+    print(f"Reading data from Excel file: {file_path}")
+
+    # Read specific columns from Excel
+    df = pd.read_excel(file_path)
+
+    # Convert to numpy arrays
+    temp = df[temp_col].to_numpy()
+    prop = df[prop_col].to_numpy()
+
+    # Check for NaN values
+    if np.any(np.isnan(temp)) or np.any(np.isnan(prop)):
+        nan_rows = np.where(np.isnan(temp) | np.isnan(prop))[0] + 1
+        raise ValueError(f"Data contains NaN values in rows: {', '.join(map(str, nan_rows))}")
+
+    # Check for duplicate temperatures
+    unique_temp, counts = np.unique(temp, return_counts=True)
+    duplicates = unique_temp[counts > 1]
+    if len(duplicates) > 0:
+        duplicate_rows = [str(idx + 1) for idx, value in enumerate(temp) if value in duplicates]
+        raise ValueError(f"Duplicate temperature entries found in rows: {', '.join(duplicate_rows)}")
+
+    return temp, prop
+
+
+def read_data_from_file(file_config: Union[str, Dict], header: bool = True) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    Reads temperature and property data from a file based on configuration.
+
+    Args:
+        file_config: Either a path string or a dictionary containing file configuration
+            If dictionary, required keys:
+                - file: Path to data file
+                - temp_col: Temperature column name/index
+                - prop_col: Property column name/index
+            If string, treated as direct file path
+        header (bool): Indicates if the file contains a header row.
+
+    Returns:
+        Tuple[np.ndarray, np.ndarray]: Temperature and property arrays
+    """
+    # Handle string (direct path) or dictionary configuration
+    if isinstance(file_config, str):
+        file_path = file_config
+        # For direct file paths, assume first two columns are temperature and property
+        temp_col = 0
+        prop_col = 1
+    else:
+        file_path = file_config['file']
+        temp_col = file_config['temp_col']
+        prop_col = file_config['prop_col']
+
+    print(f"Reading data from file: {file_path}")
+
+    if file_path.endswith('.xlsx'):
+        df = pd.read_excel(file_path, header=0 if header else None)
+    elif file_path.endswith('.csv'):
+        # Use pandas read_csv for CSV files
+        df = pd.read_csv(file_path, header=0 if header else None)
+    else:
+        # For txt files, assume columns are space/tab separated
+        data = np.loadtxt(file_path, dtype=float, skiprows=1 if header else 0)
+        if data.ndim != 2:
+            raise ValueError("Data should be two-dimensional")
+
+        # Handle both column name (which would be an index for txt files) and column index
+        if isinstance(temp_col, int):
+            temp = data[:, temp_col]
+        else:
+            temp = data[:, 0]  # Default to first column
+
+        if isinstance(prop_col, int):
+            prop = data[:, prop_col]
+        else:
+            prop = data[:, 1]  # Default to second column
+
+        # Skip the pandas processing below
+        return temp, prop
+
+    # Process pandas DataFrame (for both Excel and CSV)
+    # Handle both column name (string) and column index (integer)
+    if isinstance(temp_col, str):
+        temp = df[temp_col].to_numpy(dtype=np.float64)
+    else:
+        temp = df.iloc[:, temp_col].to_numpy(dtype=np.float64)
+
+    if isinstance(prop_col, str):
+        prop = df[prop_col].to_numpy(dtype=np.float64)
+    else:
+        prop = df.iloc[:, prop_col].to_numpy(dtype=np.float64)
 
     # Check for NaN values
     if np.any(np.isnan(temp)) or np.any(np.isnan(prop)):
