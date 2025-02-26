@@ -24,7 +24,7 @@ class DoubleLookupArrayContainer(CustomGenerator):
 
     @classmethod
     def from_material(cls, name: str, material):
-        return cls(name, material.temperature_array, material.energy_density_array)
+        return cls(name, material.energy_density_temperature_array, material.energy_density_array)
 
     def generate(self, sfg: SfgComposer):
         sfg.include("<array>")
@@ -319,8 +319,8 @@ def interpolate_binary_search(
 
 
 def E_eq_from_E_neq(E_neq: np.ndarray) -> Tuple[np.ndarray, float]:
-    # delta_E_neq = np.diff(E_neq)
     delta_min: float = np.min(np.diff(E_neq))
+    # delta_min: float = np.min(np.abs(np.diff(E_neq)))
     if delta_min < 1.:
         raise ValueError(f"Energy density array points are very closely spaced, delta = {delta_min}")
     delta_E_eq = max(np.floor(delta_min * 0.95), 1.)
