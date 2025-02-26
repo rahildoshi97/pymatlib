@@ -40,8 +40,8 @@ properties:
 
   latent_heat_of_fusion:
     key: [solidus_temperature, liquidus_temperature]
-    val: [0, 260000]
-  latent_heat_of_vaporization: 1678
+    val: [171401, 0]
+  # latent_heat_of_vaporization: 1678
 
 
   heat_conductivity:

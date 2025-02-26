@@ -16,10 +16,13 @@ liquidus_temperature: 1735  # temperature at which an alloy is completely melted
 
 properties:
   # energy_density:
-    # key: (500, 20)
-    # val: [...]
+  # key: (500, 20)
+  # val: [...]
   #OR
-  energy_density: compute
+  # energy_density: compute
+  #OR
+  energy_density:
+    compute: total_enthalpy  # Explicit model selection
   # User can specify either:
   energy_density_temperature_array: (300, 3000, 540)    # int for number of points
   # OR
@@ -52,10 +55,15 @@ properties:
 
   thermal_expansion_coefficient: 16.3e-6
 
+  specific_enthalpy:
+    file: ./304L_Erstarrungsdaten_edited.xlsx
+    temp_col: T (K)
+    prop_col: Enthalpy (J/kg)
 
   latent_heat_of_fusion:
-    key: [solidus_temperature, liquidus_temperature]
-    val: [0, 260000]
+    file: ./304L_Erstarrungsdaten_edited.xlsx
+    temp_col: T (K)
+    prop_col: Latent heat (J/Kg)
   #OR
   # latent_heat_of_fusion:
     # file: ./304L_Erstarrungsdaten_edited.xlsx
