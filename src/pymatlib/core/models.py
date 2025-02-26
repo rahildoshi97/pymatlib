@@ -193,6 +193,10 @@ def energy_density_standard(
     # Just FYI: ps.Assignment(T.center, (s.h / s.density_mat - s.latent_heat_mat) / s.heat_capacity_mat)
 
 
+# For backward compatibility
+energy_density = energy_density_standard
+
+
 def energy_density_enthalpy_based(
         density: Union[float, MaterialProperty],
         specific_enthalpy: Union[float, MaterialProperty],
