@@ -7,7 +7,9 @@ from pymatlib.core.alloy import Alloy
 from pymatlib.core.elements import ChemicalElement
 from pymatlib.core.interpolators import interpolate_property
 from pymatlib.core.data_handler import read_data_from_file
-from pymatlib.core.models import thermal_diffusivity_by_heat_conductivity, density_by_thermal_expansion, energy_density
+from pymatlib.core.models import (density_by_thermal_expansion,
+                                  thermal_diffusivity_by_heat_conductivity,
+                                  energy_density_standard, energy_density_enthalpy_based, energy_density_total_enthalpy)
 from pymatlib.core.typedefs import MaterialProperty
 from ruamel.yaml import YAML, constructor, scanner
 from difflib import get_close_matches
@@ -30,6 +32,7 @@ class MaterialConfigParser:
         'kinematic_viscosity',
         'latent_heat_of_fusion',
         'latent_heat_of_vaporization',
+        'specific_enthalpy',
         'surface_tension',
         'temperature_array',
         'thermal_diffusivity',
@@ -152,18 +155,38 @@ class MaterialConfigParser:
             return False
 
     def _is_data_file(self, value: Dict[str, str]) -> bool:
-        """Check if dictionary represents a valid file configuration"""
-        return (isinstance(value, dict)
-                and 'file' in value
-                and 'temp_col' in value
-                and 'prop_col' in value)
+        """Check if dictionary represents a valid data file configuration"""
+        # Simple format: property_name: "filename.txt"
+        if isinstance(value, str) and (value.endswith('.txt') or value.endswith('.csv') or value.endswith('.xlsx')):
+            return True
+        # Advanced format: property_name: { file: "filename", temp_col: "col1", prop_col: "col2" }
+        if isinstance(value, dict) and 'file' in value:
+            # Required keys for advanced format
+            required_keys = ['file', 'temp_col', 'prop_col']
+            missing_keys = [k for k in required_keys if k not in value]
+
+            if missing_keys:
+                raise ValueError(f"Missing required keys for file configuration: {missing_keys}")
+            return True
+        return False
+
     def _is_key_val_property(self, value: Dict) -> bool:
         """Check if property is defined with key-val pairs"""
         return isinstance(value, dict) and 'key' in value and 'val' in value
 
-    def _is_compute_property(self, value: str) -> bool:
-        """Check if property should be computed"""
-        return isinstance(value, str) and value == 'compute'
+    def _is_compute_property(self, value: Any) -> bool:
+        """Check if property should be computed using any valid format"""
+        # Simple format: property_name: compute
+        if isinstance(value, str) and value == 'compute':
+            return True
+        # Advanced format: property_name: { compute: "method_name" }
+        elif isinstance(value, dict) and 'compute' in value:
+            # Ensure no other keys are present
+            invalid_keys = [k for k in value.keys() if k != 'compute']
+            if invalid_keys:
+                raise ValueError(f"Invalid keys in compute property: {invalid_keys}. Only 'compute' is allowed.")
+            return True
+        return False
 
     def _process_properties(self, alloy: Alloy, T: Union[float, sp.Symbol]):
         """Process all material properties in correct order"""
@@ -201,12 +224,26 @@ class MaterialConfigParser:
 
 ########################################################################################################################
 
-    def _process_file_property(self, alloy: Alloy, prop_name: str, file_config: Dict[str, Any], T: Union[float, sp.Symbol]):
+    def _process_file_property(self, alloy: Alloy, prop_name: str, file_config: Union[str, Dict], T: Union[float, sp.Symbol]):
         """Process property data from file configuration"""
-        full_path = self.base_dir / file_config['file']
-        file_config['file'] = str(full_path)  # Update path to full path
-        temp_array, prop_array = read_data_from_file(file_config)
+        # Get the directory containing the YAML file
+        yaml_dir = self.base_dir
+        # print(yaml_dir)
 
+        # Construct path relative to YAML file location
+        if isinstance(file_config, dict) and 'file' in file_config:
+            # print("if isinstance(file_config, dict) and 'file' in file_config:")
+            # print(file_config)
+            # print(type(file_config))
+            file_config['file'] = str(yaml_dir / file_config['file'])
+            temp_array, prop_array = read_data_from_file(file_config)
+        else:
+            # print("if isinstance(file_config, str):")
+            # print(file_config)
+            # print(type(file_config))
+            # For string configuration, construct the full path
+            file_path = str(yaml_dir / file_config)
+            temp_array, prop_array = read_data_from_file(file_path)
         # Temperature conversion
         '''temp_array = temp_array + 273.15
 
@@ -299,76 +336,120 @@ class MaterialConfigParser:
         """Process computed properties using predefined models with dependency checking"""
 
         # Define property dependencies and their computation methods
-        property_computations = {
-            'density': lambda: density_by_thermal_expansion(
-                T,
-                alloy.base_temperature,
-                alloy.base_density,
-                alloy.thermal_expansion_coefficient
-            ),
-            'thermal_diffusivity': lambda: thermal_diffusivity_by_heat_conductivity(
-                alloy.heat_conductivity,
-                alloy.density,
-                alloy.heat_capacity
-            ),
-            'energy_density': lambda: energy_density(
-                T,
-                alloy.density,
-                alloy.heat_capacity,
-                alloy.latent_heat_of_fusion
-            )
+        computation_methods = {
+            'density': {
+                'default': lambda: density_by_thermal_expansion(
+                    T,
+                    alloy.base_temperature,
+                    alloy.base_density,
+                    alloy.thermal_expansion_coefficient
+                )
+            },
+            'thermal_diffusivity': {
+                'default': lambda: thermal_diffusivity_by_heat_conductivity(
+                    alloy.heat_conductivity,
+                    alloy.density,
+                    alloy.heat_capacity
+                )
+            },
+            'energy_density': {
+                'default': lambda: energy_density_standard(
+                    T,
+                    alloy.density,
+                    alloy.heat_capacity,
+                    alloy.latent_heat_of_fusion
+                ),
+                'enthalpy_based': lambda: energy_density_enthalpy_based(
+                    alloy.density,
+                    alloy.specific_enthalpy,
+                    alloy.latent_heat_of_fusion
+                ),
+                'total_enthalpy': lambda: energy_density_total_enthalpy(
+                    alloy.density,
+                    alloy.specific_enthalpy
+                )
+            },
         }
 
-        # Define property dependencies
+        # Define property dependencies for each computation method
         dependencies = {
-            'density': ['base_temperature', 'base_density', 'thermal_expansion_coefficient'],
-            'thermal_diffusivity': ['heat_conductivity', 'density', 'heat_capacity'],
-            'energy_density': ['density', 'heat_capacity', 'latent_heat_of_fusion'],
+            'density': {
+                'default': ['base_temperature', 'base_density', 'thermal_expansion_coefficient'],
+            },
+            'thermal_diffusivity': {
+                'default': ['heat_conductivity', 'density', 'heat_capacity'],
+            },
+            'energy_density': {
+                'default': ['density', 'heat_capacity', 'latent_heat_of_fusion'],
+                'enthalpy_based': ['density', 'specific_enthalpy', 'latent_heat_of_fusion'],
+                'total_enthalpy': ['density', 'specific_enthalpy'],
+            },
         }
 
-        # Check if property has computation method
-        if prop_name not in property_computations:
+        # Check if property has computation methods
+        if prop_name not in computation_methods:
             raise ValueError(f"No computation method defined for property: {prop_name}")
 
-        # Check if property has dependencies
-        if prop_name in dependencies:
-            # Process dependencies first if they're marked for computation
-            if prop_name == 'energy_density':
-                if 'energy_density_temperature_array' not in self.config['properties']:
-                    raise ValueError(f"energy_density_temperature_array must be defined when energy_density is computed")
+        # Determine which computation method to use
+        prop_config = self.config['properties'][prop_name]
+        print(f"prop_name: {prop_name}, prop_config: {prop_config}")
+        method = 'default'
 
-                # Process energy_density_temperature_array
-                edta = self.config['properties']['energy_density_temperature_array']
-                alloy.energy_density_temperature_array = self._process_edta(edta)
+        if isinstance(prop_config, dict) and 'compute' in prop_config:
+            print(f"prop_config: {prop_config}")
+            method = prop_config['compute']
+            print(f"method: {method}")
 
-            # Process other dependencies
-            for dep in dependencies[prop_name]:
-                if hasattr(alloy, dep) and getattr(alloy, dep) is None:
-                    if dep in self.config['properties'] and self.config['properties'][dep] == 'compute':
+        # Validate method exists
+        if method not in computation_methods[prop_name]:
+            available_methods = list(computation_methods[prop_name].keys())
+            raise ValueError(f"Unknown computation method '{method}' for {prop_name}. Available: {available_methods}")
+
+        # Get dependencies for selected method
+        method_dependencies = dependencies[prop_name][method]
+
+        # Process dependencies first if they're marked for computation
+        if prop_name == 'energy_density':
+            if 'energy_density_temperature_array' not in self.config['properties']:
+                raise ValueError(f"energy_density_temperature_array must be defined when energy_density is computed")
+
+            # Process energy_density_temperature_array
+            edta = self.config['properties']['energy_density_temperature_array']
+            alloy.energy_density_temperature_array = self._process_edta(edta)
+
+        # Process other dependencies
+        for dep in method_dependencies:
+            if hasattr(alloy, dep) and getattr(alloy, dep) is None:
+                if dep in self.config['properties']:
+                    dep_config = self.config['properties'][dep]
+                    if dep_config == 'compute' or (isinstance(dep_config, dict) and 'compute' in dep_config):
                         print(f"prop_name, dependencies[prop_name], dep: {prop_name, dependencies[prop_name], dep}")
                         self._process_computed_property(alloy, dep, T)
 
-            # Verify all dependencies are available
-            missing_deps = [dep for dep in dependencies[prop_name]
-                            if not hasattr(alloy, dep) or getattr(alloy, dep) is None]
-            # print(f"missing_deps: {missing_deps}")
-            if missing_deps:
-                raise ValueError(f"Cannot compute {prop_name}. Missing dependencies: {missing_deps}")
+        # Verify all dependencies are available
+        missing_deps = [dep for dep in method_dependencies
+                        if not hasattr(alloy, dep) or getattr(alloy, dep) is None]
+        # print(f"missing_deps: {missing_deps}")
+        if missing_deps:
+            raise ValueError(f"Cannot compute {prop_name}. Missing dependencies: {missing_deps}")
 
-            # Compute property
-            material_property = property_computations[prop_name]()
-            setattr(alloy, prop_name, material_property)
+        # Compute property
+        material_property = computation_methods[prop_name][method]()
+        setattr(alloy, prop_name, material_property)
 
-            # Handle special case for energy_density arrays and phase points
-            if prop_name == 'energy_density':
-                if any(isinstance(dep, MaterialProperty) for dep in [alloy.density, alloy.heat_capacity, alloy.latent_heat_of_fusion]):
-                    if hasattr(alloy, 'energy_density_temperature_array') and len(alloy.energy_density_temperature_array) > 0:
-                        # alloy.energy_density_temperature_array = alloy.temperature_array
-                        alloy.energy_density_array = np.array([
-                            material_property.evalf(T, temp) for temp in alloy.energy_density_temperature_array
-                        ])
-                        alloy.energy_density_solidus = material_property.evalf(T, alloy.temperature_solidus)
-                        alloy.energy_density_liquidus = material_property.evalf(T, alloy.temperature_liquidus)
+        # Handle special case for energy_density arrays and phase points
+        if prop_name == 'energy_density':
+            # Check if any dependency is a MaterialProperty
+            deps_to_check = [getattr(alloy, dep) for dep in method_dependencies if hasattr(alloy, dep)]
+            if any(isinstance(dep, MaterialProperty) for dep in deps_to_check):
+            # if any(isinstance(dep, MaterialProperty) for dep in [alloy.density, alloy.heat_capacity, alloy.latent_heat_of_fusion]):
+                if hasattr(alloy, 'energy_density_temperature_array') and len(alloy.energy_density_temperature_array) > 0:
+                    # alloy.energy_density_temperature_array = alloy.temperature_array
+                    alloy.energy_density_array = np.array([
+                        material_property.evalf(T, temp) for temp in alloy.energy_density_temperature_array
+                    ])
+                    alloy.energy_density_solidus = material_property.evalf(T, alloy.temperature_solidus)
+                    alloy.energy_density_liquidus = material_property.evalf(T, alloy.temperature_liquidus)
 
     def _process_edta(self, array_def: str) -> np.ndarray:
         """Process temperature array definition with format (start, end, points/delta)"""
