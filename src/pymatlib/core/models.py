@@ -26,7 +26,7 @@ def wrapper(value: Union[sp.Expr, NumericType, ArrayTypes, MaterialProperty]) \
         return value.expr
     if isinstance(value, sp.Expr):
         return sp.simplify(value)
-    if isinstance(value, (float, np.float32, np.float64)):  # np.floating
+    if isinstance(value, (float, np.int32, np.int64, np.float32, np.float64)):  # np.floating
         if abs(value) < DEFAULT_TOLERANCE:
             return sp.Float(0.0)
         return sp.Float(float(value))
@@ -49,6 +49,41 @@ def material_property_wrapper(value: Union[sp.Expr, NumericType, ArrayTypes]) \
     """
     wrapped_value = wrapper(value)
     return MaterialProperty(wrapped_value)
+
+
+def _validate_positive(*values, names=None):
+    """Validate that float values are positive."""
+    if names is None:
+        names = [f"Value {i+1}" for i in range(len(values))]
+
+    for value, name in zip(values, names):
+        if isinstance(value, float) and value <= 0:
+            raise ValueError(f"{name} must be positive, got {value}")
+
+
+def _validate_non_negative(*values, names=None):
+    """Validate that float values are non-negative."""
+    if names is None:
+        names = [f"Value {i+1}" for i in range(len(values))]
+
+    for value, name in zip(values, names):
+        if isinstance(value, float) and value < 0:
+            raise ValueError(f"{name} cannot be negative, got {value}")
+
+
+def _prepare_material_expressions(*properties):
+    """Prepare expressions and collect assignments from material properties."""
+    sub_assignments = []
+    expressions = []
+
+    for prop in properties:
+        if isinstance(prop, MaterialProperty):
+            sub_assignments.extend(prop.assignments)
+            expressions.append(prop.expr)
+        else:
+            expressions.append(wrapper(prop))
+
+    return expressions, sub_assignments
 
 
 def density_by_thermal_expansion(
@@ -110,27 +145,10 @@ def thermal_diffusivity_by_heat_conductivity(
         TypeError: If incompatible input data types are provided.
         ValueError: If physically impossible values are used.
     """
-    # Input validation to check for incompatible data types
-    for param_name, param_value in [
-        ("heat_conductivity", heat_conductivity),
-        ("density", density),
-        ("heat_capacity", heat_capacity)
-    ]:
-        if isinstance(param_value, np.ndarray):
-            raise TypeError(f"Incompatible input data type for {param_name}: {type(param_value)}")
-        if isinstance(param_value, float) and param_value <= 0:
-            raise ValueError(f"{param_name} must be positive")
+    _validate_positive(heat_conductivity, density, heat_capacity, names=["Heat conductivity", "Density", "Heat capacity"])
 
-    sub_assignments = [
-        assignment for prop in [heat_conductivity, density, heat_capacity]
-        if isinstance(prop, MaterialProperty)
-        for assignment in prop.assignments
-    ]
-
-    # Handle the symbolic expression, using `.expr` only for MaterialProperty objects
-    k_expr = heat_conductivity.expr if isinstance(heat_conductivity, MaterialProperty) else wrapper(heat_conductivity)
-    rho_expr = density.expr if isinstance(density, MaterialProperty) else wrapper(density)
-    cp_expr = heat_capacity.expr if isinstance(heat_capacity, MaterialProperty) else wrapper(heat_capacity)
+    (k_expr, rho_expr, cp_expr), sub_assignments \
+        = _prepare_material_expressions(heat_conductivity, density, heat_capacity)
 
     try:
         thermal_diffusivity = k_expr / (rho_expr * cp_expr)
@@ -139,7 +157,7 @@ def thermal_diffusivity_by_heat_conductivity(
         raise ValueError("Division by zero encountered in thermal diffusivity calculation")
 
 
-def energy_density(
+def energy_density_standard(
         temperature: Union[float, sp.Symbol],
         density: Union[float, MaterialProperty],
         heat_capacity: Union[float, MaterialProperty],
@@ -149,22 +167,51 @@ def energy_density(
     # Input validation to check for incompatible data types
     if isinstance(temperature, float) and temperature < ABSOLUTE_ZERO:
         raise ValueError(f"Temperature cannot be below absolute zero ({ABSOLUTE_ZERO}K)")
-    if isinstance(density, float) and density <= 0:
-        raise ValueError(f"Density must be positive, got {density}")
-    if isinstance(heat_capacity, float) and heat_capacity <= 0:
-        raise ValueError(f"Heat capacity must be positive, got {heat_capacity}")
-    if isinstance(latent_heat, float) and latent_heat < 0:
-        raise ValueError(f"Latent heat cannot be negative (should be zero or positive), got {latent_heat}")
 
-    sub_assignments = [
-        assignment for prop in [density, heat_capacity, latent_heat]
-        if isinstance(prop, MaterialProperty)
-        for assignment in prop.assignments
-    ]
+    _validate_positive(density, heat_capacity, names=['Density', 'Heat capacity'])
+
+    _validate_non_negative(latent_heat, names=['Latent heat'])
+
+    (density_expr, heat_capacity_expr, latent_heat_expr), sub_assignments \
+        = _prepare_material_expressions(density, heat_capacity, latent_heat)
 
     density_expr = density.expr if isinstance(density, MaterialProperty) else wrapper(density)
     heat_capacity_expr = heat_capacity.expr if isinstance(heat_capacity, MaterialProperty) else wrapper(heat_capacity)
     latent_heat_expr = latent_heat.expr if isinstance(latent_heat, MaterialProperty) else wrapper(latent_heat)
 
-    _energy_density = density_expr * (temperature * heat_capacity_expr + latent_heat_expr)
-    return MaterialProperty(_energy_density, sub_assignments)
+    energy_density_expr = density_expr * (temperature * heat_capacity_expr + latent_heat_expr)
+    return MaterialProperty(energy_density_expr, sub_assignments)
+
+
+# For backward compatibility
+energy_density = energy_density_standard
+
+
+def energy_density_enthalpy_based(
+        density: Union[float, MaterialProperty],
+        specific_enthalpy: Union[float, MaterialProperty],
+        latent_heat: Union[float, MaterialProperty]) \
+        -> MaterialProperty:
+
+    _validate_positive(density, specific_enthalpy, names=["Density", "Specific enthalpy"])
+    _validate_non_negative(latent_heat, names=["Latent heat"])
+
+    (density_expr, specific_enthalpy_expr, latent_heat_expr), sub_assignments \
+        = _prepare_material_expressions(density, specific_enthalpy, latent_heat)
+
+    energy_density_expr = density_expr * (specific_enthalpy_expr + latent_heat_expr)
+    return MaterialProperty(energy_density_expr, sub_assignments)
+
+
+def energy_density_total_enthalpy(
+        density: Union[float, MaterialProperty],
+        specific_enthalpy: Union[float, MaterialProperty]) \
+        -> MaterialProperty:
+
+    _validate_positive(density, specific_enthalpy, names=["Density", "Specific enthalpy"])
+
+    (density_expr, specific_enthalpy_expr), sub_assignments \
+        = _prepare_material_expressions(density, specific_enthalpy)
+
+    energy_density_expr = density_expr * specific_enthalpy_expr
+    return MaterialProperty(energy_density_expr, sub_assignments)
