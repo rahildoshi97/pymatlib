@@ -67,13 +67,20 @@ def create_SS316L(T: Union[float, sp.Symbol]) -> Alloy:
     # heat_capacity_data_file_path = str(base_dir / 'heat_capacity_temperature_edited.txt')
     heat_capacity_data_file_path = str(base_dir / '304L_Erstarrungsdaten_edited.xlsx')
     heat_conductivity_data_file_path = str(base_dir / '..' / 'SS316L' / '304L_Erstarrungsdaten_edited.xlsx')
+    latent_heat_of_fusion_data_file_path = str(base_dir / '..' / 'SS316L' / '304L_Erstarrungsdaten_edited.xlsx')
 
     # Read temperature and material property data from the files
     # density_temp_array, density_array = read_data_from_txt(density_data_file_path)
     density_temp_array, density_array = read_data_from_excel(density_data_file_path, temp_col="T (K)", prop_col="Density (kg/(m)^3)")
     # heat_capacity_temp_array, heat_capacity_array = read_data_from_txt(heat_capacity_data_file_path)
-    heat_capacity_temp_array, heat_capacity_array = read_data_from_excel(heat_capacity_data_file_path, temp_col="T (K)", prop_col="Specific heat (J/(Kg K))")
+    heat_capacity_temp_array, heat_capacity_array = read_data_from_excel(heat_capacity_data_file_path, temp_col="T (K)", prop_col="Specific heat regular weighted")
     heat_conductivity_temp_array, heat_conductivity_array = read_data_from_excel(heat_conductivity_data_file_path, temp_col="T (K)", prop_col="Thermal conductivity (W/(m*K))-TOTAL-10000.0(K/s)")
+    latent_heat_of_fusion_temp_array, latent_heat_of_fusion_array = read_data_from_excel(latent_heat_of_fusion_data_file_path, temp_col="T (K)", prop_col="Latent heat (J/Kg)")
+    _, sp_enthalpy = read_data_from_excel(density_data_file_path, temp_col="T (K)", prop_col="Enthalpy (J/g)-TOTAL-10000.0(K/s)")
+    _, sp_enthalpy_weighted = read_data_from_excel(density_data_file_path, temp_col="T (K)", prop_col="Enthalpy (J/kg) weighted")
+    _, u1 = read_data_from_excel(density_data_file_path, temp_col="T (K)", prop_col="u1 (rho*h)")
+    _, u2 = read_data_from_excel(density_data_file_path, temp_col="T (K)", prop_col="u2 (rho*h + rho*L)")
+    _, u3 = read_data_from_excel(density_data_file_path, temp_col="T (K)", prop_col="u3 (rho*h_weighted + rho*L)")
 
     # Ensure the data was loaded correctly
     if any(arr.size == 0 for arr in [density_temp_array, density_array, heat_capacity_temp_array, heat_capacity_array,
@@ -93,7 +100,8 @@ def create_SS316L(T: Union[float, sp.Symbol]) -> Alloy:
     SS316L.density = interpolate_property(T, density_temp_array, density_array)
     SS316L.heat_capacity = interpolate_property(T, heat_capacity_temp_array, heat_capacity_array)
     SS316L.thermal_diffusivity = thermal_diffusivity_by_heat_conductivity(SS316L.heat_conductivity, SS316L.density, SS316L.heat_capacity)
-    SS316L.latent_heat_of_fusion = interpolate_property(T, SS316L.solidification_interval(), np.array([0.0, 260000.0]))
+    # SS316L.latent_heat_of_fusion = interpolate_property(T, SS316L.solidification_interval(), np.array([171401.0, 0.0]))
+    SS316L.latent_heat_of_fusion = interpolate_property(T, latent_heat_of_fusion_temp_array, latent_heat_of_fusion_array)
     SS316L.energy_density = energy_density(T, SS316L.density, SS316L.heat_capacity, SS316L.latent_heat_of_fusion)
     SS316L.energy_density_solidus = SS316L.energy_density.evalf(T, SS316L.temperature_solidus)
     SS316L.energy_density_liquidus = SS316L.energy_density.evalf(T, SS316L.temperature_liquidus)
@@ -129,9 +137,15 @@ def create_SS316L(T: Union[float, sp.Symbol]) -> Alloy:
 
     # Create the plot
     plot_arrays(density_temp_array, density_array, "T (K)", "Density (kg/(m)^3)")
-    plot_arrays(heat_capacity_temp_array, heat_capacity_array, "T (K)", "Specific heat (J/(Kg K))")
+    plot_arrays(heat_capacity_temp_array, heat_capacity_array, "T (K)", "Specific heat regular weighted")
     plot_arrays(heat_conductivity_temp_array, heat_conductivity_array, "T (K)", "Thermal conductivity (W/(m*K))")
+    plot_arrays(latent_heat_of_fusion_temp_array, latent_heat_of_fusion_array, "T (K)", "Latent heat (J/Kg)")
     plot_arrays(density_temp_array, SS316L.energy_density_array, "T (K)", "Energy Density (J/(m)^3)")
+    plot_arrays(density_temp_array, sp_enthalpy, "T (K)", "Enthalpy (J/g)-TOTAL-10000.0(K/s)")
+    plot_arrays(density_temp_array, u1, "T (K)", "u1")
+    plot_arrays(density_temp_array, sp_enthalpy_weighted, "T (K)", "Enthalpy (J/kg) weighted")
+    plot_arrays(density_temp_array, u2, "T (K)", "u2")
+    plot_arrays(density_temp_array, u3, "T (K)", "u3")
 
     print("----------" * 10)
 
