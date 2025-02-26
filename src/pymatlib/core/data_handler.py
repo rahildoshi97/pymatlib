@@ -102,38 +102,75 @@ def read_data_from_excel(file_path: str, temp_col: str, prop_col: str) -> Tuple[
 
     return temp, prop
 
-def read_data_from_file(file_config: Dict[str, Any], header: bool = True) -> Tuple[np.ndarray, np.ndarray]:
+def read_data_from_file(file_config: Union[str, Dict], header: bool = True) -> Tuple[np.ndarray, np.ndarray]:
     """
     Reads temperature and property data from a file based on configuration.
 
     Args:
-        file_config (Dict[str, Any]): Dictionary containing file configuration
-            Required keys:
+        file_config: Either a path string or a dictionary containing file configuration
+            If dictionary, required keys:
                 - file: Path to data file
                 - temp_col: Temperature column name/index
                 - prop_col: Property column name/index
+            If string, treated as direct file path
         header (bool): Indicates if the file contains a header row.
 
     Returns:
         Tuple[np.ndarray, np.ndarray]: Temperature and property arrays
     """
-    file_path = file_config['file']
-    temp_col = file_config['temp_col']
-    prop_col = file_config['prop_col']
+    # Handle string (direct path) or dictionary configuration
+    if isinstance(file_config, str):
+        #print('string')
+        file_path = file_config
+        # For direct file paths, assume first two columns are temperature and property
+        temp_col = 0
+        prop_col = 1
+    else:
+        #print('dict')
+        file_path = file_config['file']
+        temp_col = file_config['temp_col']
+        prop_col = file_config['prop_col']
+        #temp_col = file_config.get('temp_col', 0)
+        #prop_col = file_config.get('prop_col', 1)
 
     print(f"Reading data from file: {file_path}")
 
     if file_path.endswith('.xlsx'):
         df = pd.read_excel(file_path)
-        temp = df[temp_col].to_numpy()
-        prop = df[prop_col].to_numpy()
+        # Handle both column name (string) and column index (integer)
+        if isinstance(temp_col, str):
+            print("temp_col is str")
+            temp = df[temp_col].to_numpy(dtype=np.float64)
+            #print(temp)
+        else:
+            print("temp_col is index")
+            temp = df.iloc[:, temp_col].to_numpy(dtype=np.float64)
+            #print(temp)
+
+        if isinstance(prop_col, str):
+            print("prop_col is str")
+            prop = df[prop_col].to_numpy(dtype=np.float64)
+            #print(prop)
+        else:
+            print("prop_col is index")
+            prop = df.iloc[:, prop_col].to_numpy(dtype=np.float64)
+            #print(prop)
     else:
         # For txt files, assume columns are space/tab separated
         data = np.loadtxt(file_path, dtype=float, skiprows=1 if header else 0)
         if data.ndim != 2:
             raise ValueError("Data should be two-dimensional")
-        temp = data[:, 0]
-        prop = data[:, 1]
+
+        # Handle both column name (which would be an index for txt files) and column index
+        if isinstance(temp_col, int):
+            temp = data[:, temp_col]
+        else:
+            temp = data[:, 0]  # Default to first column
+
+        if isinstance(prop_col, int):
+            prop = data[:, prop_col]
+        else:
+            prop = data[:, 1]  # Default to second column
 
     # Check for NaN values
     if np.any(np.isnan(temp)) or np.any(np.isnan(prop)):
