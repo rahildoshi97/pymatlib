@@ -38,7 +38,7 @@ def read_data_from_txt(file_path: str, header: bool = True) -> Tuple[np.ndarray,
             - Data contains NaN values
             - Data contains duplicate temperature entries
     """
-    print(f"Reading data from txt file: {file_path}")
+    # print(f"Reading data from txt file: {file_path}")
     data = np.loadtxt(file_path, dtype=float, skiprows=1 if header else 0)
 
     if data.ndim != 2 or data.shape[1] != 2:
