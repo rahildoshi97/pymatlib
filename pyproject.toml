@@ -11,7 +11,7 @@ dependencies = [
     "scipy",
     "matplotlib",
     "ruamel.yaml>=0.15.70",
-    "PyYAML",
+    #"PyYAML",
     "pandas",
     "openpyxl>=3.1.5",
 ]
@@ -44,7 +44,7 @@ requires = [
     "wheel",
     "pybind11",
     "ruamel.yaml>=0.15.70",
-    "PyYAML",
+    #"PyYAML",
     "pandas",
     "openpyxl>=3.1.5",
 ]
