@@ -38,7 +38,7 @@ def read_data_from_txt(file_path: str, header: bool = True) -> Tuple[np.ndarray,
             - Data contains NaN values
             - Data contains duplicate temperature entries
     """
-    print(f"Reading data from txt file: {file_path}")
+    # print(f"Reading data from txt file: {file_path}")
     data = np.loadtxt(file_path, dtype=float, skiprows=1 if header else 0)
 
     if data.ndim != 2 or data.shape[1] != 2:
@@ -79,7 +79,7 @@ def read_data_from_excel(file_path: str, temp_col: str, prop_col: str) -> Tuple[
             - Data contains NaN values
             - Data contains duplicate temperature entries
     """
-    print(f"Reading data from Excel file: {file_path}")
+    # print(f"Reading data from Excel file: {file_path}")
 
     # Read specific columns from Excel
     df = pd.read_excel(file_path)
@@ -130,7 +130,7 @@ def read_data_from_file(file_config: Union[str, Dict], header: bool = True) -> T
         temp_col = file_config['temp_col']
         prop_col = file_config['prop_col']
 
-    print(f"Reading data from file: {file_path}")
+    # print(f"Reading data from file: {file_path}")
 
     if file_path.endswith('.xlsx'):
         df = pd.read_excel(file_path, header=0 if header else None)
@@ -273,7 +273,6 @@ def check_strictly_increasing(arr, name="Array", threshold=0.1):
                 f"{context}"
             )
             raise ValueError(error_msg)
-    print(f"{name} is strictly monotonically increasing")
     return True
 
 
