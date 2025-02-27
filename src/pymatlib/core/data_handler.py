@@ -273,7 +273,6 @@ def check_strictly_increasing(arr, name="Array", threshold=0.1):
                 f"{context}"
             )
             raise ValueError(error_msg)
-    print(f"{name} is strictly monotonically increasing")
     return True
 
 
