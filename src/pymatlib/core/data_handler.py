@@ -102,6 +102,7 @@ def read_data_from_excel(file_path: str, temp_col: str, prop_col: str) -> Tuple[
 
     return temp, prop
 
+
 def read_data_from_file(file_config: Union[str, Dict], header: bool = True) -> Tuple[np.ndarray, np.ndarray]:
     """
     Reads temperature and property data from a file based on configuration.
@@ -136,25 +137,10 @@ def read_data_from_file(file_config: Union[str, Dict], header: bool = True) -> T
     print(f"Reading data from file: {file_path}")
 
     if file_path.endswith('.xlsx'):
-        df = pd.read_excel(file_path)
-        # Handle both column name (string) and column index (integer)
-        if isinstance(temp_col, str):
-            print("temp_col is str")
-            temp = df[temp_col].to_numpy(dtype=np.float64)
-            #print(temp)
-        else:
-            print("temp_col is index")
-            temp = df.iloc[:, temp_col].to_numpy(dtype=np.float64)
-            #print(temp)
-
-        if isinstance(prop_col, str):
-            print("prop_col is str")
-            prop = df[prop_col].to_numpy(dtype=np.float64)
-            #print(prop)
-        else:
-            print("prop_col is index")
-            prop = df.iloc[:, prop_col].to_numpy(dtype=np.float64)
-            #print(prop)
+        df = pd.read_excel(file_path, header=0 if header else None)
+    elif file_path.endswith('.csv'):
+        # Use pandas read_csv for CSV files
+        df = pd.read_csv(file_path, header=0 if header else None)
     else:
         # For txt files, assume columns are space/tab separated
         data = np.loadtxt(file_path, dtype=float, skiprows=1 if header else 0)
@@ -172,6 +158,21 @@ def read_data_from_file(file_config: Union[str, Dict], header: bool = True) -> T
         else:
             prop = data[:, 1]  # Default to second column
 
+        # Skip the pandas processing below
+        return temp, prop
+
+    # Process pandas DataFrame (for both Excel and CSV)
+    # Handle both column name (string) and column index (integer)
+    if isinstance(temp_col, str):
+        temp = df[temp_col].to_numpy(dtype=np.float64)
+    else:
+        temp = df.iloc[:, temp_col].to_numpy(dtype=np.float64)
+
+    if isinstance(prop_col, str):
+        prop = df[prop_col].to_numpy(dtype=np.float64)
+    else:
+        prop = df.iloc[:, prop_col].to_numpy(dtype=np.float64)
+
     # Check for NaN values
     if np.any(np.isnan(temp)) or np.any(np.isnan(prop)):
         nan_rows = np.where(np.isnan(temp) | np.isnan(prop))[0] + 1
@@ -185,6 +186,7 @@ def read_data_from_file(file_config: Union[str, Dict], header: bool = True) -> T
         raise ValueError(f"Duplicate temperature entries found in rows: {', '.join(duplicate_rows)}")
 
     return temp, prop
+
 
 def celsius_to_kelvin(temp: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
     """

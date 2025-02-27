@@ -1,5 +1,4 @@
 from pathlib import Path
-import yaml
 import numpy as np
 from typing import Dict, Any, Union, List, Tuple
 import sympy as sp
@@ -62,12 +61,12 @@ class MaterialConfigParser:
         Returns:
             Dict containing parsed YAML content
         """
-        # yaml = YAML(typ='safe')
+        yaml = YAML(typ='safe')
         yaml.allow_duplicate_keys = False
 
         try:
             with open(self.yaml_path, 'r') as f:
-                return yaml.safe_load(f)
+                return yaml.load(f)
         except FileNotFoundError:
             raise FileNotFoundError(f"YAML file not found: {self.yaml_path}")
         except constructor.DuplicateKeyError as e:
@@ -110,7 +109,7 @@ class MaterialConfigParser:
 
     def _validate_required_fields(self) -> None:
         """Validate required configuration fields."""
-        required_fields = {'name', 'composition'}
+        required_fields = {'name', 'composition', 'solidus_temperature', 'liquidus_temperature'}
         missing_fields = required_fields - set(self.config.keys())
         if missing_fields:
             raise ValueError(f"Missing required fields: {', '.join(missing_fields)}")
@@ -467,22 +466,22 @@ class MaterialConfigParser:
             step = values[2]
 
             # Check if step represents delta (float) or points (int)
-            try:
-                if '.' in step or 'e' in step.lower():
-                    delta = float(step)
-                    return np.arange(start, end + delta/2, delta)  # delta/2 ensures end point inclusion
-                else:
-                    points = int(step) + 1
-                    return np.linspace(start, end, points)
-            except ValueError as e:
-                raise ValueError(f"Invalid temperature array specification: {e}")
+            if '.' in step or 'e' in step.lower():
+                delta = float(step)
+                return np.arange(start, end + delta/2, delta)  # delta/2 ensures end point inclusion
+            else:
+            # Handle as points (int)
+                points = int(step)
+                if points <= 0:
+                    raise ValueError(f"Number of points must be a positive integer, got {points}")
+                return np.linspace(start, end, points)
 
         except ValueError as e:
             raise ValueError(f"Invalid temperature array definition: {e}")
 
 ########################################################################################################################
 
-def create_alloy_from_yaml(yaml_path: str, T: Union[float, sp.Symbol]) -> Alloy:
+def create_alloy_from_yaml(yaml_path: Union[str, Path], T: Union[float, sp.Symbol]) -> Alloy:
     """Create alloy instance from YAML configuration file"""
     parser = MaterialConfigParser(yaml_path)
     return parser.create_alloy(T)

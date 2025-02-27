@@ -269,11 +269,11 @@ int main(int argc, char** argv)
 {
    walberla::main(argc, argv);
 
-   constexpr SS316L_1 test_1;
+   /*constexpr SS316L_1 test_1;
    const double result_1 = test_1.interpolateDL(7.88552550e+09);
    const double result_2 = test_1.interpolateDL(1.02864255e+10);
    std::cout << result_1 << std::endl;
-   std::cout << result_2 << std::endl;;
+   std::cout << result_2 << std::endl;*/
 
    test_performance();
 }

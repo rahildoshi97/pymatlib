@@ -1,5 +1,6 @@
 import sympy as sp
 import pystencils as ps
+from importlib.resources import files
 # from pystencils_walberla import CodeGeneration, generate_sweep
 # script_dir = os.path.dirname(__file__)
 # walberla_dir = os.path.join(script_dir, '..', '..', '..')
@@ -35,14 +36,14 @@ with SourceFileGenerator() as sfg:
     # Access the YAML file as a package resource
     yaml_path = files('pymatlib.data.alloys.SS316L').joinpath('SS304L.yaml')
     mat = create_alloy_from_yaml(str(yaml_path), u.center())
-    yaml_path_1 = files('pymatlib.data.alloys.SS316L').joinpath('SS304L_1.yaml')
-    mat1 = create_alloy_from_yaml(str(yaml_path_1), u.center())
+    # yaml_path_1 = files('pymatlib.data.alloys.SS316L').joinpath('SS304L_1.yaml')
+    # mat1 = create_alloy_from_yaml(str(yaml_path_1), u.center())
 
     # arr_container = DoubleLookupArrayContainer("SS316L", mat.temperature_array, mat.energy_density_array)
     arr_container = DoubleLookupArrayContainer.from_material("SS316L", mat)
     sfg.generate(arr_container)
-    arr_container = DoubleLookupArrayContainer.from_material("SS316L_1", mat1)
-    sfg.generate(arr_container)
+    # arr_container = DoubleLookupArrayContainer.from_material("SS316L_1", mat1)
+    # sfg.generate(arr_container)
 
     # Convert assignments to pystencils format
     print("Print statements")
