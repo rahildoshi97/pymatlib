@@ -12,15 +12,31 @@ from pystencilssfg.composer.custom import CustomGenerator
 COUNT = 0
 
 
-class DoubleLookupArrayContainer(CustomGenerator):
+class InterpolationArrayContainer(CustomGenerator):
     def __init__(self, name: str, temperature_array: np.ndarray, energy_density_array: np.ndarray):
         super().__init__()
         self.name = name
-        self.T_eq = temperature_array
-        self.E_neq = energy_density_array
+        self.T_array = temperature_array
+        self.E_array = energy_density_array
 
-        self.T_eq, self.E_neq, self.E_eq, self.inv_delta_E_eq, self.idx_mapping = \
-            prepare_interpolation_arrays(self.T_eq, self.E_neq)
+        # Prepare arrays and determine best method
+        self.data = prepare_interpolation_arrays(self.T_array, self.E_array)
+        self.method = self.data["method"]
+
+        # Store arrays for binary search (always available)
+        self.T_bs = self.data["T_bs"]
+        self.E_bs = self.data["E_bs"]
+
+        # Store arrays for double lookup if available
+        if self.method == "double_lookup":
+            self.T_eq = self.data["T_eq"]
+            self.E_neq = self.data["E_neq"]
+            self.E_eq = self.data["E_eq"]
+            self.inv_delta_E_eq = self.data["inv_delta_E_eq"]
+            self.idx_map = self.data["idx_map"]
+            self.has_double_lookup = True
+        else:
+            self.has_double_lookup = False
 
     @classmethod
     def from_material(cls, name: str, material):
@@ -28,28 +44,65 @@ class DoubleLookupArrayContainer(CustomGenerator):
 
     def generate(self, sfg: SfgComposer):
         sfg.include("<array>")
-        sfg.include("interpolate_double_lookup_cpp.h")
+        sfg.include("interpolate_binary_search_cpp.h")
 
-        T_eq_arr_values = ", ".join(str(v) for v in self.T_eq)
-        E_neq_arr_values = ", ".join(str(v) for v in self.E_neq)
-        E_eq_arr_values = ", ".join(str(v) for v in self.E_eq)
-        idx_mapping_arr_values = ", ".join(str(v) for v in self.idx_mapping)
+        # Binary search arrays (always included)
+        T_bs_arr_values = ", ".join(str(v) for v in self.T_bs)
+        E_bs_arr_values = ", ".join(str(v) for v in self.E_bs)
 
         E_target = sfg.var("E_target", "double")
 
-        sfg.klass(self.name)(
+        public_members = [
+            # Binary search arrays
+            f"static constexpr std::array< double, {self.T_bs.shape[0]} > T_bs {{ {T_bs_arr_values} }}; \n"
+            f"static constexpr std::array< double, {self.E_bs.shape[0]} > E_bs {{ {E_bs_arr_values} }}; \n",
 
-            sfg.public(
+            # Binary search method
+            sfg.method("interpolateBS", returns=PsCustomType("double"), inline=True, const=True)(
+                sfg.expr("return interpolate_binary_search_cpp({}, *this);", E_target)
+            )
+        ]
+
+        # Add double lookup if available
+        if self.has_double_lookup:
+            sfg.include("interpolate_double_lookup_cpp.h")
+
+            T_eq_arr_values = ", ".join(str(v) for v in self.T_eq)
+            E_neq_arr_values = ", ".join(str(v) for v in self.E_neq)
+            E_eq_arr_values = ", ".join(str(v) for v in self.E_eq)
+            idx_mapping_arr_values = ", ".join(str(v) for v in self.idx_map)
+
+            public_members.extend([
+                # Double lookup arrays
                 f"static constexpr std::array< double, {self.T_eq.shape[0]} > T_eq = {{ {T_eq_arr_values} }}; \n"
                 f"static constexpr std::array< double, {self.E_neq.shape[0]} > E_neq = {{ {E_neq_arr_values} }}; \n"
                 f"static constexpr std::array< double, {self.E_eq.shape[0]} > E_eq = {{ {E_eq_arr_values} }}; \n"
                 f"static constexpr double inv_delta_E_eq = {self.inv_delta_E_eq}; \n"
-                f"static constexpr std::array< int, {self.idx_mapping.shape[0]} > idx_map = {{ {idx_mapping_arr_values} }}; \n",
+                f"static constexpr std::array< int, {self.idx_map.shape[0]} > idx_map = {{ {idx_mapping_arr_values} }}; \n",
 
+                # Double lookup method
                 sfg.method("interpolateDL", returns=PsCustomType("double"), inline=True, const=True)(
                     sfg.expr("return interpolate_double_lookup_cpp({}, *this);", E_target)
                 )
+            ])
+
+        # Add interpolate method that uses recommended approach
+        if self.has_double_lookup:
+            public_members.append(
+                sfg.method("interpolate", returns=PsCustomType("double"), inline=True, const=True)(
+                    sfg.expr("return interpolate_double_lookup_cpp({}, *this);", E_target)
+                )
             )
+        else:
+            public_members.append(
+                sfg.method("interpolate", returns=PsCustomType("double"), inline=True, const=True)(
+                    sfg.expr("return interpolate_binary_search_cpp({}, *this);", E_target)
+                )
+            )
+
+        # Generate the class
+        sfg.klass(self.name)(
+            sfg.public(*public_members)
         )
 
 
@@ -341,37 +394,84 @@ def create_idx_mapping(E_neq: np.ndarray, E_eq: np.ndarray) -> np.ndarray:
     return idx_map.astype(np.int32)
 
 
-def prepare_interpolation_arrays(T_eq: np.ndarray, E_neq: np.ndarray)\
-        -> Tuple[np.ndarray, np.ndarray, np.ndarray, float, np.ndarray]:
-
-    # Input validation
-    if len(T_eq) != len(E_neq):
-        raise ValueError("T_eq and E_neq must have the same length.")
-
-    T_incr = check_equidistant(T_eq)
-    if T_incr == 0.0:
-        raise ValueError("Temperature array must be equidistant")
-
+def prepare_interpolation_arrays(T_array: np.ndarray, E_array: np.ndarray) -> dict:
+    """
+    Validates input arrays and prepares data for interpolation.
+    Returns a dictionary with arrays and metadata for the appropriate method.
+    """
     # Convert to numpy arrays if not already
-    T_eq = np.asarray(T_eq)
-    E_neq = np.asarray(E_neq)
+    T_array = np.asarray(T_array)
+    E_array = np.asarray(E_array)
 
-    # Flip arrays if temperature increment is negative
-    if T_incr < 0.0:
-        T_eq = np.flip(T_eq)
-        E_neq = np.flip(E_neq)
+    # Basic validation
+    if len(T_array) != len(E_array):
+        raise ValueError("Temperature and energy density arrays must have the same length")
 
-    check_strictly_increasing(T_eq, "T_eq")
-    check_strictly_increasing(E_neq, "E_neq")
+    if len(T_array) < 2:
+        raise ValueError("Arrays must contain at least 2 elements")
 
-    if E_neq[0] >= E_neq[-1]:
+    # Check if arrays are monotonic
+    T_increasing = np.all(np.diff(T_array) > 0)
+    T_decreasing = np.all(np.diff(T_array) < 0)
+    E_increasing = np.all(np.diff(E_array) > 0)
+    E_decreasing = np.all(np.diff(E_array) < 0)
+
+    if not (T_increasing or T_decreasing):
+        raise ValueError("Temperature array must be monotonically increasing or decreasing")
+
+    if not (E_increasing or E_decreasing):
+        raise ValueError("Energy density array must be monotonically increasing or decreasing")
+
+    # Check if energy increases with temperature (both increasing or both decreasing)
+    if (T_increasing and E_decreasing) or (T_decreasing and E_increasing):
         raise ValueError("Energy density must increase with temperature")
 
-    # Create equidistant energy array and index mapping
-    E_eq, inv_delta_E_eq = E_eq_from_E_neq(E_neq)
-    idx_mapping = create_idx_mapping(E_neq, E_eq)
+    # Create copies to avoid modifying original arrays
+    T_bs = np.copy(T_array)
+    E_bs = np.copy(E_array)
 
-    return T_eq, E_neq, E_eq, inv_delta_E_eq, idx_mapping
+    # Flip arrays if temperature is in descending order
+    if T_decreasing:
+        # print("Temperature array is descending, flipping arrays for processing")
+        T_bs = np.flip(T_bs)
+        E_bs = np.flip(E_bs)
+
+    try:
+        check_strictly_increasing(T_bs, "Temperature array")
+        check_strictly_increasing(E_bs, "Energy density array")
+    except ValueError as e:
+        print(f"Warning: {e}")
+        print("Continuing with interpolation, but results may be less accurate")
+
+    # Use your existing check_equidistant function to determine if suitable for double lookup
+    T_incr = check_equidistant(T_bs)
+    is_equidistant = T_incr != 0.0
+
+    result = {
+        "T_bs": T_bs,
+        "E_bs": E_bs,
+        "method": "binary_search"
+    }
+
+    # If temperature is equidistant, prepare for double lookup
+    if is_equidistant:
+        # print(f"Temperature array is equidistant with increment {T_incr}, using double lookup")
+        # Create equidistant energy array and mapping
+        E_eq, inv_delta_E_eq = E_eq_from_E_neq(E_bs)
+        idx_mapping = create_idx_mapping(E_bs, E_eq)
+
+        result.update({
+            "T_eq": T_bs,
+            "E_neq": E_bs,
+            "E_eq": E_eq,
+            "inv_delta_E_eq": inv_delta_E_eq,
+            "idx_map": idx_mapping,
+            "method": "double_lookup"
+        })
+    else:
+        print("Temperature array is not equidistant, using binary search")
+
+    return result
 
 
 def interpolate_double_lookup(E_target: float, T_eq: np.ndarray, E_neq: np.ndarray, E_eq: np.ndarray, inv_delta_E_eq: float, idx_map: np.ndarray) -> float:

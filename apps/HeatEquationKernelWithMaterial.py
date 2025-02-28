@@ -4,7 +4,7 @@ from importlib.resources import files
 from pystencilssfg import SourceFileGenerator
 from sfg_walberla import Sweep
 from pymatlib.core.assignment_converter import assignment_converter
-from pymatlib.core.interpolators import DoubleLookupArrayContainer
+from pymatlib.core.interpolators import InterpolationArrayContainer
 from pymatlib.core.yaml_parser import create_alloy_from_yaml
 
 with SourceFileGenerator() as sfg:
@@ -23,8 +23,8 @@ with SourceFileGenerator() as sfg:
 
     yaml_path = files('pymatlib.data.alloys.SS316L').joinpath('SS304L.yaml')
     mat = create_alloy_from_yaml(yaml_path, u.center())
-    # arr_container = DoubleLookupArrayContainer("SS316L", mat.temperature_array, mat.energy_density_array)
-    arr_container = DoubleLookupArrayContainer.from_material("SS316L", mat)
+    # arr_container = InterpolationArrayContainer("SS316L", mat.energy_density_temperature_array, mat.energy_density_array)
+    arr_container = InterpolationArrayContainer.from_material("SS316L", mat)
     sfg.generate(arr_container)
 
     # Convert assignments to pystencils format

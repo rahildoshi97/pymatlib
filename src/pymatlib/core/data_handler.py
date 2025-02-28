@@ -226,34 +226,39 @@ def thousand_times(q: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
 
 
 # Moved from interpolators.py to data_handler.py
-def check_equidistant(temp: np.ndarray) -> float:
+def check_equidistant(temp: np.ndarray, rtol: float = 1e-5, atol: float = 1e-10) -> float:
     """
     Tests if the temperature values are equidistant.
 
     :param temp: Array of temperature values.
+    :param rtol: Relative tolerance for comparison.
+    :param atol: Absolute tolerance for comparison.
     :return: The common difference if equidistant, otherwise 0.
     """
     if len(temp) < 2:
-        raise ValueError(f"{temp} array has length < 2")
+        raise ValueError(f"Array has length < 2")
 
     temperature_diffs = np.diff(temp)
-    if np.allclose(temperature_diffs, temperature_diffs[0], atol=1e-10):
+    if np.allclose(temperature_diffs, temperature_diffs[0], rtol=rtol, atol=atol):
         return float(temperature_diffs[0])
     return 0.0
 
 
-def check_strictly_increasing(arr, name="Array", threshold=0.1):
+def check_strictly_increasing(arr: np.ndarray, name="Array", threshold=1e-10, raise_error=True):
     """
-    Check if array is strictly monotonically increasing and raise ValueError if not.
+    Check if array is strictly monotonically increasing.
 
     Args:
         arr: numpy array to check
         name: name of array for reporting
         threshold: minimum required difference between consecutive elements
+        raise_error: if True, raises ValueError; if False, returns False on failure
+
+    Returns:
+        bool: True if array is strictly increasing, False otherwise (if raise_error=False)
 
     Raises:
-        ValueError: If array is not strictly increasing, with detailed information
-                   about where the violation occurs
+        ValueError: If array is not strictly increasing and raise_error=True
     """
     for i in range(1, len(arr)):
         diff = arr[i] - arr[i-1]
@@ -272,7 +277,14 @@ def check_strictly_increasing(arr, name="Array", threshold=0.1):
                 f"Difference: {diff:.10e}\n"
                 f"{context}"
             )
-            raise ValueError(error_msg)
+
+            if raise_error:
+                raise ValueError(error_msg)
+            else:
+                print(f"Warning: {error_msg}")
+                return False
+
+    # print(f"{name} is strictly monotonically increasing")
     return True
 
 

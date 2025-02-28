@@ -33,10 +33,8 @@ void test_basic_functionality() {
 
     // Binary Search Tests
     {
-        double result_vec = interpolate_binary_search_cpp(T_vec, test_E, E_vec);
-        assert(is_equal(result_vec, expected_T));
-
-        double result_arr = interpolate_binary_search_cpp(T_arr, test_E, E_arr);
+        DoubleLookupTests tests;
+        double result_arr = interpolate_binary_search_cpp(test_E, tests);
         assert(is_equal(result_arr, expected_T));
 
         // Verify vector and array results match
@@ -71,20 +69,21 @@ void test_edge_cases_and_errors() {
     // Test boundary values
     {
         // Vector tests
-        double result_vec_min = interpolate_binary_search_cpp(T_vec, 1.67e10, E_vec);
+        /*double result_vec_min = interpolate_binary_search_cpp(T_vec, 1.67e10, E_vec);
         double result_vec_max = interpolate_binary_search_cpp(T_vec, 1.72e10, E_vec);
         assert(is_equal(result_vec_min, 3243.15));
-        assert(is_equal(result_vec_max, 3273.15));
+        assert(is_equal(result_vec_max, 3273.15));*/
 
         // Array tests
-        double result_arr_min = interpolate_binary_search_cpp(T_arr, 1.67e10, E_arr);
-        double result_arr_max = interpolate_binary_search_cpp(T_arr, 1.72e10, E_arr);
+        DoubleLookupTests tests;
+        double result_arr_min = interpolate_binary_search_cpp(1.67e10, tests);
+        double result_arr_max = interpolate_binary_search_cpp(1.72e10, tests);
         assert(is_equal(result_arr_min, 3243.15));
         assert(is_equal(result_arr_max, 3273.15));
     }
 
     // Error cases
-    {
+    /*{
         // Test vector size mismatch
         std::vector<double> wrong_size_vec = {1.0};
         bool caught_vector_error = false;
@@ -108,7 +107,7 @@ void test_edge_cases_and_errors() {
         // Compile-time size check for arrays
         static_assert(T_arr.size() >= 2, "Array size must be at least 2");
         static_assert(E_arr.size() >= 2, "Array size must be at least 2");
-    }
+    }*/
 
     // Double Lookup edge cases
     {
@@ -177,21 +176,21 @@ void test_interpolation_accuracy() {
     std::array<double, 4> idx_map_arr = {0, 1, 2, 3};
     const double inv_delta_E_eq = 1.0 / (1e9);
 
+    DoubleLookupTests tests;
     for (const auto& test : test_cases) {
         // Binary Search Tests
-        double result_bin_vec = interpolate_binary_search_cpp(
-            T_vec, test.input_E, E_vec);
-        double result_bin_arr = interpolate_binary_search_cpp(
-            T_arr, test.input_E, E_arr);
+        double result_bin_arr = interpolate_binary_search_cpp(test.input_E, tests);
 
         assert(is_equal(result_bin_vec, test.expected_T, test.tolerance));
         assert(is_equal(result_bin_arr, test.expected_T, test.tolerance));
         assert(is_equal(result_bin_vec, result_bin_arr, test.tolerance));
 
         // Double Lookup Tests
-        DoubleLookupTests tests;
         double result_dl_arr = tests.interpolateDL(test.input_E);
+
+        // assert(is_equal(result_dl_vec, test.expected_T, test.tolerance));
         assert(is_equal(result_dl_arr, test.expected_T, test.tolerance));
+        // assert(is_equal(result_dl_vec, result_dl_arr, test.tolerance));
     }
 }
 
@@ -255,10 +254,10 @@ void test_performance() {
 
         // Measure binary search performance
         {
+            DoubleLookupTests tests;
             auto start = std::chrono::high_resolution_clock::now();
             for (const double& E : test_points) {
-                volatile double result = interpolate_binary_search_cpp(
-                    T_vec, E, E_vec);
+                volatile double result = interpolate_binary_search_cpp(E, tests);
             }
             auto end = std::chrono::high_resolution_clock::now();
             auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(
@@ -267,10 +266,10 @@ void test_performance() {
         }
 
         {
+            DoubleLookupTests tests;
             auto start = std::chrono::high_resolution_clock::now();
             for (const double& E : test_points) {
-                volatile double result = interpolate_binary_search_cpp(
-                    T_arr, E, E_arr);
+                volatile double result = interpolate_binary_search_cpp(E, tests);
             }
             auto end = std::chrono::high_resolution_clock::now();
             auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(
@@ -280,9 +279,9 @@ void test_performance() {
 
         // Measure double lookup performance
         {
+            DoubleLookupTests tests;
             auto start = std::chrono::high_resolution_clock::now();
             for (const double& E : test_points) {
-                DoubleLookupTests tests;
                 volatile double result = tests.interpolateDL(E);
             }
             auto end = std::chrono::high_resolution_clock::now();

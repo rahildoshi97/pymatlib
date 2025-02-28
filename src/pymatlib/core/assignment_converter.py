@@ -31,14 +31,6 @@ def type_mapping(str_type: str, length: int) -> Union[PsType, Arr]:
         return Arr(Fp(64, const=True), length)  # 64-bit floating point array
     elif str_type == "float[]":
         return Arr(Fp(32, const=True), length)  # 32-bit floating point array
-    # elif str_type == "double":
-    #     return np.dtype('float64')
-    # elif str_type == "float":
-    #     return np.dtype('float32')
-    # elif str_type == "int":
-    #     return np.dtype('int32')
-    # elif str_type == "bool":
-    #     return np.dtype('bool')
     else:
         return create_type(str_type)
         # raise ValueError(f"Unsupported type string: {str_type}")
