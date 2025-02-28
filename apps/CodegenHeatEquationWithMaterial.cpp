@@ -22,7 +22,7 @@
 #include "timeloop/SweepTimeloop.h"
 
 #include "gen/HeatEquationKernelWithMaterial.hpp"
-#include "interpolate_binary_search_cpp.h"
+// #include "interpolate_binary_search_cpp.h"
 
 namespace walberla
 {
@@ -168,8 +168,8 @@ int main(int argc, char** argv)
 
 void test_performance() {
     // Configuration parameters
-    constexpr int warmupSteps = 2;
-    constexpr int outerIterations = 5;
+    constexpr int warmupSteps = 5;
+    constexpr int outerIterations = 10;
     constexpr int numCells = 64*64*64;
 
     // Setup test data
@@ -192,13 +192,13 @@ void test_performance() {
     std::cout << "Performing warmup steps..." << std::endl;
     for(int i = 0; i < warmupSteps; ++i) {
         for(const double& E : random_energies) {
+            // volatile double result = interpolate_double_lookup(E, test);
             volatile double result = test.interpolateDL(E);
         }
     }
     for(int i = 0; i < warmupSteps; ++i) {
         for(const double& E : random_energies) {
-            volatile double result = interpolate_binary_search_cpp(
-                    SS316L::T_eq, E, SS316L::E_neq);
+            volatile double result = test.interpolateBS(E);
         }
     }
 
@@ -217,26 +217,25 @@ void test_performance() {
                 volatile double result = test.interpolateDL(E);
             }
             const auto end1 = std::chrono::high_resolution_clock::now();
-            const auto duration1 = std::chrono::duration_cast<std::chrono::microseconds>(
+            const auto duration1 = std::chrono::duration_cast<std::chrono::nanoseconds>(
                 end1 - start1).count();
             timings_double_lookup.push_back(static_cast<double>(duration1));
 
-            std::cout << "Double Lookup - Iteration time: " << duration1 << " μs" << std::endl;
+            std::cout << "Double Lookup - Iteration time: " << duration1 << " ns" << std::endl;
         }
 
         // Binary Search timing
         {
             const auto start2 = std::chrono::high_resolution_clock::now();
             for(const double& E : random_energies) {
-                volatile double result = interpolate_binary_search_cpp(
-                    SS316L::T_eq, E, SS316L::E_neq);
+                volatile double result = test.interpolateBS(E);
             }
             const auto end2 = std::chrono::high_resolution_clock::now();
-            const auto duration2 = std::chrono::duration_cast<std::chrono::microseconds>(
+            const auto duration2 = std::chrono::duration_cast<std::chrono::nanoseconds>(
                 end2 - start2).count();
             timings_binary.push_back(static_cast<double>(duration2));
 
-            std::cout << "Binary Search - Iteration time: " << duration2 << " μs" << std::endl;
+            std::cout << "Binary Search - Iteration time: " << duration2 << " ns" << std::endl;
         }
     }
 
@@ -256,12 +255,12 @@ void test_performance() {
     std::cout << "\nPerformance Results (" << numCells << " cells, "
               << outerIterations << " iterations):" << std::endl;
     std::cout << "Binary Search:" << std::endl;
-    std::cout << "  Mean time: " << binary_mean << " ± " << binary_stdev << " μs" << std::endl;
-    std::cout << "  Per cell: " << binary_mean/numCells << " μs" << std::endl;
+    std::cout << "  Mean time: " << binary_mean << " ± " << binary_stdev << " ns" << std::endl;
+    std::cout << "  Per cell: " << binary_mean/numCells << " ns" << std::endl;
 
     std::cout << "Double Lookup:" << std::endl;
-    std::cout << "  Mean time: " << lookup_mean << " ± " << lookup_stdev << " μs" << std::endl;
-    std::cout << "  Per cell: " << lookup_mean/numCells << " μs" << std::endl;
+    std::cout << "  Mean time: " << lookup_mean << " ± " << lookup_stdev << " ns" << std::endl;
+    std::cout << "  Per cell: " << lookup_mean/numCells << " ns" << std::endl;
 }
 
 
