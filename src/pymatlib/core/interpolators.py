@@ -393,39 +393,112 @@ def create_idx_mapping(E_neq: np.ndarray, E_eq: np.ndarray) -> np.ndarray:
     return idx_map.astype(np.int32)
 
 
-def prepare_interpolation_arrays(T_eq: np.ndarray, E_neq: np.ndarray)\
-        -> Tuple[np.ndarray, np.ndarray, np.ndarray, float, np.ndarray]:
-
-    # Input validation
-    if len(T_eq) != len(E_neq):
-        raise ValueError("T_eq and E_neq must have the same length.")
-
-    T_incr = check_equidistant(T_eq)
-    if T_incr == 0.0:
-        raise ValueError("Temperature array must be equidistant")
-
+def prepare_interpolation_arrays(T_array: np.ndarray, E_array: np.ndarray) -> dict:
+    """
+    Validates input arrays and prepares data for interpolation.
+    Returns a dictionary with arrays and metadata for the appropriate method.
+    """
     # Convert to numpy arrays if not already
-    T_eq = np.asarray(T_eq)
-    E_neq = np.asarray(E_neq)
+    T_array = np.asarray(T_array)
+    E_array = np.asarray(E_array)
 
-    # Flip arrays if temperature increment is negative
-    if T_incr < 0.0:
-        print(f"T_incr is {T_incr}, flipping arrays")
-        T_eq = np.flip(T_eq)
-        E_neq = np.flip(E_neq)
+    # Basic validation
+    if len(T_array) != len(E_array):
+        raise ValueError("Temperature and energy density arrays must have the same length")
 
-    check_strictly_increasing(T_eq, "T_eq")
-    check_strictly_increasing(E_neq, "E_neq")
+    if len(T_array) < 2:
+        raise ValueError("Arrays must contain at least 2 elements")
 
-    if E_neq[0] >= E_neq[-1]:
+    # Check if arrays are monotonic
+    T_increasing = np.all(np.diff(T_array) > 0)
+    T_decreasing = np.all(np.diff(T_array) < 0)
+    E_increasing = np.all(np.diff(E_array) > 0)
+    E_decreasing = np.all(np.diff(E_array) < 0)
+
+    if not (T_increasing or T_decreasing):
+        raise ValueError("Temperature array must be monotonically increasing or decreasing")
+
+    if not (E_increasing or E_decreasing):
+        raise ValueError("Energy density array must be monotonically increasing or decreasing")
+
+    # Check if energy increases with temperature (both increasing or both decreasing)
+    if (T_increasing and E_decreasing) or (T_decreasing and E_increasing):
         raise ValueError("Energy density must increase with temperature")
 
-    # Create equidistant energy array and index mapping
-    E_eq, inv_delta_E_eq = E_eq_from_E_neq(E_neq)
-    idx_mapping = create_idx_mapping(E_neq, E_eq)
+    # Create copies to avoid modifying original arrays
+    T_bs = np.copy(T_array)
+    E_bs = np.copy(E_array)
 
-    return T_eq, E_neq, E_eq, inv_delta_E_eq, idx_mapping
+    # Flip arrays if temperature is in descending order
+    if T_decreasing:
+        print("Temperature array is descending, flipping arrays for processing")
+        T_bs = np.flip(T_bs)
+        E_bs = np.flip(E_bs)
 
+    try:
+        check_strictly_increasing(T_bs, "Temperature array")
+        check_strictly_increasing(E_bs, "Energy density array")
+    except ValueError as e:
+        print(f"Warning: {e}")
+        print("Continuing with interpolation, but results may be less accurate")
+
+    # Use your existing check_equidistant function to determine if suitable for double lookup
+    T_incr = check_equidistant(T_bs)
+    is_equidistant = T_incr != 0.0
+
+    result = {
+        "T_bs": T_bs,
+        "E_bs": E_bs,
+        "method": "binary_search"
+    }
+
+    # If temperature is equidistant, prepare for double lookup
+    if is_equidistant:
+        print(f"Temperature array is equidistant with increment {T_incr}, using double lookup")
+        # Create equidistant energy array and mapping
+        E_eq, inv_delta_E_eq = E_eq_from_E_neq(E_bs)
+        idx_mapping = create_idx_mapping(E_bs, E_eq)
+
+        result.update({
+            "T_eq": T_bs,
+            "E_neq": E_bs,
+            "E_eq": E_eq,
+            "inv_delta_E_eq": inv_delta_E_eq,
+            "idx_map": idx_mapping,
+            "method": "double_lookup"
+        })
+    else:
+        print("Temperature array is not equidistant, using binary search")
+
+    return result
+'''
+    # Determine if suitable for double lookup (temperature must be equidistant)
+    T_diffs = np.diff(T_bs)
+    is_equidistant = np.allclose(T_diffs, T_diffs[0], rtol=1e-5)
+
+    result = {
+        "T_bs": T_bs,
+        "E_bs": E_bs,
+        "method": "binary_search"
+    }
+
+    # If temperature is equidistant, prepare for double lookup
+    if is_equidistant:
+        # Create equidistant energy array and mapping
+        E_eq, inv_delta_E_eq = E_eq_from_E_neq(E_bs)
+        idx_mapping = create_idx_mapping(E_bs, E_eq)
+
+        result.update({
+            "T_eq": T_bs,
+            "E_neq": E_bs,
+            "E_eq": E_eq,
+            "inv_delta_E_eq": inv_delta_E_eq,
+            "idx_map": idx_mapping,
+            "method": "double_lookup"
+        })
+
+    return result
+'''
 
 def interpolate_double_lookup(E_target: float, T_eq: np.ndarray, E_neq: np.ndarray, E_eq: np.ndarray, inv_delta_E_eq: float, idx_map: np.ndarray) -> float:
     print(f"\nPython Debug:")
