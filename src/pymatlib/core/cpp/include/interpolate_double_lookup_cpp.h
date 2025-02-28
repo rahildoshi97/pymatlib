@@ -23,9 +23,6 @@ double interpolate_double_lookup_cpp(
     idx_E_neq = std::min(idx_E_neq, static_cast<int>(arrs.E_neq.size() - 2));
 
     // Adjust index if needed
-    /*if (arrs.E_neq[idx_E_neq + 1] < E_target) {
-        ++idx_E_neq;
-    }*/
     idx_E_neq += arrs.E_neq[idx_E_neq + 1] < E_target;
 
     // Get interpolation points
