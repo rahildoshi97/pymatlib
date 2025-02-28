@@ -1,8 +1,6 @@
 #pragma once
 #include <cmath>
-#include <vector>
 #include <stdexcept>
-#include <array>
 
 
 template<typename ArrayContainer>
