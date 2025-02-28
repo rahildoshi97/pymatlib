@@ -42,7 +42,7 @@ with SourceFileGenerator() as sfg:
     # arr_container = DoubleLookupArrayContainer("SS316L", mat.temperature_array, mat.energy_density_array)
     arr_container = InterpolationArrayContainer.from_material("SS316L", mat)
     sfg.generate(arr_container)
-    # arr_container = DoubleLookupArrayContainer.from_material("SS316L_1", mat1)
+    # arr_container = InterpolationArrayContainer.from_material("SS316L_1", mat1)
     # sfg.generate(arr_container)
 
     # Convert assignments to pystencils format
