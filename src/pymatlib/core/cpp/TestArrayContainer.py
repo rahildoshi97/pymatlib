@@ -2,7 +2,7 @@ import numpy as np
 from pystencils import fields
 from pystencilssfg import SourceFileGenerator
 from pymatlib.data.alloys.SS316L import SS316L
-from pymatlib.core.interpolators import DoubleLookupArrayContainer
+from pymatlib.core.interpolators import InterpolationArrayContainer
 
 
 with SourceFileGenerator() as sfg:
@@ -12,7 +12,7 @@ with SourceFileGenerator() as sfg:
     sfg.generate(arr_container)'''
 
 
-    custom_container = DoubleLookupArrayContainer("DoubleLookupTests",
+    custom_container = InterpolationArrayContainer("DoubleLookupTests",
                                        np.array([3243.15, 3253.15, 3263.15, 3273.15], dtype=np.float64),
                                        np.array([1.68e10, 1.69e10, 1.70e10, 1.71e10], dtype=np.float64))
     sfg.generate(custom_container)
