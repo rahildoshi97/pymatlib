@@ -12,15 +12,20 @@ from pystencilssfg.composer.custom import CustomGenerator
 COUNT = 0
 
 
-class DoubleLookupArrayContainer(CustomGenerator):
+class InterpolationArrayContainer(CustomGenerator):
     def __init__(self, name: str, temperature_array: np.ndarray, energy_density_array: np.ndarray):
         super().__init__()
         self.name = name
-        self.T_eq = temperature_array
-        self.E_neq = energy_density_array
+        self.T_array = temperature_array
+        self.E_array = energy_density_array
 
+        # Prepare arrays for double lookup
         self.T_eq, self.E_neq, self.E_eq, self.inv_delta_E_eq, self.idx_mapping = \
-            prepare_interpolation_arrays(self.T_eq, self.E_neq)
+            prepare_interpolation_arrays(self.T_array, self.E_array)
+
+        # Store original arrays for binary search
+        self.T_bs = self.T_array
+        self.E_bs = self.E_array
 
     @classmethod
     def from_material(cls, name: str, material):
@@ -29,30 +34,46 @@ class DoubleLookupArrayContainer(CustomGenerator):
     def generate(self, sfg: SfgComposer):
         sfg.include("<array>")
         sfg.include("interpolate_double_lookup_cpp.h")
+        sfg.include("interpolate_binary_search_cpp.h")
 
         T_eq_arr_values = ", ".join(str(v) for v in self.T_eq)
         E_neq_arr_values = ", ".join(str(v) for v in self.E_neq)
         E_eq_arr_values = ", ".join(str(v) for v in self.E_eq)
         idx_mapping_arr_values = ", ".join(str(v) for v in self.idx_mapping)
 
+        # Binary search arrays
+        T_bs_arr_values = ", ".join(str(v) for v in self.T_bs)
+        E_bs_arr_values = ", ".join(str(v) for v in self.E_bs)
+
         E_target = sfg.var("E_target", "double")
 
         sfg.klass(self.name)(
 
             sfg.public(
+                # Double lookup arrays
                 f"static constexpr std::array< double, {self.T_eq.shape[0]} > T_eq = {{ {T_eq_arr_values} }}; \n"
                 f"static constexpr std::array< double, {self.E_neq.shape[0]} > E_neq = {{ {E_neq_arr_values} }}; \n"
                 f"static constexpr std::array< double, {self.E_eq.shape[0]} > E_eq = {{ {E_eq_arr_values} }}; \n"
                 f"static constexpr double inv_delta_E_eq = {self.inv_delta_E_eq}; \n"
                 f"static constexpr std::array< int, {self.idx_mapping.shape[0]} > idx_map = {{ {idx_mapping_arr_values} }}; \n",
 
+                # Binary search arrays
+                f"static constexpr std::array< double, {self.T_bs.shape[0]} > T_bs = {{ {T_bs_arr_values} }}; \n"
+                f"static constexpr std::array< double, {self.E_bs.shape[0]} > E_bs = {{ {E_bs_arr_values} }}; \n",
+
                 #TODO!
                 # create constructor
                 # sfg.constructor(self.T_eq, self.E_neq, self.E_eq, self.inv_delta_E_eq, self.idx_mapping)
                 # sfg.constructor(sfg.var("T_eq", PsCustomType("std::array< double, N >"))),
 
+                # Double lookup method
                 sfg.method("interpolateDL", returns=PsCustomType("double"), inline=True, const=True)(
                     sfg.expr("return interpolate_double_lookup_cpp({}, *this);", E_target)
+                ),
+
+                # Binary search method
+                sfg.method("interpolateBS", returns=PsCustomType("double"), inline=True, const=True)(
+                    sfg.expr("return interpolate_binary_search_cpp({}, *this);", E_target)
                 )
             )
         )
