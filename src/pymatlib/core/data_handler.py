@@ -258,18 +258,20 @@ def thousand_times(q: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
 
 
 # Moved from interpolators.py to data_handler.py
-def check_equidistant(temp: np.ndarray) -> float:
+def check_equidistant(temp: np.ndarray, rtol: float = 1e-5, atol: float = 1e-10) -> float:
     """
     Tests if the temperature values are equidistant.
 
     :param temp: Array of temperature values.
+    :param rtol: Relative tolerance for comparison.
+    :param atol: Absolute tolerance for comparison.
     :return: The common difference if equidistant, otherwise 0.
     """
     if len(temp) < 2:
-        raise ValueError(f"{temp} array has length < 2")
+        raise ValueError(f"Array has length < 2")
 
     temperature_diffs = np.diff(temp)
-    if np.allclose(temperature_diffs, temperature_diffs[0], atol=1e-10):
+    if np.allclose(temperature_diffs, temperature_diffs[0], rtol=rtol, atol=atol):
         return float(temperature_diffs[0])
     return 0.0
 
