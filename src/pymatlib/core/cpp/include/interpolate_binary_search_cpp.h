@@ -9,44 +9,27 @@ double interpolate_binary_search_cpp(
     const ArrayContainer& arrs) {
 
     static constexpr double EPSILON = 1e-6;
-
-    // Input validation
     const size_t n = arrs.T_bs.size();
-    if (n != arrs.E_bs.size() || n < 2) {
-        throw std::runtime_error("Invalid array sizes");
-    }
-
-    // Determine array order
-    const bool is_ascending = arrs.T_bs[0] < arrs.T_bs[n-1];
-    const size_t start_idx = is_ascending ? 0 : n-1;
-    const size_t end_idx = is_ascending ? n-1 : 0;
-
-    // Validate energy density increases with temperature
-    if (arrs.E_bs[start_idx] >= arrs.E_bs[end_idx]) {
-        throw std::runtime_error("Energy density must increase with temperature");
-    }
 
     // Quick boundary checks
-    if (E_target <= arrs.E_bs[start_idx]) return arrs.T_bs[start_idx];
-    if (E_target >= arrs.E_bs[end_idx]) return arrs.T_bs[end_idx];
+    if (E_target <= arrs.E_bs[0]) return arrs.T_bs[0];
+    if (E_target >= arrs.E_bs.back()) return arrs.T_bs.back();
 
     // Binary search
     size_t left = 0;
     size_t right = n - 1;
 
-    while (left <= right) {
-        const size_t mid = (left + right) / 2;
-        const double mid_val = arrs.E_bs[mid];
+    while (right - left > 1) {
+        const size_t mid = left + (right - left) / 2;
 
-        if (std::abs(mid_val - E_target) < EPSILON) {
+        if (std::abs(arrs.E_bs[mid] - E_target) < EPSILON) {
             return arrs.T_bs[mid];
         }
 
-        const bool go_left = (mid_val > E_target) == is_ascending;
-        if (go_left) {
-            right = mid - 1;
+        if (arrs.E_bs[mid] > E_target) {
+            right = mid;
         } else {
-            left = mid + 1;
+            left = mid;
         }
     }
 
