@@ -121,18 +121,14 @@ def read_data_from_file(file_config: Union[str, Dict], header: bool = True) -> T
     """
     # Handle string (direct path) or dictionary configuration
     if isinstance(file_config, str):
-        #print('string')
         file_path = file_config
         # For direct file paths, assume first two columns are temperature and property
         temp_col = 0
         prop_col = 1
     else:
-        #print('dict')
         file_path = file_config['file']
         temp_col = file_config['temp_col']
         prop_col = file_config['prop_col']
-        #temp_col = file_config.get('temp_col', 0)
-        #prop_col = file_config.get('prop_col', 1)
 
     print(f"Reading data from file: {file_path}")
 
@@ -228,34 +224,6 @@ def thousand_times(q: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
     """
     return q * 1000
 
-'''def check_equidistant(temp: np.ndarray, tolerance: float = 1.0e-3) -> Union[float, bool]:
-    """
-    Tests if the temperature values are equidistant.
-
-    Parameters:
-        temp (np.ndarray): Array of temperature values.
-        tolerance (float): Tolerance for checking equidistant spacing.
-
-    Returns:
-        Union[float, bool]: The common difference if equidistant, otherwise False.
-    """
-    if len(temp) < 2:
-        return False
-
-    temperature_diffs = np.diff(temp)
-    unique_diffs = np.unique(temperature_diffs)
-
-    if len(unique_diffs) == 1:
-        return float(unique_diffs[0])
-
-    # Check if the differences are approximately the same within the tolerance
-    if len(unique_diffs) > 1:
-        diffs_within_tolerance = np.all(np.abs(unique_diffs - unique_diffs[0]) <= tolerance)
-        if diffs_within_tolerance:
-            return float(unique_diffs[0])
-
-    return False'''
-
 
 # Moved from interpolators.py to data_handler.py
 def check_equidistant(temp: np.ndarray, rtol: float = 1e-5, atol: float = 1e-10) -> float:
@@ -276,7 +244,7 @@ def check_equidistant(temp: np.ndarray, rtol: float = 1e-5, atol: float = 1e-10)
     return 0.0
 
 
-def check_strictly_increasing(arr, name="Array", threshold=1e-10, raise_error=True):
+def check_strictly_increasing(arr: np.ndarray, name="Array", threshold=1e-10, raise_error=True):
     """
     Check if array is strictly monotonically increasing.
 
@@ -316,7 +284,7 @@ def check_strictly_increasing(arr, name="Array", threshold=1e-10, raise_error=Tr
                 print(f"Warning: {error_msg}")
                 return False
 
-    print(f"{name} is strictly monotonically increasing")
+    # print(f"{name} is strictly monotonically increasing")
     return True
 
 
