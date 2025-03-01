@@ -79,14 +79,16 @@ class MaterialConfigParser:
     def _validate_config(self) -> None:
         """Validate YAML configuration structure and content."""
         if not isinstance(self.config, dict):
-            raise ValueError("Root YAML element must be a mapping")
+            # raise ValueError("Root YAML element must be a mapping")
+            raise ValueError("The YAML file must start with a dictionary/object structure with key-value pairs, not a list or scalar value")
 
         if 'properties' not in self.config:
             raise ValueError("Missing 'properties' section in configuration")
 
         properties = self.config.get('properties', {})
         if not isinstance(properties, dict):
-            raise ValueError("'properties' must be a mapping")
+            # raise ValueError("'properties' must be a mapping")
+            raise ValueError("The 'properties' section in your YAML file must be a dictionary with key-value pairs")
 
         self._validate_property_names(properties)
         self._validate_required_fields()
