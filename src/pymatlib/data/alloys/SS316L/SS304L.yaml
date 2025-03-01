@@ -106,8 +106,8 @@
 #   3. Properties will be computed in the correct order regardless of their position in the file.
 #   4. All numerical values must use period (.) as decimal separator, not comma.
 #   5. Interpolation between data points is performed automatically for file-based and key-val properties.
-#   6. To retrieve temperature from energy_density, use the interpolate_double_lookup_cpp method with
-#   the generated class from DoubleLookupArrayContainer named after the alloy.
+#   6. To retrieve temperature from energy_density, use the default "interpolate" method from within
+#   the generated class from InterpolationArrayContainer named after the alloy.
 
 # ====================================================================================================
 
