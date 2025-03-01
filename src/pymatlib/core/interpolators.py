@@ -58,7 +58,7 @@ class InterpolationArrayContainer(CustomGenerator):
             f"static constexpr std::array< double, {self.E_bs.shape[0]} > E_bs {{ {E_bs_arr_values} }}; \n",
 
             # Binary search method
-            sfg.method("interpolateBS", returns=PsCustomType("double"), inline=True, const=True)(
+            sfg.method("interpolateBS", returns=PsCustomType("[[nodiscard]] double"), inline=True, const=True)(
                 sfg.expr("return interpolate_binary_search_cpp({}, *this);", E_target)
             )
         ]
@@ -74,14 +74,14 @@ class InterpolationArrayContainer(CustomGenerator):
 
             public_members.extend([
                 # Double lookup arrays
-                f"static constexpr std::array< double, {self.T_eq.shape[0]} > T_eq = {{ {T_eq_arr_values} }}; \n"
-                f"static constexpr std::array< double, {self.E_neq.shape[0]} > E_neq = {{ {E_neq_arr_values} }}; \n"
-                f"static constexpr std::array< double, {self.E_eq.shape[0]} > E_eq = {{ {E_eq_arr_values} }}; \n"
+                f"static constexpr std::array< double, {self.T_eq.shape[0]} > T_eq {{ {T_eq_arr_values} }}; \n"
+                f"static constexpr std::array< double, {self.E_neq.shape[0]} > E_neq {{ {E_neq_arr_values} }}; \n"
+                f"static constexpr std::array< double, {self.E_eq.shape[0]} > E_eq {{ {E_eq_arr_values} }}; \n"
                 f"static constexpr double inv_delta_E_eq = {self.inv_delta_E_eq}; \n"
-                f"static constexpr std::array< int, {self.idx_map.shape[0]} > idx_map = {{ {idx_mapping_arr_values} }}; \n",
+                f"static constexpr std::array< int, {self.idx_map.shape[0]} > idx_map {{ {idx_mapping_arr_values} }}; \n",
 
                 # Double lookup method
-                sfg.method("interpolateDL", returns=PsCustomType("double"), inline=True, const=True)(
+                sfg.method("interpolateDL", returns=PsCustomType("[[nodiscard]] double"), inline=True, const=True)(
                     sfg.expr("return interpolate_double_lookup_cpp({}, *this);", E_target)
                 )
             ])
@@ -89,13 +89,13 @@ class InterpolationArrayContainer(CustomGenerator):
         # Add interpolate method that uses recommended approach
         if self.has_double_lookup:
             public_members.append(
-                sfg.method("interpolate", returns=PsCustomType("double"), inline=True, const=True)(
+                sfg.method("interpolate", returns=PsCustomType("[[nodiscard]] double"), inline=True, const=True)(
                     sfg.expr("return interpolate_double_lookup_cpp({}, *this);", E_target)
                 )
             )
         else:
             public_members.append(
-                sfg.method("interpolate", returns=PsCustomType("double"), inline=True, const=True)(
+                sfg.method("interpolate", returns=PsCustomType("[[nodiscard]] double"), inline=True, const=True)(
                     sfg.expr("return interpolate_binary_search_cpp({}, *this);", E_target)
                 )
             )
