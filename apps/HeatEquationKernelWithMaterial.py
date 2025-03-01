@@ -35,7 +35,7 @@ with SourceFileGenerator() as sfg:
     from importlib.resources import files
     # Access the YAML file as a package resource
     yaml_path = files('pymatlib.data.alloys.SS316L').joinpath('SS304L.yaml')
-    mat = create_alloy_from_yaml(str(yaml_path), u.center())
+    mat = create_alloy_from_yaml(yaml_path, u.center())
     # yaml_path_1 = files('pymatlib.data.alloys.SS316L').joinpath('SS304L_1.yaml')
     # mat1 = create_alloy_from_yaml(str(yaml_path_1), u.center())
 
