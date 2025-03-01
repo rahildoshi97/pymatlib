@@ -6,7 +6,7 @@ from typing import Union
 from matplotlib import pyplot as plt
 from pymatlib.core.alloy import Alloy
 from pymatlib.data.element_data import Fe, Cr, Ni, Mo, Mn
-from pymatlib.core.models import thermal_diffusivity_by_heat_conductivity, density_by_thermal_expansion, energy_density
+from pymatlib.core.models import thermal_diffusivity_by_heat_conductivity, density_by_thermal_expansion, energy_density, energy_density_total_enthalpy
 from pymatlib.core.data_handler import read_data_from_txt, celsius_to_kelvin, thousand_times, read_data_from_excel, read_data_from_file, plot_arrays
 from pymatlib.core.interpolators import interpolate_property, prepare_interpolation_arrays#, interpolate_binary_search
 from pymatlib.core.cpp.fast_interpolation import interpolate_binary_search, interpolate_double_lookup
@@ -76,9 +76,9 @@ def create_SS316L(T: Union[float, sp.Symbol]) -> Alloy:
     heat_capacity_temp_array, heat_capacity_array = read_data_from_excel(heat_capacity_data_file_path, temp_col="T (K)", prop_col="Specific heat regular weighted")
     heat_conductivity_temp_array, heat_conductivity_array = read_data_from_excel(heat_conductivity_data_file_path, temp_col="T (K)", prop_col="Thermal conductivity (W/(m*K))-TOTAL-10000.0(K/s)")
     latent_heat_of_fusion_temp_array, latent_heat_of_fusion_array = read_data_from_excel(latent_heat_of_fusion_data_file_path, temp_col="T (K)", prop_col="Latent heat (J/Kg)")
-    _, sp_enthalpy = read_data_from_excel(density_data_file_path, temp_col="T (K)", prop_col="Enthalpy (J/g)-TOTAL-10000.0(K/s)")
+    _, sp_enthalpy_array = read_data_from_excel(density_data_file_path, temp_col="T (K)", prop_col="Enthalpy (J/g)-TOTAL-10000.0(K/s)")
     _, sp_enthalpy_weighted = read_data_from_excel(density_data_file_path, temp_col="T (K)", prop_col="Enthalpy (J/kg) weighted")
-    _, u1 = read_data_from_excel(density_data_file_path, temp_col="T (K)", prop_col="u1 (rho*h)")
+    u1_temp_array, u1_array = read_data_from_excel(density_data_file_path, temp_col="T (K)", prop_col="u1 (rho*h)")
     _, u2 = read_data_from_excel(density_data_file_path, temp_col="T (K)", prop_col="u2 (rho*h + rho*L)")
     _, u3 = read_data_from_excel(density_data_file_path, temp_col="T (K)", prop_col="u3 (rho*h_weighted + rho*L)")
 
@@ -102,7 +102,8 @@ def create_SS316L(T: Union[float, sp.Symbol]) -> Alloy:
     SS316L.thermal_diffusivity = thermal_diffusivity_by_heat_conductivity(SS316L.heat_conductivity, SS316L.density, SS316L.heat_capacity)
     # SS316L.latent_heat_of_fusion = interpolate_property(T, SS316L.solidification_interval(), np.array([171401.0, 0.0]))
     SS316L.latent_heat_of_fusion = interpolate_property(T, latent_heat_of_fusion_temp_array, latent_heat_of_fusion_array)
-    SS316L.energy_density = energy_density(T, SS316L.density, SS316L.heat_capacity, SS316L.latent_heat_of_fusion)
+    SS316L.specific_enthalpy = interpolate_property(T, density_temp_array, sp_enthalpy_array)
+    SS316L.energy_density = energy_density_total_enthalpy(SS316L.density, SS316L.specific_enthalpy)
     SS316L.energy_density_solidus = SS316L.energy_density.evalf(T, SS316L.temperature_solidus)
     SS316L.energy_density_liquidus = SS316L.energy_density.evalf(T, SS316L.temperature_liquidus)
 
@@ -130,6 +131,7 @@ def create_SS316L(T: Union[float, sp.Symbol]) -> Alloy:
 
     # Populate temperature_array and energy_density_array
     SS316L.temperature_array = density_temp_array
+    SS316L.energy_density_temperature_array = u1_temp_array
 
     SS316L.energy_density_array = np.array([
         SS316L.energy_density.evalf(T, temp) for temp in density_temp_array
@@ -141,8 +143,8 @@ def create_SS316L(T: Union[float, sp.Symbol]) -> Alloy:
     plot_arrays(heat_conductivity_temp_array, heat_conductivity_array, "T (K)", "Thermal conductivity (W/(m*K))")
     plot_arrays(latent_heat_of_fusion_temp_array, latent_heat_of_fusion_array, "T (K)", "Latent heat (J/Kg)")
     plot_arrays(density_temp_array, SS316L.energy_density_array, "T (K)", "Energy Density (J/(m)^3)")
-    plot_arrays(density_temp_array, sp_enthalpy, "T (K)", "Enthalpy (J/g)-TOTAL-10000.0(K/s)")
-    plot_arrays(density_temp_array, u1, "T (K)", "u1")
+    plot_arrays(density_temp_array, sp_enthalpy_array, "T (K)", "Enthalpy (J/g)-TOTAL-10000.0(K/s)")
+    plot_arrays(u1_temp_array, u1_array, "T (K)", "u1")
     plot_arrays(density_temp_array, sp_enthalpy_weighted, "T (K)", "Enthalpy (J/kg) weighted")
     plot_arrays(density_temp_array, u2, "T (K)", "u2")
     plot_arrays(density_temp_array, u3, "T (K)", "u3")
@@ -182,17 +184,36 @@ def create_SS316L(T: Union[float, sp.Symbol]) -> Alloy:
     print(f"Execution time: {time_2:.6f} seconds\n")
 
     E = SS316L.energy_density.evalf(T, SS316L.temperature_liquidus)
-    T_eq, E_neq, E_eq, inv_delta_E_eq, idx_map = prepare_interpolation_arrays(
+    result = prepare_interpolation_arrays(
         SS316L.temperature_array,
         SS316L.energy_density_array
     )
-    args3 = (E, T_eq, E_neq, E_eq, inv_delta_E_eq, idx_map)
 
-    start_time3 = time.perf_counter()
-    T_interpolate3 = interpolate_double_lookup(*args3)
-    execution_time3 = time.perf_counter() - start_time3
-    print(f"Interpolated temperature: {T_interpolate3}")
-    print(f"Execution time: {execution_time3:.8f} seconds")
+    if result["method"] == "double_lookup":
+        start_time3 = time.perf_counter()
+        T_interpolate3 = interpolate_double_lookup(
+            E,
+            result["T_eq"],
+            result["E_neq"],
+            result["E_eq"],
+            result["inv_delta_E_eq"],
+            result["idx_map"]
+        )
+        execution_time3 = time.perf_counter() - start_time3
+        print(f"Interpolated temperature: {T_interpolate3}")
+        print(f"Execution time for double lookup: {execution_time3:.8f} seconds")
+    elif result["method"] == "binary_search":  # Fixed syntax here
+        start_time3 = time.perf_counter()
+        T_interpolate3 = interpolate_binary_search(  # Changed function name to match method
+            E,
+            result["T_bs"],
+            result["E_bs"]
+        )
+        execution_time3 = time.perf_counter() - start_time3
+        print(f"Interpolated temperature: {T_interpolate3}")
+        print(f"Execution time for binary search: {execution_time3:.8f} seconds")
+    else:
+        print("Unknown interpolation method")
 
     results = []
     execution_times = []
