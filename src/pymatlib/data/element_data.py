@@ -1,4 +1,4 @@
-from pymatlib.core.constants import Constants
+from pymatlib.data.constants import Constants
 from pymatlib.core.elements import ChemicalElement
 
 # NIST: National Institute of Standards and Technology
