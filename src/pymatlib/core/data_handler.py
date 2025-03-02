@@ -103,7 +103,7 @@ def read_data_from_excel(file_path: str, temp_col: str, prop_col: str) -> Tuple[
     return temp, prop
 
 
-def read_data_from_file(file_config: Union[str, Dict], header: bool = True) -> Tuple[np.ndarray, np.ndarray]:
+def read_data_from_file1(file_config: Union[str, Dict], header: bool = True) -> Tuple[np.ndarray, np.ndarray]:
     """
     Reads temperature and property data from a file based on configuration.
 
@@ -118,6 +118,12 @@ def read_data_from_file(file_config: Union[str, Dict], header: bool = True) -> T
 
     Returns:
         Tuple[np.ndarray, np.ndarray]: Temperature and property arrays
+
+    Raises:
+        ValueError: If:
+            - For txt files: Data has incorrect number of columns (must be exactly 2)
+            - Data contains NaN values
+            - Data contains duplicate temperature entries
     """
     # Handle string (direct path) or dictionary configuration
     if isinstance(file_config, str):
@@ -144,33 +150,228 @@ def read_data_from_file(file_config: Union[str, Dict], header: bool = True) -> T
     else:
         # For txt files, assume columns are space/tab separated
         data = np.loadtxt(file_path, dtype=float, skiprows=1 if header else 0)
-        if data.ndim != 2:
+
+        # Check for correct dimensions - only for txt files when using direct path
+        if isinstance(file_config, str) and (data.ndim != 2 or data.shape[1] != 2):
+            raise ValueError("Data should have exactly two columns")
+        elif data.ndim != 2:
             raise ValueError("Data should be two-dimensional")
 
         # Handle both column name (which would be an index for txt files) and column index
         if isinstance(temp_col, int):
+            if temp_col >= data.shape[1]:
+                raise ValueError(f"Temperature column index {temp_col} out of bounds (file has {data.shape[1]} columns)")
             temp = data[:, temp_col]
         else:
             temp = data[:, 0]  # Default to first column
 
         if isinstance(prop_col, int):
+            if prop_col >= data.shape[1]:
+                raise ValueError(f"Property column index {prop_col} out of bounds (file has {data.shape[1]} columns)")
             prop = data[:, prop_col]
         else:
             prop = data[:, 1]  # Default to second column
 
-        # Skip the pandas processing below
+        # Check for NaN values
+        if np.any(np.isnan(temp)) or np.any(np.isnan(prop)):
+            nan_rows = np.where(np.isnan(temp) | np.isnan(prop))[0] + 1
+            raise ValueError(f"Data contains NaN values in rows: {', '.join(map(str, nan_rows))}")
+
+        # Check for duplicate temperatures
+        unique_temp, counts = np.unique(temp, return_counts=True)
+        duplicates = unique_temp[counts > 1]
+        if len(duplicates) > 0:
+            duplicate_rows = [str(idx + 1) for idx, value in enumerate(temp) if value in duplicates]
+            raise ValueError(f"Duplicate temperature entries found in rows: {', '.join(duplicate_rows)}")
+
         return temp, prop
 
     # Process pandas DataFrame (for both Excel and CSV)
     # Handle both column name (string) and column index (integer)
     if isinstance(temp_col, str):
+        if temp_col not in df.columns:
+            raise ValueError(f"Temperature column '{temp_col}' not found in file")
         temp = df[temp_col].to_numpy(dtype=np.float64)
     else:
+        if temp_col >= len(df.columns):
+            raise ValueError(f"Temperature column index {temp_col} out of bounds (file has {len(df.columns)} columns)")
         temp = df.iloc[:, temp_col].to_numpy(dtype=np.float64)
 
     if isinstance(prop_col, str):
+        if prop_col not in df.columns:
+            raise ValueError(f"Property column '{prop_col}' not found in file")
         prop = df[prop_col].to_numpy(dtype=np.float64)
     else:
+        if prop_col >= len(df.columns):
+            raise ValueError(f"Property column index {prop_col} out of bounds (file has {len(df.columns)} columns)")
+        prop = df.iloc[:, prop_col].to_numpy(dtype=np.float64)
+
+    # Check for NaN values
+    if np.any(np.isnan(temp)) or np.any(np.isnan(prop)):
+        nan_rows = np.where(np.isnan(temp) | np.isnan(prop))[0] + 1
+        raise ValueError(f"Data contains NaN values in rows: {', '.join(map(str, nan_rows))}")
+
+    # Check for duplicate temperatures
+    unique_temp, counts = np.unique(temp, return_counts=True)
+    duplicates = unique_temp[counts > 1]
+    if len(duplicates) > 0:
+        duplicate_rows = [str(idx + 1) for idx, value in enumerate(temp) if value in duplicates]
+        raise ValueError(f"Duplicate temperature entries found in rows: {', '.join(duplicate_rows)}")
+
+    return temp, prop
+
+
+def read_data_from_file(file_config: Union[str, Dict], header: bool = True) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    Reads temperature and property data from a file based on configuration.
+
+    Args:
+        file_config: Either a path string or a dictionary containing file configuration
+            If string (direct path):
+                - File must have exactly 2 columns
+                - First column is temperature, second is property
+            If dictionary:
+                - file: Path to data file
+                - temp_col: Temperature column name/index
+                - prop_col: Property column name/index
+        header (bool): Indicates if the file contains a header row.
+
+    Returns:
+        Tuple[np.ndarray, np.ndarray]: Temperature and property arrays
+
+    Raises:
+        ValueError: If:
+            - For direct path: Data doesn't have exactly two columns
+            - For dictionary config: Specified column names don't match headers
+            - Data contains NaN values
+            - Data contains duplicate temperature entries
+    """
+    # Handle string (direct path) or dictionary configuration
+    if isinstance(file_config, str):
+        file_path = file_config
+        direct_path = True
+        # For direct file paths, assume first two columns are temperature and property
+        temp_col = 0
+        prop_col = 1
+    else:
+        file_path = file_config['file']
+        direct_path = False
+        temp_col = file_config['temp_col']
+        prop_col = file_config['prop_col']
+
+    print(f"Reading data from file: {file_path}")
+
+    if file_path.endswith('.xlsx'):
+        df = pd.read_excel(file_path, header=0 if header else None)
+    elif file_path.endswith('.csv'):
+        # Use pandas read_csv for CSV files
+        df = pd.read_csv(file_path, header=0 if header else None)
+    else:
+        # For txt files
+        if header:
+            # Read the header line to get column names
+            with open(file_path, 'r') as f:
+                header_line = f.readline().strip()
+                column_names = header_line.split()
+
+            # Now read the data
+            data = np.loadtxt(file_path, dtype=float, skiprows=1)
+
+            # Direct path case - check for exactly 2 columns
+            if direct_path:
+                if data.shape[1] != 2:
+                    raise ValueError(f"Data should have exactly two columns, but found {data.shape[1]} columns")
+                temp = data[:, 0]
+                prop = data[:, 1]
+            # Dictionary case - match column names
+            else:
+                # Handle temperature column
+                if isinstance(temp_col, str):
+                    if temp_col in column_names:
+                        temp_idx = column_names.index(temp_col)
+                    else:
+                        raise ValueError(f"Temperature column '{temp_col}' not found in file. "
+                                         f"Available columns: {', '.join(column_names)}")
+                else:
+                    if temp_col >= data.shape[1]:
+                        raise ValueError(f"Temperature column index {temp_col} out of bounds (file has {data.shape[1]} columns)")
+                    temp_idx = temp_col
+
+                # Handle property column
+                if isinstance(prop_col, str):
+                    if prop_col in column_names:
+                        prop_idx = column_names.index(prop_col)
+                    else:
+                        raise ValueError(f"Property column '{prop_col}' not found in file. "
+                                         f"Available columns: {', '.join(column_names)}")
+                else:
+                    if prop_col >= data.shape[1]:
+                        raise ValueError(f"Property column index {prop_col} out of bounds (file has {data.shape[1]} columns)")
+                    prop_idx = prop_col
+
+                temp = data[:, temp_idx]
+                prop = data[:, prop_idx]
+        else:
+            # No header
+            data = np.loadtxt(file_path, dtype=float, skiprows=0)
+
+            # Direct path case - check for exactly 2 columns
+            if direct_path:
+                if data.shape[1] != 2:
+                    raise ValueError(f"Data should have exactly two columns, but found {data.shape[1]} columns")
+                temp = data[:, 0]
+                prop = data[:, 1]
+            # Dictionary case - use column indices
+            else:
+                if isinstance(temp_col, str):
+                    raise ValueError(f"Column name '{temp_col}' specified, but file has no header row")
+                if isinstance(prop_col, str):
+                    raise ValueError(f"Column name '{prop_col}' specified, but file has no header row")
+
+                if temp_col >= data.shape[1]:
+                    raise ValueError(f"Temperature column index {temp_col} out of bounds (file has {data.shape[1]} columns)")
+                if prop_col >= data.shape[1]:
+                    raise ValueError(f"Property column index {prop_col} out of bounds (file has {data.shape[1]} columns)")
+
+                temp = data[:, temp_col]
+                prop = data[:, prop_col]
+
+        # Check for NaN values
+        if np.any(np.isnan(temp)) or np.any(np.isnan(prop)):
+            nan_rows = np.where(np.isnan(temp) | np.isnan(prop))[0] + 1
+            raise ValueError(f"Data contains NaN values in rows: {', '.join(map(str, nan_rows))}")
+
+        # Check for duplicate temperatures
+        unique_temp, counts = np.unique(temp, return_counts=True)
+        duplicates = unique_temp[counts > 1]
+        if len(duplicates) > 0:
+            duplicate_rows = [str(idx + 1) for idx, value in enumerate(temp) if value in duplicates]
+            raise ValueError(f"Duplicate temperature entries found in rows: {', '.join(duplicate_rows)}")
+
+        return temp, prop
+
+    # Process pandas DataFrame (for both Excel and CSV)
+    # Handle both column name (string) and column index (integer)
+    if isinstance(temp_col, str):
+        if temp_col in df.columns:
+            temp = df[temp_col].to_numpy(dtype=np.float64)
+        else:
+            raise ValueError(f"Temperature column '{temp_col}' not found in file. "
+                             f"Available columns: {', '.join(df.columns)}")
+    else:
+        if temp_col >= len(df.columns):
+            raise ValueError(f"Temperature column index {temp_col} out of bounds (file has {len(df.columns)} columns)")
+        temp = df.iloc[:, temp_col].to_numpy(dtype=np.float64)
+
+    if isinstance(prop_col, str):
+        if prop_col in df.columns:
+            prop = df[prop_col].to_numpy(dtype=np.float64)
+        else:
+            raise ValueError(f"Property column '{prop_col}' not found in file. "
+                             f"Available columns: {', '.join(df.columns)}")
+    else:
+        if prop_col >= len(df.columns):
+            raise ValueError(f"Property column index {prop_col} out of bounds (file has {len(df.columns)} columns)")
         prop = df.iloc[:, prop_col].to_numpy(dtype=np.float64)
 
     # Check for NaN values
