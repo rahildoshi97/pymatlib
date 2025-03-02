@@ -1,7 +1,7 @@
 import pytest
 import numpy as np
 from pymatlib.core.data_handler import (
-    read_data, celsius_to_kelvin, fahrenheit_to_kelvin,
+    read_data_from_txt, celsius_to_kelvin, fahrenheit_to_kelvin,
     thousand_times
 )
 
@@ -35,7 +35,7 @@ def test_read_data(tmp_path):
 3.0 30.0
 """)
 
-    temp, prop = read_data(str(test_file))
+    temp, prop = read_data_from_txt(str(test_file))
     assert np.allclose(temp, [1.0, 2.0, 3.0])
     assert np.allclose(prop, [10.0, 20.0, 30.0])
 
@@ -48,7 +48,7 @@ NaN 20.0
 """)
 
     with pytest.raises(ValueError, match="Data contains NaN values in rows: 2"):
-        read_data(str(invalid_file))
+        read_data_from_txt(str(invalid_file))
 
 def test_read_data_errors(tmp_path):
     """Test error handling in read_data function."""
@@ -77,10 +77,10 @@ NaN 20.0
 
     # Test each error case
     with pytest.raises(ValueError, match="Data should have exactly two columns"):
-        temp, prop = read_data(str(wrong_columns))
+        temp, prop = read_data_from_txt(str(wrong_columns))
 
     with pytest.raises(ValueError, match="Data contains NaN values"):
-        temp, prop = read_data(str(nan_file))
+        temp, prop = read_data_from_txt(str(nan_file))
 
     with pytest.raises(ValueError, match="Duplicate temperature entries found"):
-        temp, prop = read_data(str(duplicate_file))
+        temp, prop = read_data_from_txt(str(duplicate_file))
