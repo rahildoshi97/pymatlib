@@ -1,3 +1,20 @@
+"""
+DEPRECATED: This file contains the original implementation of interpolation comparision.
+It is kept for historical reference only and should not be used in new code.
+
+As of March 2025, please use the new dictionary-based implementation in
+pymatlib.core.interpolators instead.
+"""
+
+import warnings
+
+warnings.warn(
+    "This module is deprecated and will be removed in a future version. "
+    "Please use pymatlib.core.interpolators instead.",
+    DeprecationWarning,
+    stacklevel=2
+)
+
 import time
 import numpy as np
 import sympy as sp

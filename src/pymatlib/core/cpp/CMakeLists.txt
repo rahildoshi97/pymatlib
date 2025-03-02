@@ -33,19 +33,3 @@ target_link_libraries(fast_interpolation PRIVATE
         pybind11::module
         Python::NumPy
 )
-
-# Add C++ test executable
-add_executable(fast_interpolation_test_cpp test_interpolation.cpp)
-target_compile_features(fast_interpolation_test_cpp PRIVATE cxx_std_11)
-target_compile_options(fast_interpolation_test_cpp PRIVATE -O3)
-target_link_libraries(fast_interpolation_test_cpp PRIVATE
-        interpolation_template
-)
-
-# Add custom target for running Python tests
-add_custom_target(fast_interpolation_test_py
-        COMMAND ${Python_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/test_interpolation.py
-        DEPENDS fast_interpolation
-        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-        COMMENT "Running Python tests"
-)
