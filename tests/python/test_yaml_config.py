@@ -12,8 +12,12 @@ def print_property_value(prop, T, temp):
 # Create symbolic temperature variable
 T = sp.Symbol('T')
 
+# Get the path to the YAML file
+current_file = Path(__file__)
+yaml_path = current_file.parent.parent.parent / "src" / "pymatlib" / "data" / "alloys" / "SS316L" / "SS304L.yaml"
+
 # Create alloy from YAML
-ss316l = create_alloy_from_yaml("SS304L.yaml", T)
+ss316l = create_alloy_from_yaml(yaml_path, T)
 #ss316l_1 = create_alloy_from_yaml("SS304L_1.yaml", T)
 
 # Test various properties

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
-project(fast_interpolation)
+project(pymatlib_tests)
 
 # Find required packages
 find_package(Python COMPONENTS Interpreter Development NumPy REQUIRED)
@@ -10,34 +10,32 @@ execute_process(
 )
 find_package(pybind11 PATHS ${PYBIND11_CMAKE_DIR} NO_DEFAULT_PATH REQUIRED)
 
+# Get the path to the source directory
+set(SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../src/pymatlib/core/cpp")
+
 # Create interface library for header-only template implementation
 add_library(interpolation_template INTERFACE)
 target_include_directories(interpolation_template INTERFACE
-        ${CMAKE_CURRENT_SOURCE_DIR}
-        ${CMAKE_CURRENT_SOURCE_DIR}/include
+        ${SRC_DIR}
+        ${SRC_DIR}/include
 )
 
-# Add the Pybind11 module
-pybind11_add_module(fast_interpolation
-        module.cpp
-        binary_search_interpolation.cpp
-        double_lookup_interpolation.cpp
+# Add C++ test executable
+add_executable(fast_interpolation_test_cpp test_interpolation.cpp)
+target_include_directories(fast_interpolation_test_cpp PRIVATE
+        ${SRC_DIR}
+        ${SRC_DIR}/include
 )
-target_include_directories(fast_interpolation PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/include
-)
-target_compile_features(fast_interpolation PRIVATE cxx_std_11)
-target_compile_options(fast_interpolation PRIVATE -O3)
-target_link_libraries(fast_interpolation PRIVATE
+target_compile_features(fast_interpolation_test_cpp PRIVATE cxx_std_11)
+target_compile_options(fast_interpolation_test_cpp PRIVATE -O3)
+target_link_libraries(fast_interpolation_test_cpp PRIVATE
         interpolation_template
-        pybind11::module
-        Python::NumPy
 )
 
-# Remove or update this if test_interpolation.py has been moved
+# Optional: Add custom target for running Python tests if you have a Python test file
 # add_custom_target(fast_interpolation_test_py
 #         COMMAND ${Python_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/test_interpolation.py
-#         DEPENDS fast_interpolation
+#         DEPENDS fast_interpolation_test_cpp
 #         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 #         COMMENT "Running Python tests"
 # )
