@@ -8,8 +8,7 @@ from pymatlib.core.alloy import Alloy
 from pymatlib.data.element_data import Fe, Cr, Ni, Mo, Mn
 from pymatlib.core.models import thermal_diffusivity_by_heat_conductivity, density_by_thermal_expansion, energy_density, energy_density_total_enthalpy
 from pymatlib.core.data_handler import read_data_from_txt, celsius_to_kelvin, thousand_times, read_data_from_excel, read_data_from_file, plot_arrays
-from pymatlib.core.interpolators import interpolate_property, prepare_interpolation_arrays#, interpolate_binary_search
-from pymatlib.core.cpp.fast_interpolation import interpolate_binary_search, interpolate_double_lookup
+from pymatlib.core.interpolators import interpolate_property, prepare_interpolation_arrays, interpolate_binary_search, interpolate_double_lookup
 
 
 def create_SS316L(T: Union[float, sp.Symbol]) -> Alloy:
@@ -270,7 +269,7 @@ def create_SS316L(T: Union[float, sp.Symbol]) -> Alloy:
         print(f"Average execution time per iteration (array loop): {np.mean(all_execution_times) / len(SS316L.energy_density_array):.8f} seconds")
 
     # Run the performance test
-    measure_performance(iterations=100000)
+    measure_performance(iterations=10)
 
     quit()
 
