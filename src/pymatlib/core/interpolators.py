@@ -44,7 +44,7 @@ class InterpolationArrayContainer(CustomGenerator):
 
     def generate(self, sfg: SfgComposer):
         sfg.include("<array>")
-        sfg.include("interpolate_binary_search_cpp.h")
+        sfg.include("pymatlib_interpolators/interpolate_binary_search_cpp.h")
 
         # Binary search arrays (always included)
         T_bs_arr_values = ", ".join(str(v) for v in self.T_bs)
@@ -65,7 +65,7 @@ class InterpolationArrayContainer(CustomGenerator):
 
         # Add double lookup if available
         if self.has_double_lookup:
-            sfg.include("interpolate_double_lookup_cpp.h")
+            sfg.include("pymatlib_interpolators/interpolate_double_lookup_cpp.h")
 
             T_eq_arr_values = ", ".join(str(v) for v in self.T_eq)
             E_neq_arr_values = ", ".join(str(v) for v in self.E_neq)
