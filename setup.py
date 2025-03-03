@@ -1,22 +1,4 @@
-from setuptools import setup, find_packages, Extension
-# import pybind11
-
-
-# Define the extension module
-'''ext_modules = [
-    Extension(
-        "pymatlib.core.cpp.fast_interpolation",  # Module name in Python
-        [
-            "src/pymatlib/core/cpp/module.cpp",
-            "src/pymatlib/core/cpp/binary_search_interpolation.cpp",
-            "src/pymatlib/core/cpp/double_lookup_interpolation.cpp",
-        ],
-        include_dirs=[pybind11.get_include(),
-                      "src/pymatlib/core/cpp/include"],
-        extra_compile_args=['-O3', '-std=c++11'],  # Enable high optimization and C++11
-        language='c++'
-    ),
-]'''
+from setuptools import setup, find_packages
 
 setup(
     name='pymatlib',
@@ -44,7 +26,6 @@ setup(
         'sympy>=1.7.0',
         'pytest>=6.0.0',
         'pystencils@git+https://i10git.cs.fau.de/pycodegen/pystencils.git@v2.0-dev',
-        # 'pybind11>=2.6.0',
     ],
     extras_require={
         'dev': [
@@ -53,6 +34,5 @@ setup(
             'black',       # For code formatting
         ],
     },
-    # ext_modules=ext_modules,
     include_package_data=True,  # Include package data specified in MANIFEST.in
 )
