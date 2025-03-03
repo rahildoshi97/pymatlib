@@ -10,6 +10,6 @@ matplotlib~=3.10.0
 scipy~=1.15.1
 setuptools~=75.8.0
 versioneer~=0.29
-pybind11~=2.14.0.dev1
+# pybind11~=2.14.0.dev1
 pandas~=2.2.3
 openpyxl~=3.1.5
