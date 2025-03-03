@@ -26,14 +26,16 @@ print(f"Composition: {ss316l.composition}")
 # Print the composition of each element in the alloy
 for i in range(len(ss316l.composition)):
     print(f"Element {ss316l.elements[i]}: Composition {ss316l.composition[i]}")
-print(f"Solidus Temperature: {ss316l.temperature_solidus}")
+
+print(f"\nSolidus Temperature: {ss316l.temperature_solidus}")
 print(f"Liquidus Temperature: {ss316l.temperature_liquidus}")
+
 print("\nTesting SS316L with symbolic temperature:")
 for field in vars(ss316l):
     print(f"{field} = {ss316l.__getattribute__(field)}")
 
 # Test computed properties at specific temperature
-test_temp = 1605
+test_temp = 1735
 print(f"\nProperties at {test_temp}K:")
 print(f"Density: {print_property_value(ss316l.density, T, test_temp)}")
 print(f"Specific enthalpy: {print_property_value(ss316l.specific_enthalpy, T, test_temp)}")
