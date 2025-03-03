@@ -33,6 +33,7 @@ class MaterialConfigParser:
         'latent_heat_of_vaporization',
         'specific_enthalpy',
         'surface_tension',
+        'temperature',
         'temperature_array',
         'thermal_diffusivity',
         'thermal_expansion_coefficient',
@@ -259,7 +260,7 @@ class MaterialConfigParser:
             prop_array = prop_array * conversion_factors[prop_name]'''
 
         # Store temperature array if not already set
-        if not hasattr(alloy, 'temperature_array') or len(alloy.temperature_array) == 0:
+        '''if not hasattr(alloy, 'temperature_array') or len(alloy.temperature_array) == 0:
             alloy.temperature_array = temp_array
 
         material_property = interpolate_property(T, temp_array, prop_array)
@@ -270,7 +271,9 @@ class MaterialConfigParser:
             alloy.energy_density_temperature_array = temp_array
             alloy.energy_density_array = prop_array
             alloy.energy_density_solidus = material_property.evalf(T, alloy.temperature_solidus)
-            alloy.energy_density_liquidus = material_property.evalf(T, alloy.temperature_liquidus)
+            alloy.energy_density_liquidus = material_property.evalf(T, alloy.temperature_liquidus)'''
+
+        self._process_property_data(alloy, prop_name, T, temp_array, prop_array)
 
 ########################################################################################################################
 
@@ -283,7 +286,7 @@ class MaterialConfigParser:
             raise ValueError(f"Length mismatch in {prop_name}: key and val arrays must have same length")
 
         # Store temperature array if not already set
-        if not hasattr(alloy, 'temperature_array') or len(alloy.temperature_array) == 0:
+        '''if not hasattr(alloy, 'temperature_array') or len(alloy.temperature_array) == 0:
             alloy.temperature_array = key_array
 
         material_property = interpolate_property(T, key_array, val_array)
@@ -294,7 +297,9 @@ class MaterialConfigParser:
             alloy.energy_density_temperature_array = key_array
             alloy.energy_density_array = val_array
             alloy.energy_density_solidus = material_property.evalf(T, alloy.temperature_solidus)
-            alloy.energy_density_liquidus = material_property.evalf(T, alloy.temperature_liquidus)
+            alloy.energy_density_liquidus = material_property.evalf(T, alloy.temperature_liquidus)'''
+
+        self._process_property_data(alloy, prop_name, T, key_array, val_array)
 
     def _process_key_definition(self, key_def, val_array, alloy: Alloy) -> np.ndarray:
         """Process temperature key definition"""
@@ -330,6 +335,36 @@ class MaterialConfigParser:
             else:
                 processed_key.append(float(k))
         return np.array(processed_key, dtype=float)
+
+########################################################################################################################
+
+    def _process_property_data(self, alloy: Alloy, prop_name: str, T: Union[float, sp.Symbol], temp_array: np.ndarray, prop_array: np.ndarray):
+        if isinstance(T, sp.Symbol):
+            # If T is symbolic, store the full temperature array if not already set
+            if not hasattr(alloy, 'temperature_array') or len(alloy.temperature_array) == 0:
+                alloy.temperature_array = temp_array
+
+            material_property = interpolate_property(T, temp_array, prop_array)
+            setattr(alloy, prop_name, material_property)
+            print(f"_process_property_data (sp:symbol): {prop_name}")
+
+            # Store additional properties if this is energy_density
+            if prop_name == 'energy_density':
+                alloy.energy_density_temperature_array = temp_array
+                alloy.energy_density_array = prop_array
+                alloy.energy_density_solidus = material_property.evalf(T, alloy.temperature_solidus)
+                alloy.energy_density_liquidus = material_property.evalf(T, alloy.temperature_liquidus)
+
+        elif isinstance(T, (float, int)):
+            # If T is a constant, store just that value and interpolate
+            alloy.temperature = float(T)
+
+            material_property = interpolate_property(T, temp_array, prop_array)
+            setattr(alloy, prop_name, material_property)
+            print(f"_process_property_data (float): {prop_name}")
+
+        else:
+            raise ValueError(f"Unexpected type for T: {type(T)}")
 
 ########################################################################################################################
 
@@ -409,48 +444,44 @@ class MaterialConfigParser:
         # Get dependencies for selected method
         method_dependencies = dependencies[prop_name][method]
 
-        # Process dependencies first if they're marked for computation
-        if prop_name == 'energy_density':
-            if 'energy_density_temperature_array' not in self.config['properties']:
-                raise ValueError(f"energy_density_temperature_array must be defined when energy_density is computed")
-
-            # Process energy_density_temperature_array
-            edta = self.config['properties']['energy_density_temperature_array']
-            alloy.energy_density_temperature_array = self._process_edta(edta)
-
-        # Process other dependencies
-        for dep in method_dependencies:
-            if hasattr(alloy, dep) and getattr(alloy, dep) is None:
-                if dep in self.config['properties']:
-                    dep_config = self.config['properties'][dep]
-                    if dep_config == 'compute' or (isinstance(dep_config, dict) and 'compute' in dep_config):
-                        print(f"prop_name, dependencies[prop_name], dep: {prop_name, dependencies[prop_name], dep}")
-                        self._process_computed_property(alloy, dep, T)
-
-        # Verify all dependencies are available
-        missing_deps = [dep for dep in method_dependencies
-                        if not hasattr(alloy, dep) or getattr(alloy, dep) is None]
-        # print(f"missing_deps: {missing_deps}")
-        if missing_deps:
-            raise ValueError(f"Cannot compute {prop_name}. Missing dependencies: {missing_deps}")
+        # Process dependencies
+        self._process_dependencies(alloy, prop_name, method_dependencies, T)
 
         # Compute property
         material_property = computation_methods[prop_name][method]()
         setattr(alloy, prop_name, material_property)
 
-        # Handle special case for energy_density arrays and phase points
-        if prop_name == 'energy_density':
-            # Check if any dependency is a MaterialProperty
-            deps_to_check = [getattr(alloy, dep) for dep in method_dependencies if hasattr(alloy, dep)]
-            if any(isinstance(dep, MaterialProperty) for dep in deps_to_check):
-            # if any(isinstance(dep, MaterialProperty) for dep in [alloy.density, alloy.heat_capacity, alloy.latent_heat_of_fusion]):
-                if hasattr(alloy, 'energy_density_temperature_array') and len(alloy.energy_density_temperature_array) > 0:
-                    # alloy.energy_density_temperature_array = alloy.temperature_array
-                    alloy.energy_density_array = np.array([
-                        material_property.evalf(T, temp) for temp in alloy.energy_density_temperature_array
-                    ])
-                    alloy.energy_density_solidus = material_property.evalf(T, alloy.temperature_solidus)
-                    alloy.energy_density_liquidus = material_property.evalf(T, alloy.temperature_liquidus)
+        # Handle special case for energy_density
+        if prop_name == 'energy_density' and isinstance(T, sp.Symbol):
+            self._handle_energy_density(alloy, material_property, T, method_dependencies)
+
+    def _process_dependencies(self, alloy: Alloy, prop_name: str, dependencies: List[str], T: Union[float, sp.Symbol]):
+        for dep in dependencies:
+            if getattr(alloy, dep, None) is None:
+                if dep in self.config['properties']:
+                    dep_config = self.config['properties'][dep]
+                    if dep_config == 'compute' or (isinstance(dep_config, dict) and 'compute' in dep_config):
+                        self._process_computed_property(alloy, dep, T)
+
+        # Verify all dependencies are available
+        missing_deps = [dep for dep in dependencies if getattr(alloy, dep, None) is None]
+        if missing_deps:
+            raise ValueError(f"Cannot compute {prop_name}. Missing dependencies: {missing_deps}")
+
+    def _handle_energy_density(self, alloy: Alloy, material_property: MaterialProperty, T: sp.Symbol, dependencies: List[str]):
+        if not isinstance(T, sp.Symbol):
+            raise ValueError("_handle_energy_density should only be called with symbolic T")
+        deps_to_check = [getattr(alloy, dep) for dep in dependencies if hasattr(alloy, dep)]
+        if any(isinstance(dep, MaterialProperty) for dep in deps_to_check):
+            if 'energy_density_temperature_array' not in self.config['properties']:
+                raise ValueError(f"energy_density_temperature_array must be defined when energy_density is computed with symbolic T")
+            # Process energy_density_temperature_array
+            edta = self.config['properties']['energy_density_temperature_array']
+            alloy.energy_density_temperature_array = self._process_edta(edta)
+            if len(alloy.energy_density_temperature_array) >= 2:
+                alloy.energy_density_array = np.vectorize(lambda temp: material_property.evalf(T, temp))(alloy.energy_density_temperature_array)
+                alloy.energy_density_solidus = material_property.evalf(T, alloy.temperature_solidus)
+                alloy.energy_density_liquidus = material_property.evalf(T, alloy.temperature_liquidus)
 
     def _process_edta(self, array_def: str) -> np.ndarray:
         """Process temperature array definition with format (start, end, points/delta)"""
@@ -472,7 +503,7 @@ class MaterialConfigParser:
                 delta = float(step)
                 return np.arange(start, end + delta/2, delta)  # delta/2 ensures end point inclusion
             else:
-            # Handle as points (int)
+                # Handle as points (int)
                 points = int(step)
                 if points <= 0:
                     raise ValueError(f"Number of points must be a positive integer, got {points}")
