@@ -42,7 +42,7 @@ test = [
 requires = [
     "setuptools>=69",
     "wheel",
-    "pybind11",
+    # "pybind11",
     "ruamel.yaml>=0.15.70",
     #"PyYAML",
     "pandas",
