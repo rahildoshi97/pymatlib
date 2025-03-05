@@ -35,7 +35,7 @@ for field in vars(ss316l):
     print(f"{field} = {ss316l.__getattribute__(field)}")
 
 # Test computed properties at specific temperature
-test_temp = 1735
+test_temp = 1670
 print(f"\nProperties at {test_temp}K:")
 print(f"Density: {print_property_value(ss316l.density, T, test_temp)}")
 print(f"Specific enthalpy: {print_property_value(ss316l.specific_enthalpy, T, test_temp)}")
@@ -48,4 +48,4 @@ print(f"Latent heat: {ss316l.latent_heat_of_fusion.evalf(T, test_temp)}")
 # Test array generation for energy density
 if hasattr(ss316l, 'energy_density_array'):
     print(f"\nEnergy Density Array Shape: {ss316l.energy_density_array.shape}")
-    print(f"Temperature Array Shape: {ss316l.energy_density_temperature_array.shape}")
+    print(f"Energy Density Temperature Array Shape: {ss316l.energy_density_temperature_array.shape}")
