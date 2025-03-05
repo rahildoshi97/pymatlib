@@ -97,8 +97,8 @@ def create_alloy(T: Union[float, sp.Symbol]) -> Alloy:
     base_dir = Path(__file__).parent
 
     # Paths to data files using relative paths
-    density_data_file_path = str(base_dir/'..'/'data'/'alloys'/'SS316L'/'density_temperature_edited.txt')
-    heat_capacity_data_file_path = str(base_dir/'..'/'data'/'alloys'/'SS316L'/'heat_capacity_temperature_edited.txt')
+    density_data_file_path = str(base_dir/'..'/'data'/'alloys'/'SS304L'/'density_temperature_edited.txt')
+    heat_capacity_data_file_path = str(base_dir/'..'/'data'/'alloys'/'SS304L'/'heat_capacity_temperature_edited.txt')
 
     # Read temperature and material property data from the files
     density_temp_array, density_array = read_data(density_data_file_path)
@@ -162,7 +162,7 @@ def create_alloy(T: Union[float, sp.Symbol]) -> Alloy:
         raise ValueError(f"Mismatch value. Temperature value should be {alloy.temperature_liquidus}")
 
     E_target_alloy = generate_target_points(float(alloy.energy_density_array[0]), float(alloy.energy_density_array[-1]), 1_000)
-    compare_interpolation_methods(E_target_alloy, T_eq, E_neq, E_eq, inv_delta_E_eq, idx_map, 'SS316L')
+    compare_interpolation_methods(E_target_alloy, T_eq, E_neq, E_eq, inv_delta_E_eq, idx_map, 'SS304L')
 
     def measure_performance(iterations=1):
         all_execution_times = np.zeros(iterations)

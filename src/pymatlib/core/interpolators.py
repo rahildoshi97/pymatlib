@@ -405,10 +405,13 @@ def prepare_interpolation_arrays(T_array: np.ndarray, E_array: np.ndarray) -> di
 
     # Basic validation
     if len(T_array) != len(E_array):
-        raise ValueError("Temperature and energy density arrays must have the same length")
+        raise ValueError(f"Energy density array (length {len(E_array)}) and temperature array (length {len(T_array)}) must have the same length!")
 
-    if len(T_array) < 2:
-        raise ValueError("Arrays must contain at least 2 elements")
+    if not E_array.size or not T_array.size:
+        raise ValueError("Energy density and temperature arrays must not be empty!")
+
+    if len(E_array) < 2:
+        raise ValueError(f"Arrays must contain at least 2 elements, got {len(E_array)}!")
 
     # Check if arrays are monotonic
     T_increasing = np.all(np.diff(T_array) > 0)

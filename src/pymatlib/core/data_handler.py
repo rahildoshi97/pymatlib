@@ -449,7 +449,7 @@ if __name__ == '__main__':
     # Example usage:
     # 1. Using a file path
     base_dir = Path(__file__).parent  # Directory of the current file
-    _file_path = str( base_dir / '..' / 'data' / 'alloys' / 'SS316L' / 'density_temperature.txt' )
+    _file_path = str( base_dir / '..' / 'data' / 'alloys' / 'SS304L' / 'density_temperature.txt' )
     min_temp, max_temp = find_min_max_temperature(_file_path)
     print(f"Minimum Temperature from file: {min_temp}")
     print(f"Maximum Temperature from file: {max_temp}")

@@ -3,7 +3,7 @@ import numpy as np
 import sympy as sp
 from pymatlib.core.alloy import Alloy, AlloyCompositionError, AlloyTemperatureError
 from pymatlib.data.element_data import Ti, Al, V, Fe, Cr, Mn, Ni
-from src.pymatlib.data.alloys.SS316L.SS316L import create_SS316L
+from src.pymatlib.data.alloys.SS304L.SS304L import create_SS304L
 from src.pymatlib.core.typedefs import MaterialProperty
 
 def test_alloy_creation():
@@ -22,9 +22,9 @@ def test_alloy_creation():
         Alloy(elements=[Fe, Cr, Mn, Ni], composition=[0.7, 0.2, 0.05, 0.05], temperature_solidus=1900., temperature_liquidus=1800.)
 
 def test_create_SS316L():
-    """Test the creation and properties of SS316L alloy."""
+    """Test the creation and properties of SS304L alloy."""
     # Test with float temperature input
-    alloy = create_SS316L(1400.0)
+    alloy = create_SS304L(1400.0)
 
     # Check if properties are set and have correct types
     assert hasattr(alloy, 'density')
@@ -40,7 +40,7 @@ def test_create_SS316L():
 
     # Test with symbolic temperature input
     T = sp.Symbol('T')
-    alloy_symbolic = create_SS316L(T)
+    alloy_symbolic = create_SS304L(T)
 
     # Check symbolic properties
     assert alloy_symbolic.density is not None
@@ -55,7 +55,7 @@ def test_create_SS316L():
     assert isinstance(float(alloy.thermal_diffusivity.expr), float)
 
 def test_create_SS316L2():
-    alloy = create_SS316L(1400.0)
+    alloy = create_SS304L(1400.0)
 
     # Check if density exists and has the correct type
     assert hasattr(alloy, 'density')
@@ -70,14 +70,14 @@ def test_alloy_single_element():
 
 def test_alloy_property_modification():
     # Test accessing and modifying individual alloy properties
-    alloy = create_SS316L(1400.0)
+    alloy = create_SS304L(1400.0)
     # assert isinstance(alloy.density, MaterialProperty)
     # Set the density to a MaterialProperty instance with a constant expression
     alloy.density = MaterialProperty(expr=sp.Float(8000.0))
     assert alloy.density.expr == sp.Float(8000.0)
 
 '''def test_create_SS316L_invalid_temperature():
-    # Test creating SS316L alloy with invalid temperature inputs
+    # Test creating SS304L alloy with invalid temperature inputs
     with pytest.raises(ValueError):
         create_SS316L(-100.0)  # Negative temperature
     with pytest.raises(ValueError):

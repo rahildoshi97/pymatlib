@@ -23,7 +23,6 @@ with SourceFileGenerator() as sfg:
 
     yaml_path = files('pymatlib.data.alloys.SS316L').joinpath('SS304L.yaml')
     mat = create_alloy_from_yaml(yaml_path, u.center())
-    # arr_container = DoubleLookupArrayContainer("SS316L", mat.temperature_array, mat.energy_density_array)
     arr_container = InterpolationArrayContainer.from_material("SS316L", mat)
     sfg.generate(arr_container)
 
@@ -39,6 +38,5 @@ with SourceFileGenerator() as sfg:
             ps.Assignment(thermal_diffusivity_out.center(), thermal_diffusivity)
         ])
 
-    # generate_sweep(ctx, 'HeatEquationKernelWithMaterial', ac, varying_parameters=((data_type, str(thermal_diffusivity)),))
     sweep = Sweep("HeatEquationKernelWithMaterial", ac)
     sfg.generate(sweep)

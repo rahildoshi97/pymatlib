@@ -133,8 +133,8 @@ properties:
   #OR
   # energy_density: compute
   #OR
-  energy_density:
-    compute: total_enthalpy  # Explicit model selection
+  energy_density: compute
+    #compute: total_enthalpy  # Explicit model selection
   # User can specify either:
   energy_density_temperature_array: (300, 3000, 541)  # int for number of points
   # OR
@@ -142,22 +142,16 @@ properties:
   # save the energy_density and temperature as arrays always.
 
 
-  #density: 7950
+  #density: 7950.
   #OR
-  #density: compute  # computed by thermal expansion coefficient, should be acceptable even if TEC is defined later in the file
-  base_temperature: 2273
+  density: compute  # computed by thermal expansion coefficient, should be acceptable even if TEC is defined later in the file
+  base_temperature: 2273.
   base_density: 6.591878918e3
   #OR
-  density:
-    file: ./304L_Erstarrungsdaten_edited.xlsx
-    temp_col: T (K)
-    prop_col: Density (kg/(m)^3)
 
 
-  heat_conductivity:
-    file: ./304L_Erstarrungsdaten_edited.xlsx
-    temp_col: T (K)
-    prop_col: Thermal conductivity (W/(m*K))-TOTAL-10000.0(K/s)
+
+
 
 
   heat_capacity:
@@ -182,9 +176,9 @@ properties:
     # val: [171401, 0]
 
 
-  # heat_conductivity:
-    # key: [1200, 1800, 2200, 2400]  # temperature values
-    # val: [25, 30, 33, 35]  # corresponding heat_conductivity values
+  heat_conductivity:
+    val: [25, 30, 33, 35]  # corresponding heat_conductivity values
+    key: [25, 30, 33, 35]
 
 
   # heat_capacity:
