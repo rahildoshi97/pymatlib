@@ -14,7 +14,7 @@ T = sp.Symbol('T')
 
 # Get the path to the YAML file
 current_file = Path(__file__)
-yaml_path = current_file.parent.parent.parent / "src" / "pymatlib" / "data" / "alloys" / "SS316L" / "SS304L.yaml"
+yaml_path = current_file.parent.parent.parent / "src" / "pymatlib" / "data" / "alloys" / "SS304L" / "SS304L.yaml"
 
 # Create alloy from YAML
 ss316l = create_alloy_from_yaml(yaml_path, T)
@@ -30,7 +30,7 @@ for i in range(len(ss316l.composition)):
 print(f"\nSolidus Temperature: {ss316l.temperature_solidus}")
 print(f"Liquidus Temperature: {ss316l.temperature_liquidus}")
 
-print("\nTesting SS316L with symbolic temperature:")
+print("\nTesting SS304L with symbolic temperature:")
 for field in vars(ss316l):
     print(f"{field} = {ss316l.__getattribute__(field)}")
 

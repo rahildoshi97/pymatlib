@@ -21,7 +21,7 @@ with SourceFileGenerator() as sfg:
     custom_container = InterpolationArrayContainer("DoubleLookupTests", np.flip(T_eq), np.flip(E_neq))
     sfg.generate(custom_container)
 
-    yaml_path = files('pymatlib.data.alloys.SS316L').joinpath('SS304L.yaml')
+    yaml_path = files('pymatlib.data.alloys.SS304L').joinpath('SS304L.yaml')
     mat = create_alloy_from_yaml(yaml_path, u.center())
-    arr_container = InterpolationArrayContainer.from_material("SS316L", mat)
+    arr_container = InterpolationArrayContainer.from_material("SS304L", mat)
     sfg.generate(arr_container)
