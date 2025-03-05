@@ -142,10 +142,10 @@ properties:
   # save the energy_density and temperature as arrays always.
 
 
-  #density: 7950
+  #density: 7950.
   #OR
   #density: compute  # computed by thermal expansion coefficient, should be acceptable even if TEC is defined later in the file
-  base_temperature: 2273
+  base_temperature: 2273.
   base_density: 6.591878918e3
   #OR
   density:

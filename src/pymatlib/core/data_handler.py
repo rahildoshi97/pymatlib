@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Union, Tuple, Dict, Any
 from matplotlib import pyplot as plt
 import pandas as pd
+import warnings
 
 
 def print_results(file_path: str, temperatures: np.ndarray, material_property: np.ndarray) -> None:
@@ -38,7 +39,6 @@ def read_data_from_txt(file_path: str, header: bool = True) -> Tuple[np.ndarray,
             - Data contains NaN values
             - Data contains duplicate temperature entries
     """
-    # print(f"Reading data from txt file: {file_path}")
     data = np.loadtxt(file_path, dtype=float, skiprows=1 if header else 0)
 
     if data.ndim != 2 or data.shape[1] != 2:
@@ -79,8 +79,6 @@ def read_data_from_excel(file_path: str, temp_col: str, prop_col: str) -> Tuple[
             - Data contains NaN values
             - Data contains duplicate temperature entries
     """
-    # print(f"Reading data from Excel file: {file_path}")
-
     # Read specific columns from Excel
     df = pd.read_excel(file_path)
 
@@ -140,8 +138,6 @@ def read_data_from_file(file_config: Union[str, Dict], header: bool = True) -> T
         direct_path = False
         temp_col = file_config['temp_col']
         prop_col = file_config['prop_col']
-
-    # print(f"Reading data from file: {file_path}")
 
     if file_path.endswith('.xlsx'):
         df = pd.read_excel(file_path, header=0 if header else None)
@@ -281,6 +277,11 @@ def celsius_to_kelvin(temp: Union[float, np.ndarray]) -> Union[float, np.ndarray
     Returns:
         Union[float, np.ndarray]: Temperature(s) in Kelvin.
     """
+    warnings.warn(
+        "The celsius_to_kelvin function is deprecated and will be removed in a future version.",
+        DeprecationWarning,
+        stacklevel=2
+    )
     return temp + 273.15
 
 
@@ -294,6 +295,11 @@ def fahrenheit_to_kelvin(temp: Union[float, np.ndarray]) -> Union[float, np.ndar
     Returns:
         Union[float, np.ndarray]: Temperature(s) in Kelvin.
     """
+    warnings.warn(
+        "The fahrenheit_to_kelvin function is deprecated and will be removed in a future version.",
+        DeprecationWarning,
+        stacklevel=2
+    )
     return celsius_to_kelvin((temp - 32.0) * (5.0 / 9.0))
 
 
@@ -309,6 +315,11 @@ def thousand_times(q: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
     Returns:
         Union[float, np.ndarray]: Scaled value(s).
     """
+    warnings.warn(
+        "The thousand_times function is deprecated and will be removed in a future version.",
+        DeprecationWarning,
+        stacklevel=2
+    )
     return q * 1000
 
 
@@ -371,7 +382,6 @@ def check_strictly_increasing(arr: np.ndarray, name="Array", threshold=1e-10, ra
                 print(f"Warning: {error_msg}")
                 return False
 
-    # print(f"{name} is strictly monotonically increasing")
     return True
 
 
@@ -436,26 +446,10 @@ def plot_arrays(x_arr: np.ndarray, y_arr: np.ndarray, x_label: str = None, y_lab
 
     # Define filename and directory
     filename = f"{y_label.replace('/', '_')}_vs_{x_label.replace('/', '_')}.png"
-    directory = "plots"
+    directory = "pymatlib_plots"
     os.makedirs(directory, exist_ok=True)  # Ensure the directory exists
 
     filepath = os.path.join(directory, filename)
     plt.savefig(filepath, dpi=300, bbox_inches="tight")
     plt.show()
     print(f"Plot saved as {filepath}")
-
-
-if __name__ == '__main__':
-    # Example usage:
-    # 1. Using a file path
-    base_dir = Path(__file__).parent  # Directory of the current file
-    _file_path = str( base_dir / '..' / 'data' / 'alloys' / 'SS316L' / 'density_temperature.txt' )
-    min_temp, max_temp = find_min_max_temperature(_file_path)
-    print(f"Minimum Temperature from file: {min_temp}")
-    print(f"Maximum Temperature from file: {max_temp}")
-
-    # 2. Using a numpy array
-    temperature_array = np.array([3300, 500, 800, 1000, 1500])
-    min_temp, max_temp = find_min_max_temperature(temperature_array)
-    print(f"Minimum Temperature from array: {min_temp}")
-    print(f"Maximum Temperature from array: {max_temp}")

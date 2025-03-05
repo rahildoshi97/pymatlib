@@ -3,7 +3,6 @@ import numpy as np
 import sympy as sp
 from pathlib import Path
 from typing import Union
-from matplotlib import pyplot as plt
 from pymatlib.core.alloy import Alloy
 from pymatlib.data.element_data import Fe, Cr, Ni, Mo, Mn
 from pymatlib.core.models import thermal_diffusivity_by_heat_conductivity, density_by_thermal_expansion, energy_density, energy_density_total_enthalpy
@@ -11,13 +10,13 @@ from pymatlib.core.data_handler import read_data_from_txt, celsius_to_kelvin, th
 from pymatlib.core.interpolators import interpolate_property, prepare_interpolation_arrays, interpolate_binary_search, interpolate_double_lookup
 
 
-def create_SS316L(T: Union[float, sp.Symbol]) -> Alloy:
+def create_SS304L(T: Union[float, sp.Symbol]) -> Alloy:
     """
-    Creates an Alloy instance for SS316L stainless steel with specific properties.
+    Creates an Alloy instance for SS304L stainless steel with specific properties.
     Args:
         T (Union[float, sp.Symbol]): Temperature as a symbolic variable or numeric value.
     Returns:
-        Alloy: Initialized SS316L alloy with physical properties.
+        Alloy: Initialized SS304L alloy with physical properties.
     Notes:
         - **Material Properties**:
             - **Density**: 8.0 g/cm³ (8000 kg/m³) at room temperature
@@ -45,18 +44,18 @@ def create_SS316L(T: Union[float, sp.Symbol]) -> Alloy:
             - heat_conductivity_temperature.txt
     Example:
         >>> T = sp.Symbol('T')
-        >>> ss316l = create_SS316L(T)
+        >>> ss316l = create_SS304L(T)
         >>> density_at_1000K = ss316l.density.evalf(T, 1000.0)
     """
     # Define the alloy with specific elemental composition and phase transition temperatures
-    SS316L = Alloy(
+    SS304L = Alloy(
         elements=[Fe, Cr, Ni, Mo, Mn],
         composition=[0.675, 0.17, 0.12, 0.025, 0.01],  # Fe: 67.5%, Cr: 17%, Ni: 12%, Mo: 2.5%, Mn: 1%
         temperature_solidus=1605.,  # Solidus temperature in Kelvin (test at 1653.15 K = 1380 C)
         temperature_liquidus=1735.,  # Liquidus temperature in Kelvin (test at 1723.15 K = 1450 C)
         thermal_expansion_coefficient=16.3e-6  # in 1/K
     )
-    # density_data_file_path = "/local/ca00xebo/repos/pymatlib/src/pymatlib/data/alloys/SS316L/density_temperature.txt"
+    # density_data_file_path = "/local/ca00xebo/repos/pymatlib/src/pymatlib/data/alloys/SS304L/density_temperature.txt"
     # Determine the base directory
     base_dir = Path(__file__).parent  # Directory of the current file
 
@@ -65,8 +64,8 @@ def create_SS316L(T: Union[float, sp.Symbol]) -> Alloy:
     density_data_file_path = str(base_dir / '304L_Erstarrungsdaten_edited.xlsx')
     # heat_capacity_data_file_path = str(base_dir / 'heat_capacity_temperature_edited.txt')
     heat_capacity_data_file_path = str(base_dir / '304L_Erstarrungsdaten_edited.xlsx')
-    heat_conductivity_data_file_path = str(base_dir / '..' / 'SS316L' / '304L_Erstarrungsdaten_edited.xlsx')
-    latent_heat_of_fusion_data_file_path = str(base_dir / '..' / 'SS316L' / '304L_Erstarrungsdaten_edited.xlsx')
+    heat_conductivity_data_file_path = str(base_dir / '..' / 'SS304L' / '304L_Erstarrungsdaten_edited.xlsx')
+    latent_heat_of_fusion_data_file_path = str(base_dir / '..' / 'SS304L' / '304L_Erstarrungsdaten_edited.xlsx')
 
     # Read temperature and material property data from the files
     # density_temp_array, density_array = read_data_from_txt(density_data_file_path)
@@ -86,33 +85,33 @@ def create_SS316L(T: Union[float, sp.Symbol]) -> Alloy:
                                      heat_conductivity_temp_array, heat_conductivity_array]):
         raise ValueError("Failed to load temperature or material data from the file.")
 
-    SS316L.heat_conductivity = interpolate_property(T, heat_conductivity_temp_array, heat_conductivity_array)
-    SS316L.density = interpolate_property(T, density_temp_array, density_array)
-    SS316L.heat_capacity = interpolate_property(T, heat_capacity_temp_array, heat_capacity_array)
-    SS316L.thermal_diffusivity = thermal_diffusivity_by_heat_conductivity(SS316L.heat_conductivity, SS316L.density, SS316L.heat_capacity)
-    # SS316L.latent_heat_of_fusion = interpolate_property(T, SS316L.solidification_interval(), np.array([171401.0, 0.0]))
-    SS316L.latent_heat_of_fusion = interpolate_property(T, latent_heat_of_fusion_temp_array, latent_heat_of_fusion_array)
-    SS316L.specific_enthalpy = interpolate_property(T, density_temp_array, sp_enthalpy_array)
-    SS316L.energy_density = energy_density_total_enthalpy(SS316L.density, SS316L.specific_enthalpy)
-    SS316L.energy_density_solidus = SS316L.energy_density.evalf(T, SS316L.temperature_solidus)
-    SS316L.energy_density_liquidus = SS316L.energy_density.evalf(T, SS316L.temperature_liquidus)
+    SS304L.heat_conductivity = interpolate_property(T, heat_conductivity_temp_array, heat_conductivity_array)
+    SS304L.density = interpolate_property(T, density_temp_array, density_array)
+    SS304L.heat_capacity = interpolate_property(T, heat_capacity_temp_array, heat_capacity_array)
+    SS304L.thermal_diffusivity = thermal_diffusivity_by_heat_conductivity(SS304L.heat_conductivity, SS304L.density, SS304L.heat_capacity)
+    # SS304L.latent_heat_of_fusion = interpolate_property(T, SS304L.solidification_interval(), np.array([171401.0, 0.0]))
+    SS304L.latent_heat_of_fusion = interpolate_property(T, latent_heat_of_fusion_temp_array, latent_heat_of_fusion_array)
+    SS304L.specific_enthalpy = interpolate_property(T, density_temp_array, sp_enthalpy_array)
+    SS304L.energy_density = energy_density_total_enthalpy(SS304L.density, SS304L.specific_enthalpy)
+    SS304L.energy_density_solidus = SS304L.energy_density.evalf(T, SS304L.temperature_solidus)
+    SS304L.energy_density_liquidus = SS304L.energy_density.evalf(T, SS304L.temperature_liquidus)
 
     # Populate temperature_array and energy_density_array
-    SS316L.temperature_array = density_temp_array
-    SS316L.energy_density_temperature_array = u1_temp_array
+    SS304L.temperature_array = density_temp_array
+    SS304L.energy_density_temperature_array = u1_temp_array
 
-    SS316L.energy_density_array = np.array([
-        SS316L.energy_density.evalf(T, temp) for temp in density_temp_array
+    SS304L.energy_density_array = np.array([
+        SS304L.energy_density.evalf(T, temp) for temp in density_temp_array
     ])
 
-    args = (SS316L.temperature_array,
-            SS316L.energy_density_liquidus,
-            SS316L.energy_density_array)
+    args = (SS304L.temperature_array,
+            SS304L.energy_density_liquidus,
+            SS304L.energy_density_array)
 
-    E = SS316L.energy_density.evalf(T, SS316L.temperature_liquidus)
+    E = SS304L.energy_density.evalf(T, SS304L.temperature_liquidus)
     result = prepare_interpolation_arrays(
-        SS316L.temperature_array,
-        SS316L.energy_density_array
+        SS304L.temperature_array,
+        SS304L.energy_density_array
     )
 
     if result["method"] == "double_lookup":
@@ -144,18 +143,18 @@ def create_SS316L(T: Union[float, sp.Symbol]) -> Alloy:
     T_star = interpolate_binary_search(*args)
     print(f"T_star: {T_star}")
 
-    return SS316L
+    return SS304L
 
 
 if __name__ == '__main__':
     Temp = sp.Symbol('T')
-    alloy = create_SS316L(Temp)
+    alloy = create_SS304L(Temp)
 
     # Print the composition of each element in the alloy
     for i in range(len(alloy.composition)):
         print(f"Element {alloy.elements[i]}: {alloy.composition[i]}")
 
-    print("\nTesting SS316L with symbolic temperature:")
+    print("\nTesting SS304L with symbolic temperature:")
     for field in vars(alloy):
         print(f"{field} = {alloy.__getattribute__(field)}")
 
