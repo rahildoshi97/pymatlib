@@ -115,12 +115,15 @@
 name: SS304L
 
 composition:
-  Fe: 0.675
-  Cr: 0.170
-  Ni: 0.120
-  Mo: 0.025
-  Mn: 0.010
-
+  C: 0.0002
+  Si: 0.0041
+  Mn: 0.016
+  P: 0.00028
+  S: 0.00002
+  Cr: 0.1909
+  N: 0.00095
+  Ni: 0.0806
+  Fe: 0.70695
 
 solidus_temperature: 1605
 liquidus_temperature: 1735
