@@ -5,14 +5,24 @@ from pymatlib.core.elements import ChemicalElement
 # RSC: Royal Society of Chemistry
 # CRC: CRC Handbook of Chemistry and Physics
 
-Ti = ChemicalElement(
-    name="Titanium",
-    atomic_number=22,  # Atomic number = 22 / Source: Periodic Table
-    atomic_mass=47.867 * Constants.u,  # Atomic mass = 47.867 u / Source: NIST
-    temperature_melt=1941,  # Melting temperature = 1941 K / Source: RSC
-    temperature_boil=3560,  # Boiling temperature = 3560 K / Source: RSC
-    latent_heat_of_fusion=18700,  # Latent heat of fusion = 18700 J/kg / Source: CRC
-    latent_heat_of_vaporization=427000  # Latent heat of vaporization = 427000 J/kg / Source: CRC
+C = ChemicalElement(
+    name="Carbon",
+    atomic_number=6,
+    atomic_mass=12.0107 * Constants.u,
+    temperature_melt=3915,  # Melting temperature = 3915 K
+    temperature_boil=4300,  # Boiling temperature = 4300 K
+    latent_heat_of_fusion=117000,  # Latent heat of fusion = 117 kJ/mol
+    latent_heat_of_vaporization=355000  # Latent heat of vaporization = 355 kJ/mol
+)
+
+N = ChemicalElement(
+    name="Nitrogen",
+    atomic_number=7,
+    atomic_mass=14.0067 * Constants.u,
+    temperature_melt=63.15,  # Melting temperature = 63.15 K
+    temperature_boil=77.36,  # Boiling temperature = 77.36 K
+    latent_heat_of_fusion=720,  # Latent heat of fusion = 0.72 kJ/mol
+    latent_heat_of_vaporization=5570  # Latent heat of vaporization = 5.57 kJ/mol
 )
 
 Al = ChemicalElement(
@@ -25,6 +35,46 @@ Al = ChemicalElement(
     latent_heat_of_vaporization=284000  # Latent heat of vaporization = 284000 J/kg / Source: CRC
 )
 
+Si = ChemicalElement(
+    name="Silicon",
+    atomic_number=14,
+    atomic_mass=28.0855 * Constants.u,
+    temperature_melt=1687,  # Melting temperature = 1687 K
+    temperature_boil=3538,  # Boiling temperature = 3538 K
+    latent_heat_of_fusion=50200,  # Latent heat of fusion = 50.2 kJ/mol
+    latent_heat_of_vaporization=359000  # Latent heat of vaporization = 359 kJ/mol
+)
+
+P = ChemicalElement(
+    name="Phosphorus",
+    atomic_number=15,
+    atomic_mass=30.973762 * Constants.u,
+    temperature_melt=317.3,  # Melting temperature = 317.3 K
+    temperature_boil=553.7,  # Boiling temperature = 553.7 K
+    latent_heat_of_fusion=2510,  # Latent heat of fusion = 2.51 kJ/mol
+    latent_heat_of_vaporization=12400  # Latent heat of vaporization = 12.4 kJ/mol
+)
+
+S = ChemicalElement(
+    name="Sulfur",
+    atomic_number=16,
+    atomic_mass=32.065 * Constants.u,
+    temperature_melt=388.36,  # Melting temperature = 388.36 K
+    temperature_boil=717.8,  # Boiling temperature = 717.8 K
+    latent_heat_of_fusion=1730,  # Latent heat of fusion = 1.73 kJ/mol
+    latent_heat_of_vaporization=9800  # Latent heat of vaporization = 9.8 kJ/mol
+)
+
+Ti = ChemicalElement(
+    name="Titanium",
+    atomic_number=22,  # Atomic number = 22 / Source: Periodic Table
+    atomic_mass=47.867 * Constants.u,  # Atomic mass = 47.867 u / Source: NIST
+    temperature_melt=1941,  # Melting temperature = 1941 K / Source: RSC
+    temperature_boil=3560,  # Boiling temperature = 3560 K / Source: RSC
+    latent_heat_of_fusion=18700,  # Latent heat of fusion = 18700 J/kg / Source: CRC
+    latent_heat_of_vaporization=427000  # Latent heat of vaporization = 427000 J/kg / Source: CRC
+)
+
 V = ChemicalElement(
     name="Vanadium",
     atomic_number=23,  # Atomic number = 23 / Source: Periodic Table
@@ -33,16 +83,6 @@ V = ChemicalElement(
     temperature_boil=3680,  # Boiling temperature = 3680 K / Source: RSC
     latent_heat_of_fusion=21500,  # Latent heat of fusion = 21500 J/kg / Source: CRC
     latent_heat_of_vaporization=444000  # Latent heat of vaporization = 444000 J/kg / Source: CRC
-)
-
-Fe = ChemicalElement(
-    name="Iron",
-    atomic_number=26,  # Atomic number = 26 / Source: Periodic Table
-    atomic_mass=55.845 * Constants.u,  # Atomic mass = 55.845 u / Source: NIST
-    temperature_melt=1809,  # Melting temperature = 1809 K / Source: RSC
-    temperature_boil=3134,  # Boiling temperature = 3134 K / Source: RSC
-    latent_heat_of_fusion=13800,  # Latent heat of fusion = 13800 J/kg / Source: CRC
-    latent_heat_of_vaporization=340000  # Latent heat of vaporization = 340000 J/kg / Source: CRC
 )
 
 Cr = ChemicalElement(
@@ -63,6 +103,16 @@ Mn = ChemicalElement(
     temperature_boil=2334,  # Boiling temperature = 2334 K / Source: RSC
     latent_heat_of_fusion=12500,  # Latent heat of fusion = 12500 J/kg / Source: CRC
     latent_heat_of_vaporization=220000  # Latent heat of vaporization = 220000 J/kg / Source: CRC
+)
+
+Fe = ChemicalElement(
+    name="Iron",
+    atomic_number=26,  # Atomic number = 26 / Source: Periodic Table
+    atomic_mass=55.845 * Constants.u,  # Atomic mass = 55.845 u / Source: NIST
+    temperature_melt=1809,  # Melting temperature = 1809 K / Source: RSC
+    temperature_boil=3134,  # Boiling temperature = 3134 K / Source: RSC
+    latent_heat_of_fusion=13800,  # Latent heat of fusion = 13800 J/kg / Source: CRC
+    latent_heat_of_vaporization=340000  # Latent heat of vaporization = 340000 J/kg / Source: CRC
 )
 
 Ni = ChemicalElement(
@@ -88,12 +138,17 @@ Mo = ChemicalElement(
 # This dictionary maps chemical symbols (strings) to their corresponding ChemicalElement instances,
 # allowing the parser to convert composition keys from the YAML file (like 'Fe': 0.675) to actual ChemicalElement objects needed by the Alloy class.
 element_map = {
-    'Ti': Ti,
+    'C': C,
+    'N': N,
     'Al': Al,
+    'Si': Si,
+    'P': P,
+    'S': S,
+    'Ti': Ti,
     'V': V,
-    'Fe': Fe,
     'Cr': Cr,
     'Mn': Mn,
+    'Fe': Fe,
     'Ni': Ni,
-    'Mo': Mo
+    'Mo': Mo,
 }
