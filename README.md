@@ -31,6 +31,7 @@ pip install "git+https://i10git.cs.fau.de/rahil.doshi/pymatlib.git"
 ```python
 import pystencils as ps
 from pystencilssfg import SourceFileGenerator
+from pymatlib.core.typedefs import MaterialProperty
 from pymatlib.core.yaml_parser import create_alloy_from_yaml
 
 # Define a temperature field
@@ -43,8 +44,8 @@ with SourceFileGenerator() as sfg:
     # Now you can use the alloy in your simulation
     # Get material properties at specific temperature
     temperature = 1500.0  # Kelvin
-    thermal_diffusivity = alloy.thermal_diffusivity.evalf(T, temperature)
-    print(f"Thermal diffusivity at {temperature}K: {thermal_diffusivity} W/(m·K)")
+    thermal_diffusivity_value = alloy.thermal_diffusivity.evalf(u.center(), temperature)
+    print(f"Thermal diffusivity at {temperature}K: {thermal_diffusivity_value} W/(m·K)")
 ```
 See the [tutorials](#documentation) for more detailed examples.
 
