@@ -217,7 +217,7 @@ class MaterialConfigParser:
                     raise ValueError(f"'{prop_name}' cannot be negative, got {prop_value}")
 
             if prop_name == 'thermal_expansion_coefficient':
-                if isinstance(prop_value, float) and prop_value < -3e-5 or prop_value > 0.001:
+                if isinstance(prop_value, float) and (prop_value < -3e-5 or prop_value > 0.001):
                     raise ValueError(f"'thermal_expansion_coefficient' value {prop_value} is outside the expected range (-3e-5/K to 0.001/K)")
 
             if prop_name == 'energy_density_temperature_array':
