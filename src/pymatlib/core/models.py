@@ -27,8 +27,8 @@ def wrapper(value: Union[sp.Expr, NumericType, ArrayTypes, MaterialProperty]) \
     if isinstance(value, sp.Expr):
         return sp.simplify(value)
     if isinstance(value, (float, np.int32, np.int64, np.float32, np.float64)):  # np.floating
-        if abs(value) < DEFAULT_TOLERANCE:
-            return sp.Float(0.0)
+        # if abs(value) < DEFAULT_TOLERANCE:
+            # return sp.Float(0.0)
         return sp.Float(float(value))
     if isinstance(value, ArrayTypes):  # Handles lists, tuples, and arrays
         try:

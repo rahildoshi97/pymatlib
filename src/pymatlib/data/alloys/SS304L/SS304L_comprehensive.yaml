@@ -1,0 +1,61 @@
+name: SS304L_Comprehensive
+
+composition:
+  Fe: 0.675
+  Cr: 0.170
+  Ni: 0.120
+  Mo: 0.025
+  Mn: 0.010
+
+solidus_temperature: 1605
+liquidus_temperature: 1735
+
+properties:
+  # 1. Constant float property
+  density: 7950.  # kg/m³
+
+  # 2.1 File-based property (simple format)
+  heat_conductivity: ./heat_conductivity_temperature.txt
+
+  # 2.2 File-based property (advanced format)
+  specific_enthalpy:
+    file: ./304L_Erstarrungsdaten_edited.xlsx
+    temp_col: T (K)
+    prop_col: Enthalpy (J/kg)
+
+  # 3.1 Key-val pair with explicit temperature list
+  heat_capacity:
+    key: [1000, 1200, 1400, 1600, 1800, 2000, 2200, 2400, 2600, 2800]
+    val: [580, 590, 600, 600, 600, 610, 620, 630, 660, 700]
+
+  # 3.2 Key-val pair with references to defined temperatures
+  latent_heat_of_fusion:
+    key: [solidus_temperature, liquidus_temperature]
+    val: [171401, 0]
+
+  # 3.3 Key-val pair with tuple for temperature generation (increment)
+  thermal_expansion_coefficient:
+    key: (300, 100)  # Start at 300K and increment by 100K
+    val: [16.3e-6, 16.5e-6, 16.8e-6, 17.0e-6, 17.2e-6]
+
+  # 3.4 Key-val pair with tuple for temperature generation (decrement)
+  dynamic_viscosity:
+    key: (1735, -10)  # Start at 1735K and decrement by 10K
+    val: [0.005, 0.006, 0.007, 0.008, 0.009]
+
+  # 4.1 Computed property (simple format)
+  thermal_diffusivity: compute  # k/(rho*cp)
+
+  # 4.2 Computed property (advanced format with model selection)
+  energy_density:
+    compute: total_enthalpy
+
+  # Required for energy_density computation (with number of points)
+  # energy_density_temperature_array: (300, 3000, 541)
+
+  # Alternative specification (with temperature increment)
+  energy_density_temperature_array: (300, 3000, 5.0)
+
+  # Properties required for density computation by thermal expansion
+  base_temperature: 2273.
+  base_density: 6.591878918e3

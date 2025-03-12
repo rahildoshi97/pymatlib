@@ -1,7 +1,7 @@
 [project]
 name = "pymatlib"
 version = "0.1.0"
-description = "A Python based material library"
+description = "Python based material library"
 authors = [
     {name = "Rahil Doshi", email = "rahil.doshi@fau.de"},
 ]
