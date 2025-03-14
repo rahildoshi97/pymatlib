@@ -12,8 +12,8 @@ import pystencils as ps
 from importlib.resources import files
 from pystencilssfg import SourceFileGenerator
 from pymatlib.core.yaml_parser import create_alloy_from_yaml
-from pymatlib.core.interpolators import InterpolationArrayContainer
 from pymatlib.core.assignment_converter import assignment_converter
+from pymatlib.core.codegen.interpolation_array_container import InterpolationArrayContainer
 
 # Define the path to the folder inside the apps directory
 apps_directory = '/local/ca00xebo/repos/pymatlib/apps'

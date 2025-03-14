@@ -3,9 +3,9 @@ import pystencils as ps
 from importlib.resources import files
 from pystencilssfg import SourceFileGenerator
 from sfg_walberla import Sweep
-from pymatlib.core.assignment_converter import assignment_converter
-from pymatlib.core.interpolators import InterpolationArrayContainer
 from pymatlib.core.yaml_parser import create_alloy_from_yaml
+from pymatlib.core.assignment_converter import assignment_converter
+from pymatlib.core.codegen.interpolation_array_container import InterpolationArrayContainer
 
 with SourceFileGenerator() as sfg:
     data_type = "float64"  # if ctx.double_accuracy else "float32"
