@@ -136,8 +136,8 @@ properties:
   #OR
   # energy_density: compute
   #OR
-  energy_density: compute
-    #compute: total_enthalpy  # Explicit model selection
+  energy_density:
+    compute: total_enthalpy  # Explicit model selection
   # User can specify either:
   energy_density_temperature_array: (300, 3000, 541)  # int for number of points
   # OR
