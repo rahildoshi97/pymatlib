@@ -2,7 +2,7 @@ import numpy as np
 from pystencils.types import PsCustomType
 from pystencilssfg import SfgComposer
 from pystencilssfg.composer.custom import CustomGenerator
-from src.pymatlib.core.interpolators import prepare_interpolation_arrays
+from pymatlib.core.interpolators import prepare_interpolation_arrays
 
 
 class InterpolationArrayContainer(CustomGenerator):
