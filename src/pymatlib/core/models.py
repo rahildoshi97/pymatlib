@@ -11,7 +11,7 @@ ABSOLUTE_ZERO = 0.0  # Kelvin
 DEFAULT_TOLERANCE = 1e-10
 
 
-def wrapper(value: Union[sp.Expr, NumericType, ArrayTypes, MaterialProperty]) \
+def sympy_wrapper(value: Union[sp.Expr, NumericType, ArrayTypes, MaterialProperty]) \
         -> Union[sp.Expr, List[sp.Expr]]:
     """
     Wraps various input types into sympy expressions.
@@ -47,7 +47,7 @@ def material_property_wrapper(value: Union[sp.Expr, NumericType, ArrayTypes]) \
     Returns:
         MaterialProperty object containing the wrapped value.
     """
-    wrapped_value = wrapper(value)
+    wrapped_value = sympy_wrapper(value)
     return MaterialProperty(wrapped_value)
 
 
@@ -81,7 +81,7 @@ def _prepare_material_expressions(*properties):
             sub_assignments.extend(prop.assignments)
             expressions.append(prop.expr)
         else:
-            expressions.append(wrapper(prop))
+            expressions.append(sympy_wrapper(prop))
 
     return expressions, sub_assignments
 
@@ -119,7 +119,7 @@ def density_by_thermal_expansion(
         raise ValueError(f"Thermal expansion coefficient must be between -3e-5 and 0.001, got {thermal_expansion_coefficient}")
 
     try:
-        tec_expr = thermal_expansion_coefficient.expr if isinstance(thermal_expansion_coefficient, MaterialProperty) else wrapper(thermal_expansion_coefficient)
+        tec_expr = thermal_expansion_coefficient.expr if isinstance(thermal_expansion_coefficient, MaterialProperty) else sympy_wrapper(thermal_expansion_coefficient)
         sub_assignments = thermal_expansion_coefficient.assignments if isinstance(thermal_expansion_coefficient, MaterialProperty) else []
         density = density_base * (1 + tec_expr * (temperature - temperature_base)) ** (-3)
         return MaterialProperty(density, sub_assignments)
@@ -184,9 +184,9 @@ def energy_density_standard(
     (density_expr, heat_capacity_expr, latent_heat_expr), sub_assignments \
         = _prepare_material_expressions(density, heat_capacity, latent_heat)
 
-    density_expr = density.expr if isinstance(density, MaterialProperty) else wrapper(density)
-    heat_capacity_expr = heat_capacity.expr if isinstance(heat_capacity, MaterialProperty) else wrapper(heat_capacity)
-    latent_heat_expr = latent_heat.expr if isinstance(latent_heat, MaterialProperty) else wrapper(latent_heat)
+    density_expr = density.expr if isinstance(density, MaterialProperty) else sympy_wrapper(density)
+    heat_capacity_expr = heat_capacity.expr if isinstance(heat_capacity, MaterialProperty) else sympy_wrapper(heat_capacity)
+    latent_heat_expr = latent_heat.expr if isinstance(latent_heat, MaterialProperty) else sympy_wrapper(latent_heat)
 
     energy_density_expr = density_expr * (temperature * heat_capacity_expr + latent_heat_expr)
     return MaterialProperty(energy_density_expr, sub_assignments)

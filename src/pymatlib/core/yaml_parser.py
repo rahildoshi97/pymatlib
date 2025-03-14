@@ -64,10 +64,8 @@ class MaterialConfigParser:
 
     def __init__(self, yaml_path: str | Path) -> None:
         """Initialize parser with YAML file path.
-
         Args:
             yaml_path: Path to the YAML configuration file
-
         Raises:
             FileNotFoundError: If YAML file is not found
             ValueError: If configuration is invalid
@@ -81,10 +79,8 @@ class MaterialConfigParser:
 
     def _load_yaml(self) -> Dict[str, Any]:
         """Load and parse YAML file.
-
         Returns:
             Dict containing parsed YAML content
-
         Raises:
             FileNotFoundError: If YAML file is not found
             constructor.DuplicateKeyError: If duplicate keys are found
@@ -112,10 +108,8 @@ class MaterialConfigParser:
     def _validate_config(self) -> None:
         """
         Validate YAML configuration structure and content.
-
         This method checks the overall structure of the configuration,
         validates property names, required fields, and property values.
-
         Raises:
             ValueError: If any part of the configuration is invalid.
         """
@@ -139,10 +133,8 @@ class MaterialConfigParser:
     def _validate_property_names(self, properties: Dict[str, Any]) -> None:
         """
         Validate property names against the allowed set.
-
         Args:
             properties (Dict[str, Any]): Dictionary of properties to validate.
-
         Raises:
             ValueError: If any property name is not in VALID_PROPERTIES.
         """
@@ -162,7 +154,6 @@ class MaterialConfigParser:
     def _validate_required_fields(self) -> None:
         """
         Validate required configuration fields.
-
         Raises:
             ValueError: If any required field is missing.
         """
@@ -234,13 +225,10 @@ class MaterialConfigParser:
     def create_alloy(self, T: Union[float, sp.Symbol]) -> Alloy:
         """
         Creates an Alloy instance from YAML configuration.
-
         Args:
             T (Union[float, sp.Symbol]): Temperature value or symbol.
-
         Returns:
             Alloy: An instance of the Alloy class.
-
         Raises:
             ValueError: If there's an error in creating the alloy.
         """
@@ -261,10 +249,8 @@ class MaterialConfigParser:
     def _get_elements(self) -> List[ChemicalElement]:
         """
         Convert element symbols to ChemicalElement instances.
-
         Returns:
             List[ChemicalElement]: List of ChemicalElement instances.
-
         Raises:
             ValueError: If an invalid element symbol is encountered.
         """
@@ -281,10 +267,8 @@ class MaterialConfigParser:
     def _is_numeric(value: str) -> bool:
         """
         Check if string represents a number (including scientific notation).
-
         Args:
             value (str): The string to check.
-
         Returns:
             bool: True if the string represents a number, False otherwise.
         """
@@ -299,13 +283,10 @@ class MaterialConfigParser:
     def _is_data_file(value: str | Dict[str, str]) -> bool:
         """
         Check if the value represents a valid data file configuration.
-
         Args:
             value (Union[str, Dict[str, str]]): The value to check.
-
         Returns:
             bool: True if it's a valid data file configuration, False otherwise.
-
         Raises:
             ValueError: If the file configuration is invalid.
         """
@@ -327,10 +308,8 @@ class MaterialConfigParser:
     def _is_key_val_property(value: Any) -> bool:
         """
         Check if property is defined with key-val pairs.
-
         Args:
             value (Any): The value to check.
-
         Returns:
             bool: True if it's a key-val property, False otherwise.
         """
@@ -340,13 +319,10 @@ class MaterialConfigParser:
     def _is_compute_property(value: Any) -> bool:
         """
         Check if property should be computed using any valid format.
-
         Args:
             value (Any): The value to check.
-
         Returns:
             bool: True if it's a compute property, False otherwise.
-
         Raises:
             ValueError: If the compute property configuration is invalid.
         """
@@ -365,11 +341,9 @@ class MaterialConfigParser:
     def _determine_property_type(self, prop_name: str, config: Any) -> PropertyType:
         """
         Determine the type of property based on its configuration.
-
         Args:
             prop_name (str): The name of the property.
             config (Any): The configuration of the property.
-
         Returns:
             PropertyType: The determined property type.
         """
@@ -389,13 +363,10 @@ class MaterialConfigParser:
     def _categorize_properties(self, properties: Dict[str, Any]) -> Dict[PropertyType, List[Tuple[str, Any]]]:
         """
         Categorize properties based on their types.
-
         Args:
             properties (Dict[str, Any]): Dictionary of properties to categorize.
-
         Returns:
             Dict[PropertyType, List[Tuple[str, Any]]]: Categorized properties.
-
         Raises:
             ValueError: If an invalid property configuration is found.
         """
@@ -422,11 +393,9 @@ class MaterialConfigParser:
     def _process_properties(self, alloy: Alloy, T: Union[float, sp.Symbol]) -> None:
         """
         Process all properties for the alloy.
-
         Args:
             alloy (Alloy): The alloy object to process properties for.
             T (Union[float, sp.Symbol]): Temperature value or symbol.
-
         Raises:
             ValueError: If there's an error processing any property.
         """
@@ -456,11 +425,9 @@ class MaterialConfigParser:
     def _process_properties1(self, alloy: Alloy, T: Union[float, sp.Symbol]) -> None:
         """
         Process all properties for the alloy.
-
         Args:
             alloy (Alloy): The alloy object to process properties for.
             T (Union[float, sp.Symbol]): Temperature value or symbol.
-
         Raises:
             ValueError: If there's an error processing any property.
         """
@@ -490,12 +457,10 @@ class MaterialConfigParser:
     def _process_constant_property(alloy: Alloy, prop_name: str, prop_config: Union[int, float, str]) -> None:
         """
         Process constant float property.
-
         Args:
             alloy (Alloy): The alloy object to update.
             prop_name (str): The name of the property to set.
             prop_config (Union[int, float, str]): The property value or string representation.
-
         Raises:
             ValueError: If the property value cannot be converted to float.
         """
@@ -511,13 +476,11 @@ class MaterialConfigParser:
     def _process_file_property(self, alloy: Alloy, prop_name: str, file_config: Union[str, Dict[str, Any]], T: Union[float, sp.Symbol]) -> None:
         """
         Process property data from file configuration.
-
         Args:
             alloy (Alloy): The alloy object to update.
             prop_name (str): The name of the property to set.
             file_config (Union[str, Dict[str, Any]]): File path or configuration dictionary.
             T (Union[float, sp.Symbol]): Temperature value or symbol.
-
         Raises:
             ValueError: If there's an error processing the file data.
         """
@@ -576,13 +539,11 @@ class MaterialConfigParser:
     def _process_key_val_property(self, alloy: Alloy, prop_name: str, prop_config: Dict, T: Union[float, sp.Symbol]) -> None:
         """
         Process property defined with key-val pairs.
-
         Args:
             alloy (Alloy): The alloy object to update.
             prop_name (str): The name of the property to set.
             prop_config (Dict[str, Any]): The property configuration dictionary.
             T (Union[float, sp.Symbol]): Temperature value or symbol.
-
         Raises:
             ValueError: If there's an error processing the key-val property.
         """
@@ -602,15 +563,12 @@ class MaterialConfigParser:
     def _process_key_definition(self, key_def, val_array, alloy: Alloy) -> np.ndarray:
         """
         Process temperature key definition.
-
         Args:
             key_def (Union[str, List[Union[str, float]]]): The key definition.
             val_array (List[float]): The value array.
             alloy (Alloy): The alloy object.
-
         Returns:
             np.ndarray: Processed key array.
-
         Raises:
             ValueError: If there's an error processing the key definition.
         """
@@ -629,14 +587,11 @@ class MaterialConfigParser:
     def _process_equidistant_key(key_def: str, n_points: int) -> np.ndarray:
         """
         Process equidistant key definition.
-
         Args:
             key_def (str): The equidistant key definition string.
             n_points (int): Number of points.
-
         Returns:
             np.ndarray: Equidistant key array.
-
         Raises:
             ValueError: If there's an error processing the equidistant key.
         """
@@ -655,14 +610,11 @@ class MaterialConfigParser:
     def _process_list_key(key_def: List, alloy: Alloy) -> np.ndarray:
         """
         Process list key definition.
-
         Args:
             key_def (List[Union[str, float]]): The list key definition.
             alloy (Alloy): The alloy object.
-
         Returns:
             np.ndarray: Processed list key array.
-
         Raises:
             ValueError: If there's an error processing the list key.
         """
@@ -691,14 +643,12 @@ class MaterialConfigParser:
     def _process_property_data(self, alloy: Alloy, prop_name: str, T: Union[float, sp.Symbol], temp_array: np.ndarray, prop_array: np.ndarray) -> None:
         """
         Process property data and set it on the alloy object.
-
         Args:
             alloy (Alloy): The alloy object to update.
             prop_name (str): The name of the property to set.
             T (Union[float, sp.Symbol]): Temperature value or symbol.
             temp_array (np.ndarray): Array of temperature values.
             prop_array (np.ndarray): Array of property values.
-
         Raises:
             ValueError: If there's an error processing the property data.
         """
@@ -716,7 +666,6 @@ class MaterialConfigParser:
     def _process_symbolic_temperature(self, alloy: Alloy, prop_name: str, T: sp.Symbol, temp_array: np.ndarray, prop_array: np.ndarray) -> None:
         """
         Process property data for symbolic temperature.
-
         Args:
             alloy (Alloy): The alloy object to update.
             prop_name (str): The name of the property to set.
@@ -738,7 +687,6 @@ class MaterialConfigParser:
     def _process_constant_temperature(alloy: Alloy, prop_name: str, T: Union[float, int], temp_array: np.ndarray, prop_array: np.ndarray) -> None:
         """
         Process property data for constant temperature.
-
         Args:
             alloy (Alloy): The alloy object to update.
             prop_name (str): The name of the property to set.
@@ -757,7 +705,6 @@ class MaterialConfigParser:
     def _process_energy_density(alloy: Alloy, material_property: Any, T: sp.Symbol, temp_array: np.ndarray, prop_array: np.ndarray) -> None:
         """
         Process additional properties for energy density.
-
         Args:
             alloy (Alloy): The alloy object to update.
             material_property (Any): The interpolated material property.
@@ -777,12 +724,10 @@ class MaterialConfigParser:
     def _process_computed_property(self, alloy: Alloy, prop_name: str, T: Union[float, sp.Symbol]) -> None:
         """
         Process computed properties using predefined models with dependency checking.
-
         Args:
             alloy (Alloy): The alloy object to process.
             prop_name (str): The name of the property to compute.
             T (Union[float, Symbol]): The temperature value or symbol.
-
         Raises:
             ValueError: If no computation method is defined for the property or if the method is unknown.
         """
@@ -826,11 +771,9 @@ class MaterialConfigParser:
     def _get_computation_methods(alloy: Alloy, T: Union[float, sp.Symbol]):
         """
         Get the computation methods for various properties of the alloy.
-
         Args:
             alloy (Alloy): The alloy object containing property data.
             T (Union[float, sp.Symbol]): The temperature value or symbol.
-
         Returns:
             dict: A dictionary of computation methods for different properties.
         """
@@ -873,7 +816,6 @@ class MaterialConfigParser:
     def _get_dependencies():
         """
         Get the dependencies for each computation method.
-
         Returns:
             dict: A nested dictionary specifying the dependencies for each
                   computation method of each property.
@@ -895,10 +837,8 @@ class MaterialConfigParser:
     def _process_dependencies(self, alloy: Alloy, prop_name: str, dependencies: List[str], T: Union[float, sp.Symbol]):
         """
         Process and compute the dependencies required for a given property.
-
         This method checks if each dependency is already computed for the alloy.
         If not, it attempts to compute the dependency if a computation method is defined.
-
         Args:
             alloy (Alloy): The alloy object to process.
             prop_name (str): The name of the property being computed.
@@ -926,16 +866,13 @@ class MaterialConfigParser:
     def _handle_energy_density(self, alloy: Alloy, material_property: MaterialProperty, T: sp.Symbol, dependencies: List[str]):
         """
         Handle the special case of energy density computation.
-
         This method computes additional properties related to energy density when T is symbolic.
         It computes the energy density array, solidus, and liquidus values.
-
         Args:
             alloy (Alloy): The alloy object to process.
             material_property (MaterialProperty): The computed energy density property.
             T (sp.Symbol): The symbolic temperature variable.
             dependencies (List[str]): List of dependencies for energy density computation.
-
         Raises:
             ValueError: If T is not symbolic or if energy_density_temperature_array is not defined in the config.
         """
@@ -964,18 +901,14 @@ class MaterialConfigParser:
     def _process_edta(self, array_def: str) -> np.ndarray:
         """
         Process temperature array definition with format (start, end, points/delta).
-
         Args:
             array_def (str): A string defining the temperature array in the format
                              "(start, end, points/delta)".
-
         Returns:
             np.ndarray: An array of temperature values.
-
         Raises:
             ValueError: If the array definition is invalid, improperly formatted,
                         or contains physically impossible temperatures.
-
         Examples:
             >>> self._process_edta("(300, 3000, 5)")
             array([ 300., 975., 1650., 2325., 3000.])
