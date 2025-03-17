@@ -10,8 +10,8 @@ composition:
   Mn: 0.010
 
 
-solidus_temperature: 1605
-liquidus_temperature: 1735
+solidus_temperature: 1605.
+liquidus_temperature: 1735.
 
 
 properties:
