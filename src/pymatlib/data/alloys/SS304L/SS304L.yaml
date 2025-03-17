@@ -125,8 +125,8 @@ composition:
   Ni: 0.0806
   Fe: 0.70695
 
-solidus_temperature: 1605
-liquidus_temperature: 1735
+solidus_temperature: 1605.
+liquidus_temperature: 1735.
 
 
 properties:

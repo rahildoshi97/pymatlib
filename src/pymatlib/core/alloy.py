@@ -115,6 +115,12 @@ class Alloy:
                 - If solidus temperature is greater than liquidus temperature.
                 - If temperatures are outside the general range for alloys (450 K to 2000 K).
         """
+        if not isinstance(self.temperature_solidus, float):
+            raise AlloyTemperatureError(f"Solidus temperature must be a float, "
+                                        f"got {type(self.temperature_solidus).__name__}.")
+        if not isinstance(self.temperature_liquidus, float):
+            raise AlloyTemperatureError(f"Liquidus temperature must be a float, "
+                                        f"got {type(self.temperature_liquidus).__name__}.")
         if self.temperature_solidus > self.temperature_liquidus:
             raise AlloyTemperatureError("The solidus temperature must be less than or equal to the liquidus temperature.")
         if not (450 <= self.temperature_solidus <= 1900):
