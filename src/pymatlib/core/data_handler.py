@@ -235,7 +235,7 @@ def read_data_from_file(file_config: Union[str, Dict], header: bool = True) -> T
             temp = df[temp_col].to_numpy(dtype=np.float64)
         else:
             raise ValueError(f"Temperature column '{temp_col}' not found in file. "
-                             f"Available columns: {', '.join(df.columns)}")
+                             f"\n -> Available columns: {', '.join(df.columns)}")
     else:
         if temp_col >= len(df.columns):
             raise ValueError(f"Temperature column index {temp_col} out of bounds (file has {len(df.columns)} columns)")
@@ -246,7 +246,7 @@ def read_data_from_file(file_config: Union[str, Dict], header: bool = True) -> T
             prop = df[prop_col].to_numpy(dtype=np.float64)
         else:
             raise ValueError(f"Property column '{prop_col}' not found in file. "
-                             f"Available columns: {', '.join(df.columns)}")
+                             f"\n -> Available columns: {', '.join(df.columns)}")
     else:
         if prop_col >= len(df.columns):
             raise ValueError(f"Property column index {prop_col} out of bounds (file has {len(df.columns)} columns)")

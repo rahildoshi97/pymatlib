@@ -7,12 +7,12 @@ composition:
   Mo: 0.025
   Mn: 0.010
 
-solidus_temperature: 1605
-liquidus_temperature: 1735
+solidus_temperature: 1605.
+liquidus_temperature: 1735.
 
 properties:
   # 1. Constant float property
-  density: 7950.  # kg/m³
+  density: compute  # kg/m³
 
   # 2.1 File-based property (simple format)
   heat_conductivity: ./heat_conductivity_temperature.txt

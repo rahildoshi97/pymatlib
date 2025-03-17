@@ -121,7 +121,6 @@ class MaterialConfigParser:
             raise ValueError("The 'properties' section in your YAML file must be a dictionary with key-value pairs")
         self._validate_property_names(properties)
         self._validate_required_fields()
-        self._validate_property_values(properties)
 
     def _validate_property_names(self, properties: Dict[str, Any]) -> None:
         """
@@ -188,6 +187,107 @@ class MaterialConfigParser:
             if prop_name in ['energy_density_solidus', 'energy_density_liquidus']:
                 raise ValueError(f"{prop_name} cannot be set directly. It is computed from other properties")
 
+    @staticmethod
+    def _validate_property_value(prop: str, value: Union[float, np.ndarray]) -> None:
+        """
+        Validate a property value or array of values against physical constraints.
+        Args:
+            prop (str): The name of the property being validated
+            value (Union[float, np.ndarray]): The value or array of values to validate
+        Raises:
+            ValueError: If the property value violates physical constraints
+            TypeError: If the property value has an invalid type
+        """
+        # Define property constraints with SI units
+        BASE_PROPERTIES = {'base_temperature', 'base_density'}  # always single float values
+        POSITIVE_PROPERTIES = {'density', 'heat_capacity', 'heat_conductivity', 'temperature',
+                               'dynamic_viscosity', 'kinematic_viscosity', 'thermal_diffusivity',
+                               'surface_tension'}
+        NON_NEGATIVE_PROPERTIES = {'latent_heat_of_fusion', 'latent_heat_of_vaporization', 'energy_density',
+                                   'energy_density_solidus', 'energy_density_liquidus', 'energy_density_array'}
+        ARRAY_PROPERTIES = {'temperature_array', 'energy_density_temperature_array', 'energy_density_array'}
+
+        # Property-specific range constraints
+        PROPERTY_RANGES = {
+            'base_temperature': (0, 5000),  # K
+            'temperature': (0, 5000),  # K
+            'base_density': (800, 22000),  # kg/m³
+            'density': (800, 22000),  # kg/m³
+            'heat_capacity': (100, 10000),  # J/(kg·K)
+            'heat_conductivity': (1, 600),  # W/(m·K)
+            'thermal_expansion_coefficient': (-5e-5, 3e-5),  # 1/K
+            'dynamic_viscosity': (1e-4, 1e5),  # Pa·s
+            'kinematic_viscosity': (1e-8, 1e-3),  # m²/s
+            'thermal_diffusivity': (1e-8, 1e-3),  # m²/s
+            'surface_tension': (0.1, 3.0),  # N/m
+            'latent_heat_of_fusion': (0, 600000),  # J/kg
+            'latent_heat_of_vaporization': (50000, 12000000),  # J/kg
+        }
+
+        try:
+            # Handle arrays (from file or key-val properties)
+            if isinstance(value, np.ndarray):
+                # Check for NaN or infinite values
+                if np.isnan(value).any():
+                    raise ValueError(f"Property '{prop}' contains NaN values.")
+                if np.isinf(value).any():
+                    raise ValueError(f"Property '{prop}' contains infinite values.")
+
+                # Property-specific validations for arrays
+                if prop in POSITIVE_PROPERTIES:
+                    if (value <= 0).any():
+                        bad_indices = np.where(value <= 0)[0]
+                        bad_values = value[value <= 0]
+                        raise ValueError(f"All '{prop}' values must be positive. Found {len(bad_indices)} invalid values "
+                                         f"at indices {bad_indices}: {bad_values}.")
+
+                if prop in NON_NEGATIVE_PROPERTIES or prop in ARRAY_PROPERTIES:
+                    if (value < 0).any():
+                        bad_indices = np.where(value < 0)[0]
+                        bad_values = value[value < 0]
+                        raise ValueError(f"All '{prop}' values must be non-negative. Found {len(bad_indices)} invalid values "
+                                         f"at indices {bad_indices}: {bad_values}.")
+
+                # Check range constraints if applicable
+                if prop in PROPERTY_RANGES:
+                    min_val, max_val = PROPERTY_RANGES[prop]
+                    if ((value < min_val) | (value > max_val)).any():
+                        out_of_range = np.where((value < min_val) | (value > max_val))[0]
+                        out_values = value[out_of_range]
+                        raise ValueError(f"'{prop}' contains values outside expected range ({min_val} to {max_val}) "
+                                         f"\n -> Found {len(out_of_range)} out-of-range values at indices {out_of_range}: {out_values}")
+
+            # Handle single values (from constant or computed properties)
+            else:
+                # Check for NaN or infinite values
+                if np.isnan(value):
+                    raise ValueError(f"Property '{prop}' is NaN.")
+                if np.isinf(value):
+                    raise ValueError(f"Property '{prop}' is infinite.")
+
+                # Type checking
+                if not isinstance(value, float):
+                    raise TypeError(f"Property '{prop}' must be a float, got {type(value).__name__}. "
+                                    f"\n -> Please use decimal notation (e.g., 1.0 instead of 1) or scientific notation.")
+
+                # Property-specific validations for single values
+                if prop in BASE_PROPERTIES or prop in POSITIVE_PROPERTIES:
+                    if value <= 0:
+                        raise ValueError(f"Property '{prop}' must be positive, got {value}.")
+
+                if prop in NON_NEGATIVE_PROPERTIES:
+                    if value < 0:
+                        raise ValueError(f"Property '{prop}' must be non-negative, got {value}.")
+
+                # Check range constraints if applicable
+                if prop in PROPERTY_RANGES:
+                    min_val, max_val = PROPERTY_RANGES[prop]
+                    if value < min_val or value > max_val:
+                        raise ValueError(f"Property '{prop}' value {value} is outside expected range ({min_val} to {max_val}).")
+
+        except Exception as e:
+            raise ValueError(f"Failed to validate property value \n -> {e}")
+
     ##################################################
     # Alloy Creation
     ##################################################
@@ -214,7 +314,7 @@ class MaterialConfigParser:
         except KeyError as e:
             raise ValueError(f"Configuration error: Missing {e}")
         except Exception as e:
-            raise ValueError(f"Failed to create alloy: {e}")
+            raise ValueError(f"Failed to create alloy \n -> {e}")
 
     def _get_elements(self) -> List[ChemicalElement]:
         """
@@ -234,19 +334,25 @@ class MaterialConfigParser:
     # Property Type Checking
     ##################################################
     @staticmethod
-    def _is_numeric(value: str) -> bool:
+    def _is_numeric(value: Any) -> bool:
         """
-        Check if string represents a number (including scientific notation).
+        Check if string represents a float number (including scientific notation).
         Args:
-            value (str): The string to check.
+            value (Any): The value to check.
         Returns:
-            bool: True if the string represents a number, False otherwise.
+            bool: True if the value represents a float, False otherwise.
         """
-        try:
-            float(value)
+        if isinstance(value, float):
             return True
-        except ValueError:
-            return False
+        if isinstance(value, str):
+            try:
+                float(value)
+                # return True
+                # Ensure it contains a decimal point or is in scientific notation
+                return '.' in value or 'e' in value.lower()
+            except ValueError:
+                return False
+        return False
 
     @staticmethod
     def _is_data_file(value: str | Dict[str, str]) -> bool:
@@ -263,14 +369,16 @@ class MaterialConfigParser:
         if isinstance(value, str):
             return value.endswith(('.txt', '.csv', '.xlsx'))
         # Advanced format: property_name: { file: "filename", temp_col: "col1", prop_col: "col2" }
-        if isinstance(value, dict) and 'file' in value and 'temp_col' in value and 'prop_col' in value:
+        if isinstance(value, dict) and 'file' in value:
             required_keys = {'file', 'temp_col', 'prop_col'}
             value_keys = set(value.keys())
-            if not required_keys.issubset(value_keys):
-                missing_keys = required_keys - value_keys
+            # Check for missing required keys
+            missing_keys = required_keys - value_keys
+            if missing_keys:
                 raise ValueError(f"Missing required keys for file configuration: {missing_keys}")
-            if value_keys != required_keys:
-                extra_keys = value_keys - required_keys
+            # Check for extra keys
+            extra_keys = value_keys - required_keys
+            if extra_keys:
                 raise ValueError(f"Extra keys found in file configuration: {extra_keys}")
             return True
         return False
@@ -286,17 +394,18 @@ class MaterialConfigParser:
         Raises:
             ValueError: If the key-val property configuration is invalid.
         """
-        if isinstance(value, dict) and 'key' in value and 'val' in value:
-            required_keys = {'key', 'val'}
+        required_keys = {'key', 'val'}
+        # Check if it looks like it's trying to be a key-val property
+        if isinstance(value, dict) and any(k in value for k in required_keys):
             value_keys = set(value.keys())
-
-            if value_keys != required_keys:
-                missing_keys = required_keys - value_keys
-                extra_keys = value_keys - required_keys
-                if missing_keys:
-                    raise ValueError(f"Missing required keys for key-val property: {missing_keys}")
-                if extra_keys:
-                    raise ValueError(f"Extra keys found in key-val property: {extra_keys}")
+            # Check for missing required keys
+            missing_keys = required_keys - value_keys
+            if missing_keys:
+                raise ValueError(f"Missing required keys for key-val property: {missing_keys}")
+            # Check for extra keys
+            extra_keys = value_keys - required_keys
+            if extra_keys:
+                raise ValueError(f"Extra keys found in key-val property: {extra_keys}")
             return True
         return False
 
@@ -311,19 +420,23 @@ class MaterialConfigParser:
         Raises:
             ValueError: If the compute property configuration is invalid.
         """
-        if isinstance(value, str) and value == 'compute':
-            return True
-        elif isinstance(value, dict) and 'compute' in value:
+        # Simple format: property_name: compute
+        if isinstance(value, str):
+            if value == 'compute':
+                return True
+            elif value.startswith('compute'):
+                # Catch common mistakes like 'compute1'
+                raise ValueError(f"Invalid compute property value: '{value}'. Did you mean 'compute'?")
+        # Advanced format: property_name: { compute: "method_name" }
+        elif isinstance(value, dict) and any(k.startswith('compute') for k in value.keys()):
             required_keys = {'compute'}
             value_keys = set(value.keys())
-
-            if value_keys != required_keys:
-                missing_keys = required_keys - value_keys
-                extra_keys = value_keys - required_keys
-                if missing_keys:
-                    raise ValueError(f"Missing required key for compute property: {missing_keys}")
-                if extra_keys:
-                    raise ValueError(f"Extra keys found in compute property: {extra_keys}")
+            missing_keys = required_keys - value_keys
+            extra_keys = value_keys - required_keys
+            if missing_keys:
+                raise ValueError(f"Missing required key for compute property: {missing_keys}")
+            if extra_keys:
+                raise ValueError(f"Extra keys found in compute property: {extra_keys}")
             return True
         return False
 
@@ -336,18 +449,23 @@ class MaterialConfigParser:
         Returns:
             PropertyType: The determined property type.
         """
-        if isinstance(config, float) or (isinstance(config, str) and self._is_numeric(config)):
-            return PropertyType.CONSTANT
-        elif self._is_data_file(config):
-            return PropertyType.FILE
-        elif self._is_key_val_property(config):
-            return PropertyType.KEY_VAL
-        elif self._is_compute_property(config):
-            return PropertyType.COMPUTE
-        elif prop_name == 'energy_density_temperature_array' and isinstance(config, str) and config.startswith('(') and config.endswith(')'):
-            return PropertyType.TUPLE_STRING
-        else:
-            return PropertyType.INVALID
+        try:
+            if isinstance(config, int):
+                raise ValueError(f"Property '{prop_name}' must be defined as a float, got {config} of type {type(config).__name__}")
+            if self._is_numeric(config):
+                return PropertyType.CONSTANT
+            elif self._is_data_file(config):
+                return PropertyType.FILE
+            elif self._is_key_val_property(config):
+                return PropertyType.KEY_VAL
+            elif self._is_compute_property(config):
+                return PropertyType.COMPUTE
+            elif prop_name == 'energy_density_temperature_array' and isinstance(config, str) and config.startswith('(') and config.endswith(')'):
+                return PropertyType.TUPLE_STRING
+            else:
+                return PropertyType.INVALID
+        except Exception as e:
+            raise ValueError(f"Failed to determine property type \n -> {e}")
 
     def _categorize_properties(self, properties: Dict[str, Any]) -> Dict[PropertyType, List[Tuple[str, Any]]]:
         """
@@ -367,10 +485,14 @@ class MaterialConfigParser:
             PropertyType.TUPLE_STRING: []
         }
         for prop_name, config in properties.items():
-            prop_type = self._determine_property_type(prop_name, config)
-            if prop_type == PropertyType.INVALID:
-                raise ValueError(f"Invalid configuration for property '{prop_name}': {config}")
-            categorized_properties[prop_type].append((prop_name, config))
+            try:
+                prop_type = self._determine_property_type(prop_name, config)
+                if prop_type == PropertyType.INVALID:
+                    raise ValueError(f"Invalid configuration format for property '{prop_name}': {config}")
+                categorized_properties[prop_type].append((prop_name, config))
+            except Exception as e:
+                # Provide more context in the error message
+                raise ValueError(f"Failed to categorize properties \n -> {e}")
         return categorized_properties
 
     ##################################################
@@ -403,26 +525,28 @@ class MaterialConfigParser:
                         # Handle tuple string properties if needed
                         pass
         except Exception as e:
-            raise ValueError(f"Failed to process properties: {e}")
+            raise ValueError(f"Failed to process properties \n -> {e}")
 
 ########################################################################################################################
 
     @staticmethod
-    def _process_constant_property(alloy: Alloy, prop_name: str, prop_config: Union[int, float, str]) -> None:
+    def _process_constant_property(alloy: Alloy, prop_name: str, prop_config: Union[float, str]) -> None:
         """
         Process constant float property.
         Args:
             alloy (Alloy): The alloy object to update.
             prop_name (str): The name of the property to set.
-            prop_config (Union[int, float, str]): The property value or string representation.
+            prop_config (Union[float, str]): The property value or string representation.
         Raises:
-            ValueError: If the property value cannot be converted to float.
+            ValueError: If the property value cannot be converted to float or violates constraints.
         """
         try:
             value = float(prop_config)
+            # Validate the value
+            MaterialConfigParser._validate_property_value(prop_name, value)
             setattr(alloy, prop_name, value)
         except (ValueError, TypeError) as e:
-            error_msg = f"Invalid number format for {prop_name}: {prop_config}"
+            error_msg = f"Failed to process constant property \n -> {e}"
             raise ValueError(error_msg) from e
 
 ########################################################################################################################
@@ -449,9 +573,11 @@ class MaterialConfigParser:
                 # For string configuration, construct the full path
                 file_path = str(yaml_dir / file_config)
                 temp_array, prop_array = read_data_from_file(file_path)
+            # Validate the property array
+            self._validate_property_value(prop_name, prop_array)
             self._process_property_data(alloy, prop_name, T, temp_array, prop_array)
         except Exception as e:
-            error_msg = f"Error processing file property {prop_name}: {str(e)}"
+            error_msg = f"Failed to process file property {prop_name} \n -> {str(e)}"
             raise ValueError(error_msg) from e
 
 ########################################################################################################################
@@ -472,9 +598,11 @@ class MaterialConfigParser:
             val_array = np.array(prop_config['val'], dtype=float)
             if len(key_array) != len(val_array):
                 raise ValueError(f"Length mismatch in {prop_name}: key and val arrays must have same length")
+            # Validate the value array
+            self._validate_property_value(prop_name, val_array)
             self._process_property_data(alloy, prop_name, T, key_array, val_array)
         except Exception as e:
-            error_msg = f"Error processing key-val property {prop_name}: {str(e)}"
+            error_msg = f"Failed to proces key-val property '{prop_name}' \n -> {str(e)}"
             raise ValueError(error_msg) from e
 
     def _process_key_definition(self, key_def, val_array, alloy: Alloy) -> np.ndarray:
@@ -497,7 +625,7 @@ class MaterialConfigParser:
             else:
                 raise ValueError(f"Invalid key definition: {key_def}")
         except Exception as e:
-            error_msg = f"Error processing key definition: {str(e)}"
+            error_msg = f"Failed to process key definition \n -> {str(e)}"
             raise ValueError(error_msg) from e
 
     @staticmethod
@@ -520,7 +648,7 @@ class MaterialConfigParser:
             key_array = np.arange(start, start + increment * n_points, increment)
             return key_array
         except Exception as e:
-            error_msg = f"Invalid equidistant format: {key_def}. Error: {str(e)}"
+            error_msg = f"Invalid equidistant format: {key_def} \n -> {str(e)}"
             raise ValueError(error_msg) from e
 
     @staticmethod
@@ -550,7 +678,7 @@ class MaterialConfigParser:
             key_array = np.array(processed_key, dtype=float)
             return key_array
         except Exception as e:
-            error_msg = f"Error processing list key: {str(e)}"
+            error_msg = f"Error processing list key \n -> {str(e)}"
             raise ValueError(error_msg) from e
 
     ##################################################
@@ -577,7 +705,7 @@ class MaterialConfigParser:
             else:
                 raise ValueError(f"Unexpected type for T: {type(T)}")
         except Exception as e:
-            error_msg = f"Error processing property data for {prop_name}: {str(e)}"
+            error_msg = f"Error processing property data for '{prop_name}' \n -> {str(e)}"
             raise ValueError(error_msg) from e
 
     def _process_symbolic_temperature(self, alloy: Alloy, prop_name: str, T: sp.Symbol, temp_array: np.ndarray, prop_array: np.ndarray) -> None:
@@ -829,7 +957,7 @@ class MaterialConfigParser:
             else:
                 return self._process_int_step(start, end, int(step))
         except ValueError as e:
-            raise ValueError(f"Invalid temperature array definition: {e}")
+            raise ValueError(f"Invalid temperature array definition \n -> {e}")
 
     @staticmethod
     def _process_float_step(start: float, end: float, delta: float) -> np.ndarray:
