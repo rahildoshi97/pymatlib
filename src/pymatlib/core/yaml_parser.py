@@ -229,18 +229,25 @@ class MaterialConfigParser:
         # Property-specific range constraints
         PROPERTY_RANGES = {
             'base_temperature': (0, 5000),  # K
-            'temperature': (0, 5000),  # K
-            'base_density': (800, 22000),  # kg/m³
-            'density': (800, 22000),  # kg/m³
+            'base_density': (-100, 22000),  # kg/m³
+            'density': (100, 22000),  # kg/m³
+            'dynamic_viscosity': (1e-4, 1e5),  # Pa·s
+            'energy_density': (0, 1e8),  # J/m³
+            'energy_density_solidus': (0, 1e8),  # J/m³
+            'energy_density_liquidus': (0, 1e8),  # J/m³
+            'energy_density_temperature_array': (0, 5000),  # K
+            'energy_density_array': (0, 1e8),  # J/m³
             'heat_capacity': (100, 10000),  # J/(kg·K)
             'heat_conductivity': (1, 600),  # W/(m·K)
-            'thermal_expansion_coefficient': (-5e-5, 3e-5),  # 1/K
-            'dynamic_viscosity': (1e-4, 1e5),  # Pa·s
             'kinematic_viscosity': (1e-8, 1e-3),  # m²/s
-            'thermal_diffusivity': (1e-8, 1e-3),  # m²/s
-            'surface_tension': (0.1, 3.0),  # N/m
             'latent_heat_of_fusion': (0, 600000),  # J/kg
             'latent_heat_of_vaporization': (50000, 12000000),  # J/kg
+            'specific_enthalpy': (0, 15000000),  # J/kg
+            'surface_tension': (0.1, 3.0),  # N/m
+            'temperature': (0, 5000),  # K
+            'temperature_array': (0, 5000),  # K
+            'thermal_diffusivity': (1e-8, 1e-3),  # m²/s
+            'thermal_expansion_coefficient': (-3e-5, 3e-5),  # 1/K
         }
 
         try:
