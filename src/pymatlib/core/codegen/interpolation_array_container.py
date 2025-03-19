@@ -1,3 +1,4 @@
+import re
 import numpy as np
 from pystencils.types import PsCustomType
 from pystencilssfg import SfgComposer
@@ -53,30 +54,45 @@ class InterpolationArrayContainer(CustomGenerator):
                 corresponding to temperature_array.
         Raises:
             ValueError: If arrays are empty, have different lengths, or are not monotonic.
+            TypeError: If name is not a string or arrays are not numpy arrays.
         """
         super().__init__()
+
+        # Validate inputs
+        if not isinstance(name, str) or not name:
+            raise TypeError("Name must be a non-empty string")
+
+        if not re.match(r'^[a-zA-Z_][a-zA-Z0-9_]*$', name):
+            raise ValueError(f"'{name}' is not a valid C++ class name")
+
+        if not isinstance(temperature_array, np.ndarray) or not isinstance(energy_density_array, np.ndarray):
+            raise TypeError("Temperature and energy arrays must be numpy arrays")
+
         self.name = name
         self.T_array = temperature_array
         self.E_array = energy_density_array
 
         # Prepare arrays and determine best method
-        self.data = prepare_interpolation_arrays(self.T_array, self.E_array)
-        self.method = self.data["method"]
+        try:
+            self.data = prepare_interpolation_arrays(T_array=self.T_array, E_array=self.E_array, verbose=False)
+            self.method = self.data["method"]
 
-        # Store arrays for binary search (always available)
-        self.T_bs = self.data["T_bs"]
-        self.E_bs = self.data["E_bs"]
+            # Store arrays for binary search (always available)
+            self.T_bs = self.data["T_bs"]
+            self.E_bs = self.data["E_bs"]
 
-        # Store arrays for double lookup if available
-        if self.method == "double_lookup":
-            self.T_eq = self.data["T_eq"]
-            self.E_neq = self.data["E_neq"]
-            self.E_eq = self.data["E_eq"]
-            self.inv_delta_E_eq = self.data["inv_delta_E_eq"]
-            self.idx_map = self.data["idx_map"]
-            self.has_double_lookup = True
-        else:
-            self.has_double_lookup = False
+            # Store arrays for double lookup if available
+            if self.method == "double_lookup":
+                self.T_eq = self.data["T_eq"]
+                self.E_neq = self.data["E_neq"]
+                self.E_eq = self.data["E_eq"]
+                self.inv_delta_E_eq = self.data["inv_delta_E_eq"]
+                self.idx_map = self.data["idx_map"]
+                self.has_double_lookup = True
+            else:
+                self.has_double_lookup = False
+        except Exception as e:
+            raise ValueError(f"Failed to prepare interpolation arrays: {e}") from e
 
     @classmethod
     def from_material(cls, name: str, material):
