@@ -8,7 +8,6 @@ NumericType = TypeVar('NumericType', float, np.float32, np.float64)
 
 # Constants
 ABSOLUTE_ZERO = 0.0  # Kelvin
-DEFAULT_TOLERANCE = 1e-10
 
 
 def sympy_wrapper(value: Union[sp.Expr, NumericType, ArrayTypes, MaterialProperty]) \
@@ -27,8 +26,6 @@ def sympy_wrapper(value: Union[sp.Expr, NumericType, ArrayTypes, MaterialPropert
     if isinstance(value, sp.Expr):
         return sp.simplify(value)
     if isinstance(value, (float, np.int32, np.int64, np.float32, np.float64)):  # np.floating
-        # if abs(value) < DEFAULT_TOLERANCE:
-            # return sp.Float(0.0)
         return sp.Float(float(value))
     if isinstance(value, ArrayTypes):  # Handles lists, tuples, and arrays
         try:
@@ -51,26 +48,6 @@ def material_property_wrapper(value: Union[sp.Expr, NumericType, ArrayTypes]) \
     return MaterialProperty(wrapped_value)
 
 
-def _validate_positive(*values, names=None):
-    """Validate that float values are positive."""
-    if names is None:
-        names = [f"Value {i+1}" for i in range(len(values))]
-
-    for value, name in zip(values, names):
-        if isinstance(value, float) and value <= 0:
-            raise ValueError(f"{name} must be positive, got {value}")
-
-
-def _validate_non_negative(*values, names=None):
-    """Validate that float values are non-negative."""
-    if names is None:
-        names = [f"Value {i+1}" for i in range(len(values))]
-
-    for value, name in zip(values, names):
-        if isinstance(value, float) and value < 0:
-            raise ValueError(f"{name} cannot be negative, got {value}")
-
-
 def _prepare_material_expressions(*properties):
     """Prepare expressions and collect assignments from material properties."""
     sub_assignments = []
@@ -82,7 +59,6 @@ def _prepare_material_expressions(*properties):
             expressions.append(prop.expr)
         else:
             expressions.append(sympy_wrapper(prop))
-
     return expressions, sub_assignments
 
 
@@ -111,13 +87,6 @@ def density_by_thermal_expansion(
             raise ValueError(f"Temperature cannot be below absolute zero ({ABSOLUTE_ZERO}K)")
     if isinstance(temperature, ArrayTypes):
         raise TypeError(f"Incompatible input type for temperature. Expected float or sp.Expr, got {type(temperature)}")
-    if temperature_base < ABSOLUTE_ZERO:
-        raise ValueError(f"Base temperature cannot be below absolute zero ({ABSOLUTE_ZERO}K)")
-    if density_base <= 0:
-        raise ValueError("Base density must be positive")
-    if isinstance(thermal_expansion_coefficient, float) and (thermal_expansion_coefficient < -3e-5 or thermal_expansion_coefficient > 0.001):
-        raise ValueError(f"Thermal expansion coefficient must be between -3e-5 and 0.001, got {thermal_expansion_coefficient}")
-
     try:
         tec_expr = thermal_expansion_coefficient.expr if isinstance(thermal_expansion_coefficient, MaterialProperty) else sympy_wrapper(thermal_expansion_coefficient)
         sub_assignments = thermal_expansion_coefficient.assignments if isinstance(thermal_expansion_coefficient, MaterialProperty) else []
@@ -145,11 +114,8 @@ def thermal_diffusivity_by_heat_conductivity(
         TypeError: If incompatible input data types are provided.
         ValueError: If physically impossible values are used.
     """
-    _validate_positive(heat_conductivity, density, heat_capacity, names=["Heat conductivity", "Density", "Heat capacity"])
-
     (k_expr, rho_expr, cp_expr), sub_assignments \
         = _prepare_material_expressions(heat_conductivity, density, heat_capacity)
-
     try:
         thermal_diffusivity = k_expr / (rho_expr * cp_expr)
         return MaterialProperty(thermal_diffusivity, sub_assignments)
@@ -163,14 +129,6 @@ def energy_density_standard(
         heat_capacity: Union[float, MaterialProperty],
         latent_heat: Union[float, MaterialProperty]) \
         -> MaterialProperty:
-
-    # Input validation to check for incompatible data types
-    if isinstance(temperature, float) and temperature < ABSOLUTE_ZERO:
-        raise ValueError(f"Temperature cannot be below absolute zero ({ABSOLUTE_ZERO}K)")
-
-    _validate_positive(density, heat_capacity, names=['Density', 'Heat capacity'])
-
-    _validate_non_negative(latent_heat, names=['Latent heat'])
 
     (density_expr, heat_capacity_expr, latent_heat_expr), sub_assignments \
         = _prepare_material_expressions(density, heat_capacity, latent_heat)
@@ -193,9 +151,6 @@ def energy_density_enthalpy_based(
         latent_heat: Union[float, MaterialProperty]) \
         -> MaterialProperty:
 
-    _validate_positive(density, specific_enthalpy, names=["Density", "Specific enthalpy"])
-    _validate_non_negative(latent_heat, names=["Latent heat"])
-
     (density_expr, specific_enthalpy_expr, latent_heat_expr), sub_assignments \
         = _prepare_material_expressions(density, specific_enthalpy, latent_heat)
 
@@ -207,8 +162,6 @@ def energy_density_total_enthalpy(
         density: Union[float, MaterialProperty],
         specific_enthalpy: Union[float, MaterialProperty]) \
         -> MaterialProperty:
-
-    _validate_positive(density, specific_enthalpy, names=["Density", "Specific enthalpy"])
 
     (density_expr, specific_enthalpy_expr), sub_assignments \
         = _prepare_material_expressions(density, specific_enthalpy)
