@@ -154,40 +154,6 @@ class MaterialConfigParser:
             raise ValueError(f"Missing required fields: {', '.join(missing_fields)}")
 
     @staticmethod
-    def _validate_property_values(properties: Dict[str, Any]) -> None:
-        """
-        Validate property values for type and range constraints.
-        Args:
-            properties (Dict[str, Any]): Dictionary of properties to validate.
-        Raises:
-            ValueError: If any property value is invalid.
-        """
-        for prop_name, prop_value in properties.items():
-            BASE_PROPERTIES = {'base_temperature', 'base_density'}
-            POSITIVE_PROPERTIES = {'density', 'heat_capacity', 'heat_conductivity', 'specific_enthalpy'}
-            NON_NEGATIVE_PROPERTIES = {'latent_heat'}
-            if prop_value is None or (isinstance(prop_value, str) and prop_value.strip() == ''):
-                raise ValueError(f"Property '{prop_name}' has an empty or undefined value")
-            if prop_name in BASE_PROPERTIES:
-                if not isinstance(prop_value, float) or prop_value <= 0:
-                    raise ValueError(f"'{prop_name}' must be a positive number of type float, "
-                                     f"got {prop_value} of type {type(prop_value).__name__}")
-            if prop_name in POSITIVE_PROPERTIES:
-                if isinstance(prop_value, float) and prop_value <= 0:
-                    raise ValueError(f"'{prop_name}' must be positive, got {prop_value}")
-            if prop_name in NON_NEGATIVE_PROPERTIES:
-                if isinstance(prop_value, float) and prop_value < 0:
-                    raise ValueError(f"'{prop_name}' cannot be negative, got {prop_value}")
-            if prop_name == 'thermal_expansion_coefficient':
-                if isinstance(prop_value, float) and (prop_value < -3e-5 or prop_value > 0.001):
-                    raise ValueError(f"'{prop_name}' value {prop_value} is outside the expected range (-3e-5/K to 0.001/K)")
-            if prop_name == 'energy_density_temperature_array':
-                if not (isinstance(prop_value, str) and prop_value.startswith('(') and prop_value.endswith(')')):
-                    raise ValueError(f"'{prop_name}' must be a tuple of three comma-separated values representing (start, end, points/step)")
-            if prop_name in ['energy_density_solidus', 'energy_density_liquidus']:
-                raise ValueError(f"{prop_name} cannot be set directly. It is computed from other properties")
-
-    @staticmethod
     def _validate_property_value(prop: str, value: Union[float, np.ndarray]) -> None:
         """
         Validate a property value or array of values against physical constraints.
@@ -210,20 +176,26 @@ class MaterialConfigParser:
         # Property-specific range constraints
         PROPERTY_RANGES = {
             'base_temperature': (0, 5000),  # K
-            'temperature': (0, 5000),  # K
-            'base_density': (800, 22000),  # kg/m³
-            'density': (800, 22000),  # kg/m³
+            'base_density': (-100, 22000),  # kg/m³
+            'density': (100, 22000),  # kg/m³
+            'dynamic_viscosity': (1e-4, 1e5),  # Pa·s
+            'energy_density': (0, 1e8),  # J/m³
+            'energy_density_solidus': (0, 1e8),  # J/m³
+            'energy_density_liquidus': (0, 1e8),  # J/m³
+            'energy_density_temperature_array': (0, 5000),  # K
+            'energy_density_array': (0, 1e8),  # J/m³
             'heat_capacity': (100, 10000),  # J/(kg·K)
             'heat_conductivity': (1, 600),  # W/(m·K)
-            'thermal_expansion_coefficient': (-5e-5, 3e-5),  # 1/K
-            'dynamic_viscosity': (1e-4, 1e5),  # Pa·s
             'kinematic_viscosity': (1e-8, 1e-3),  # m²/s
-            'thermal_diffusivity': (1e-8, 1e-3),  # m²/s
-            'surface_tension': (0.1, 3.0),  # N/m
             'latent_heat_of_fusion': (0, 600000),  # J/kg
             'latent_heat_of_vaporization': (50000, 12000000),  # J/kg
+            'specific_enthalpy': (0, 15000000),  # J/kg
+            'surface_tension': (0.1, 3.0),  # N/m
+            'temperature': (0, 5000),  # K
+            'temperature_array': (0, 5000),  # K
+            'thermal_diffusivity': (1e-8, 1e-3),  # m²/s
+            'thermal_expansion_coefficient': (-3e-5, 3e-5),  # 1/K
         }
-
         try:
             # Handle arrays (from file or key-val properties)
             if isinstance(value, np.ndarray):
@@ -232,7 +204,6 @@ class MaterialConfigParser:
                     raise ValueError(f"Property '{prop}' contains NaN values.")
                 if np.isinf(value).any():
                     raise ValueError(f"Property '{prop}' contains infinite values.")
-
                 # Property-specific validations for arrays
                 if prop in POSITIVE_PROPERTIES:
                     if (value <= 0).any():
@@ -240,14 +211,12 @@ class MaterialConfigParser:
                         bad_values = value[value <= 0]
                         raise ValueError(f"All '{prop}' values must be positive. Found {len(bad_indices)} invalid values "
                                          f"at indices {bad_indices}: {bad_values}.")
-
                 if prop in NON_NEGATIVE_PROPERTIES or prop in ARRAY_PROPERTIES:
                     if (value < 0).any():
                         bad_indices = np.where(value < 0)[0]
                         bad_values = value[value < 0]
                         raise ValueError(f"All '{prop}' values must be non-negative. Found {len(bad_indices)} invalid values "
                                          f"at indices {bad_indices}: {bad_values}.")
-
                 # Check range constraints if applicable
                 if prop in PROPERTY_RANGES:
                     min_val, max_val = PROPERTY_RANGES[prop]
@@ -256,35 +225,29 @@ class MaterialConfigParser:
                         out_values = value[out_of_range]
                         raise ValueError(f"'{prop}' contains values outside expected range ({min_val} to {max_val}) "
                                          f"\n -> Found {len(out_of_range)} out-of-range values at indices {out_of_range}: {out_values}")
-
-            # Handle single values (from constant or computed properties)
+            # Handle single values (from constant properties)
             else:
                 # Check for NaN or infinite values
                 if np.isnan(value):
                     raise ValueError(f"Property '{prop}' is NaN.")
                 if np.isinf(value):
                     raise ValueError(f"Property '{prop}' is infinite.")
-
                 # Type checking
                 if not isinstance(value, float):
                     raise TypeError(f"Property '{prop}' must be a float, got {type(value).__name__}. "
                                     f"\n -> Please use decimal notation (e.g., 1.0 instead of 1) or scientific notation.")
-
                 # Property-specific validations for single values
                 if prop in BASE_PROPERTIES or prop in POSITIVE_PROPERTIES:
                     if value <= 0:
                         raise ValueError(f"Property '{prop}' must be positive, got {value}.")
-
                 if prop in NON_NEGATIVE_PROPERTIES:
                     if value < 0:
                         raise ValueError(f"Property '{prop}' must be non-negative, got {value}.")
-
                 # Check range constraints if applicable
                 if prop in PROPERTY_RANGES:
                     min_val, max_val = PROPERTY_RANGES[prop]
                     if value < min_val or value > max_val:
                         raise ValueError(f"Property '{prop}' value {value} is outside expected range ({min_val} to {max_val}).")
-
         except Exception as e:
             raise ValueError(f"Failed to validate property value \n -> {e}")
 
