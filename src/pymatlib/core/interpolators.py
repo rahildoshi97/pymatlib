@@ -323,10 +323,23 @@ def create_idx_mapping(E_neq: np.ndarray, E_eq: np.ndarray) -> np.ndarray:
     return idx_map.astype(np.int32)
 
 
-def prepare_interpolation_arrays(T_array: np.ndarray, E_array: np.ndarray) -> dict:
+def prepare_interpolation_arrays(T_array: np.ndarray, E_array: np.ndarray, verbose=False) -> dict:
     """
     Validates input arrays and prepares data for interpolation.
-    Returns a dictionary with arrays and metadata for the appropriate method.
+
+    Args:
+        T_array: Array of temperature values
+        E_array: Array of energy density values corresponding to temperatures
+        verbose: If True, prints diagnostic information during processing
+
+    Returns:
+        A dictionary with arrays and metadata for the appropriate interpolation method:
+        - Common keys: 'T_bs', 'E_bs', 'method', 'is_equidistant', 'increment'
+        - Additional keys for double_lookup method: 'T_eq', 'E_neq', 'E_eq',
+          'inv_delta_E_eq', 'idx_map'
+
+    Raises:
+        ValueError: If arrays don't meet requirements for interpolation
     """
     # Convert to numpy arrays if not already
     T_array = np.asarray(T_array)
@@ -364,43 +377,59 @@ def prepare_interpolation_arrays(T_array: np.ndarray, E_array: np.ndarray) -> di
 
     # Flip arrays if temperature is in descending order
     if T_decreasing:
-        print("Temperature array is descending, flipping arrays for processing")
+        if verbose:
+            print("Temperature array is descending, flipping arrays for processing")
         T_bs = np.flip(T_bs)
         E_bs = np.flip(E_bs)
 
+    # Check for strictly increasing values
+    has_warnings = False
     try:
         check_strictly_increasing(T_bs, "Temperature array")
         check_strictly_increasing(E_bs, "Energy density array")
     except ValueError as e:
-        print(f"Warning: {e}")
-        print("Continuing with interpolation, but results may be less accurate")
+        has_warnings = True
+        if verbose:
+            print(f"Warning: {e}")
+            print("Continuing with interpolation, but results may be less accurate")
 
-    # Use your existing check_equidistant function to determine if suitable for double lookup
+    # Use the existing check_equidistant function to determine if suitable for double lookup
     T_incr = check_equidistant(T_bs)
     is_equidistant = T_incr != 0.0
 
+    # Initialize result with common fields
     result = {
         "T_bs": T_bs,
         "E_bs": E_bs,
-        "method": "binary_search"
+        "method": "binary_search",
+        "is_equidistant": is_equidistant,
+        "increment": T_incr if is_equidistant else 0.0,
+        "has_warnings": has_warnings
     }
 
     # If temperature is equidistant, prepare for double lookup
     if is_equidistant:
-        print(f"Temperature array is equidistant with increment {T_incr}, using double lookup")
-        # Create equidistant energy array and mapping
-        E_eq, inv_delta_E_eq = E_eq_from_E_neq(E_bs)
-        idx_mapping = create_idx_mapping(E_bs, E_eq)
+        if verbose:
+            print(f"Temperature array is equidistant with increment {T_incr}, using double lookup")
 
-        result.update({
-            "T_eq": T_bs,
-            "E_neq": E_bs,
-            "E_eq": E_eq,
-            "inv_delta_E_eq": inv_delta_E_eq,
-            "idx_map": idx_mapping,
-            "method": "double_lookup"
-        })
-    else:
+        try:
+            # Create equidistant energy array and mapping
+            E_eq, inv_delta_E_eq = E_eq_from_E_neq(E_bs)
+            idx_mapping = create_idx_mapping(E_bs, E_eq)
+
+            result.update({
+                "T_eq": T_bs,
+                "E_neq": E_bs,
+                "E_eq": E_eq,
+                "inv_delta_E_eq": inv_delta_E_eq,
+                "idx_map": idx_mapping,
+                "method": "double_lookup"
+            })
+        except Exception as e:
+            if verbose:
+                print(f"Warning: Failed to create double lookup tables: {e}")
+                print("Falling back to binary search method")
+    elif verbose:
         print("Temperature array is not equidistant, using binary search")
 
     return result
