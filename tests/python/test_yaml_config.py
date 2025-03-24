@@ -15,9 +15,9 @@ T = sp.Symbol('T')
 # Get the path to the YAML file
 current_file = Path(__file__)
 yaml_path = current_file.parent.parent.parent / "src" / "pymatlib" / "data" / "alloys" / "SS304L" / "SS304L.yaml"
-
+# yaml_path = current_file.parent.parent.parent / "src" / "pymatlib" / "data" / "alloys" / "SS304L" / "SS304L_comprehensive.yaml"
 # Create alloy from YAML
-ss316l = create_alloy_from_yaml(yaml_path, T)
+ss316l, temp = create_alloy_from_yaml(yaml_path, T)
 #ss316l_1 = create_alloy_from_yaml("SS304L_1.yaml", T)
 
 # Test various properties
@@ -48,4 +48,3 @@ print(f"Latent heat: {ss316l.latent_heat_of_fusion.evalf(T, test_temp)}")
 # Test array generation for energy density
 if hasattr(ss316l, 'energy_density_array'):
     print(f"\nEnergy Density Array Shape: {ss316l.energy_density_array.shape}")
-    print(f"Energy Density Temperature Array Shape: {ss316l.energy_density_temperature_array.shape}")

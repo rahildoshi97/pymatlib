@@ -4,6 +4,7 @@ from importlib.resources import files
 from pystencilssfg import SourceFileGenerator
 from pymatlib.core.yaml_parser import create_alloy_from_yaml
 from pymatlib.core.codegen.interpolation_array_container import InterpolationArrayContainer
+from pymatlib.core.property_array_extractor import PropertyArrayExtractor
 
 
 with SourceFileGenerator() as sfg:
@@ -22,6 +23,11 @@ with SourceFileGenerator() as sfg:
     sfg.generate(custom_container)
 
     yaml_path = files('pymatlib.data.alloys.SS304L').joinpath('SS304L.yaml')
-    mat = create_alloy_from_yaml(yaml_path, u.center())
-    arr_container = InterpolationArrayContainer.from_material("SS304L", mat)
+    mat, temp_array = create_alloy_from_yaml(yaml_path, u.center())
+    array_extractor = PropertyArrayExtractor(mat, temp_array, u.center)
+    arr_container = InterpolationArrayContainer("SS304L", temp_array, array_extractor.energy_density_array)
     sfg.generate(arr_container)
+    print(f"extractor.temperature_array: {array_extractor.temperature_array}")
+    # print(f"extractor.density_array: {array_extractor.density_array}")
+    print(f"extractor.specific_enthalpy_array: {array_extractor.specific_enthalpy_array}")
+    print(f"extractor.energy_density_array: {array_extractor.energy_density_array}")
