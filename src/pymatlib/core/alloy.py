@@ -93,15 +93,15 @@ class Alloy:
     temperature_boil: float = field(init=False)
 
     # Optional properties with default values
-    base_temperature: float = None
-    base_density: float = None
+    # base_temperature: float = None
+    # base_density: float = None
     density: PropertyTypes = None
     dynamic_viscosity: PropertyTypes = None
     energy_density: PropertyTypes = None
     energy_density_solidus: float = None
     energy_density_liquidus: float = None
-    energy_density_temperature_array: np.ndarray = field(default_factory=lambda: np.array([]))
-    energy_density_array: np.ndarray = field(default_factory=lambda: np.array([]))
+    # energy_density_temperature_array: np.ndarray = field(default_factory=lambda: np.array([]))
+    # energy_density_array: np.ndarray = field(default_factory=lambda: np.array([]))
     heat_capacity: PropertyTypes = None
     heat_conductivity: PropertyTypes = None
     kinematic_viscosity: PropertyTypes = None
@@ -109,8 +109,8 @@ class Alloy:
     latent_heat_of_vaporization: PropertyTypes = None
     specific_enthalpy: PropertyTypes = None
     surface_tension: PropertyTypes = None
-    temperature: PropertyTypes = None
-    temperature_array: np.ndarray = field(default_factory=lambda: np.array([]))
+    # temperature: PropertyTypes = None
+    # temperature_array: np.ndarray = field(default_factory=lambda: np.array([]))
     thermal_diffusivity: PropertyTypes = None
     thermal_expansion_coefficient: PropertyTypes = None
 
