@@ -128,6 +128,9 @@ composition:
 solidus_temperature: 1605.
 liquidus_temperature: 1735.
 
+# temperature_range: [300, 3000, 541]  # 541 (int) -> points
+#OR
+temperature_range: [3000, 300, -5.0]  # 5.0 (float) -> increment
 
 properties:
   # energy_density:
@@ -136,10 +139,9 @@ properties:
   #OR
   # energy_density: compute
   #OR
-  energy_density:
-    compute: total_enthalpy  # Explicit model selection
+  energy_density: compute
   # User can specify either:
-  energy_density_temperature_array: (300, 3000, 541)  # int for number of points
+  # energy_density_temperature_array: (300, 3000, 541)  # int for number of points
   # OR
   #energy_density_temperature_array: (300, 3000, 5.0)   # float for delta (increment)
   # save the energy_density and temperature as arrays always.

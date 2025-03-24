@@ -13,6 +13,9 @@ composition:
 solidus_temperature: 1605.
 liquidus_temperature: 1735.
 
+# temperature_range: [300, 3000, 541]  # 541 (int) -> points
+#OR
+temperature_range: [300, 3000, 5.0]  # 5.0 (float) -> increment
 
 properties:
   # energy_density:
@@ -20,22 +23,23 @@ properties:
     # val: [...]
   #OR
   energy_density: compute
-  # User can specify either:
-  energy_density_temperature_array: (300, 3000, 540)    # int for number of points
-  # OR
-  #energy_density_temperature_array: (300, 3000, 5.0)   # float for delta (increment)
-  # save the energy_density and temperature as arrays always.
 
 
-  density: 7950
+  density: 7950.
   #OR
   #density: compute  # computed by thermal expansion coefficient, should be acceptable even if TEC is defined later in the file
-  #base_temperature: 2273
+  #base_temperature: 2273.
   #base_density: 6.591878918e3
   #OR
   # density: density_temperature_edited.txt
 
   thermal_expansion_coefficient: 1e-6
+
+
+  specific_enthalpy:
+    file: ./304L_Erstarrungsdaten_edited.xlsx
+    temp_col: T (K)
+    prop_col: Enthalpy (J/kg)
 
 
   latent_heat_of_fusion:
@@ -54,7 +58,7 @@ properties:
     # val: [600, 800]
   #OR
   heat_capacity:
-    key: (1000, 200)  # generates equidistant values starting 1000 with an increment of 200 until the length of val
+    key: (1000, 150)  # generates equidistant values starting 1000 with an increment of 200 until the length of val
     # [1000, 1200, 1400, 1600, 1800, 2000, 2200, 2400, 2600, 2800, 3000, 3200]
     val: [580, 590, 600, 600, 600, 610, 620, 630, 660, 700, 750, 750]
   #OR
