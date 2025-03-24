@@ -94,7 +94,8 @@ class InterpolationArrayContainer(CustomGenerator):
         except Exception as e:
             raise ValueError(f"Failed to prepare interpolation arrays: {e}") from e
 
-    @classmethod
+    # TODO: Deprecated!
+    '''@classmethod
     def from_material(cls, name: str, material):
         """Create an interpolation container from a material object.
         Args:
@@ -104,7 +105,7 @@ class InterpolationArrayContainer(CustomGenerator):
         Returns:
             InterpolationArrayContainer: Container with arrays for interpolation.
         """
-        return cls(name, material.energy_density_temperature_array, material.y_array)
+        return cls(name, material.energy_density_temperature_array, material.y_array)'''
 
     def _generate_binary_search(self, sfg: SfgComposer):
         """Generate code for binary search interpolation.
