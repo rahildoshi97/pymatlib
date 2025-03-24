@@ -297,96 +297,96 @@ def interpolate_binary_search(
     return result
 
 
-def E_eq_from_E_neq(E_neq: np.ndarray) -> Tuple[np.ndarray, float]:
-    delta_min: float = np.min(np.abs(np.diff(E_neq)))
+def y_eq_from_y_neq(y_neq: np.ndarray) -> Tuple[np.ndarray, float]:
+    delta_min: float = np.min(np.abs(np.diff(y_neq)))
     if delta_min < 1.:
-        raise ValueError(f"Energy density array points are very closely spaced, delta = {delta_min}")
+        raise ValueError(f"Array points are very closely spaced, delta = {delta_min}")
     print(f"delta_min:", delta_min)
-    delta_E_eq = max(np.floor(delta_min * 0.95), 1.)
-    print(f"delta_E_eq:", delta_E_eq)
-    E_eq = np.arange(E_neq[0], E_neq[-1] + delta_E_eq, delta_E_eq, dtype=np.float64)
-    print(f"np.size(E_eq):", np.size(E_eq))
-    inv_delta_E_eq: float = float(1. / (E_eq[1] - E_eq[0]))
-    return E_eq, inv_delta_E_eq
+    delta_y_eq = max(np.floor(delta_min * 0.95), 1.)
+    print(f"delta_y_eq:", delta_y_eq)
+    y_eq = np.arange(y_neq[0], y_neq[-1] + delta_y_eq, delta_y_eq, dtype=np.float64)
+    print(f"np.size(y_eq):", np.size(y_eq))
+    inv_delta_y_eq: float = float(1. / (y_eq[1] - y_eq[0]))
+    return y_eq, inv_delta_y_eq
 
 
-def create_idx_mapping(E_neq: np.ndarray, E_eq: np.ndarray) -> np.ndarray:
-    """idx_map = np.zeros(len(E_eq), dtype=int)
-    for i, e in enumerate(E_eq):
-        idx = int(np.searchsorted(E_neq, e) - 1)
-        idx = max(0, min(idx, len(E_neq) - 2))  # Bound check
+def create_idx_mapping(y_neq: np.ndarray, y_eq: np.ndarray) -> np.ndarray:
+    """idx_map = np.zeros(len(y_eq), dtype=int)
+    for i, e in enumerate(y_eq):
+        idx = int(np.searchsorted(y_neq, e) - 1)
+        idx = max(0, min(idx, len(y_neq) - 2))  # Bound check
         idx_map[i] = idx"""
-    # idx_map = np.searchsorted(E_neq, E_eq) - 1
-    idx_map = np.searchsorted(E_neq, E_eq, side='right') - 1
-    idx_map = np.clip(idx_map, 0, len(E_neq) - 2)
+    # idx_map = np.searchsorted(y_neq, y_eq) - 1
+    idx_map = np.searchsorted(y_neq, y_eq, side='right') - 1
+    idx_map = np.clip(idx_map, 0, len(y_neq) - 2)
     print(f"idx_map: {idx_map}")
     return idx_map.astype(np.int32)
 
 
-def prepare_interpolation_arrays(T_array: np.ndarray, E_array: np.ndarray, verbose=False) -> dict:
+def prepare_interpolation_arrays(x_array: np.ndarray, y_array: np.ndarray, verbose=False) -> dict:
     """
     Validates input arrays and prepares data for interpolation.
 
     Args:
-        T_array: Array of temperature values
-        E_array: Array of energy density values corresponding to temperatures
+        x_array: Array of x values
+        y_array: Array of y values corresponding to x
         verbose: If True, prints diagnostic information during processing
 
     Returns:
         A dictionary with arrays and metadata for the appropriate interpolation method:
-        - Common keys: 'T_bs', 'E_bs', 'method', 'is_equidistant', 'increment'
-        - Additional keys for double_lookup method: 'T_eq', 'E_neq', 'E_eq',
-          'inv_delta_E_eq', 'idx_map'
+        - Common keys: 'x_bs', 'y_bs', 'method', 'is_equidistant', 'increment'
+        - Additional keys for double_lookup method: 'x_eq', 'y_neq', 'y_eq',
+          'inv_delta_y_eq', 'idx_map'
 
     Raises:
         ValueError: If arrays don't meet requirements for interpolation
     """
     # Convert to numpy arrays if not already
-    T_array = np.asarray(T_array)
-    E_array = np.asarray(E_array)
+    x_array = np.asarray(x_array)
+    y_array = np.asarray(y_array)
 
     # Basic validation
-    if len(T_array) != len(E_array):
-        raise ValueError(f"Energy density array (length {len(E_array)}) and temperature array (length {len(T_array)}) must have the same length!")
+    if len(x_array) != len(y_array):
+        raise ValueError(f"y array (length {len(y_array)}) and x array (length {len(x_array)}) must have the same length!")
 
-    if not E_array.size or not T_array.size:
-        raise ValueError("Energy density and temperature arrays must not be empty!")
+    if not y_array.size or not x_array.size:
+        raise ValueError("x and y arrays must not be empty!")
 
-    if len(E_array) < 2:
-        raise ValueError(f"Arrays must contain at least 2 elements, got {len(E_array)}!")
+    if len(y_array) < 2:
+        raise ValueError(f"Arrays must contain at least 2 elements, got {len(y_array)}!")
 
     # Check if arrays are monotonic
-    T_increasing = np.all(np.diff(T_array) > 0)
-    T_decreasing = np.all(np.diff(T_array) < 0)
-    E_increasing = np.all(np.diff(E_array) > 0)
-    E_decreasing = np.all(np.diff(E_array) < 0)
+    x_increasing = np.all(np.diff(x_array) > 0)
+    x_decreasing = np.all(np.diff(x_array) < 0)
+    y_increasing = np.all(np.diff(y_array) > 0)
+    y_decreasing = np.all(np.diff(y_array) < 0)
 
-    if not (T_increasing or T_decreasing):
+    if not (x_increasing or x_decreasing):
         raise ValueError("Temperature array must be monotonically increasing or decreasing")
 
-    if not (E_increasing or E_decreasing):
+    if not (y_increasing or y_decreasing):
         raise ValueError("Energy density array must be monotonically increasing or decreasing")
 
     # Check if energy increases with temperature (both increasing or both decreasing)
-    if (T_increasing and E_decreasing) or (T_decreasing and E_increasing):
+    if (x_increasing and y_decreasing) or (x_decreasing and y_increasing):
         raise ValueError("Energy density must increase with temperature")
 
     # Create copies to avoid modifying original arrays
-    T_bs = np.copy(T_array)
-    E_bs = np.copy(E_array)
+    x_bs = np.copy(x_array)
+    y_bs = np.copy(y_array)
 
     # Flip arrays if temperature is in descending order
-    if T_decreasing:
+    if x_decreasing:
         if verbose:
             print("Temperature array is descending, flipping arrays for processing")
-        T_bs = np.flip(T_bs)
-        E_bs = np.flip(E_bs)
+        x_bs = np.flip(x_bs)
+        y_bs = np.flip(y_bs)
 
     # Check for strictly increasing values
     has_warnings = False
     try:
-        check_strictly_increasing(T_bs, "Temperature array")
-        check_strictly_increasing(E_bs, "Energy density array")
+        check_strictly_increasing(x_bs, "x array")
+        check_strictly_increasing(y_bs, "y array")
     except ValueError as e:
         has_warnings = True
         if verbose:
@@ -394,34 +394,34 @@ def prepare_interpolation_arrays(T_array: np.ndarray, E_array: np.ndarray, verbo
             print("Continuing with interpolation, but results may be less accurate")
 
     # Use the existing check_equidistant function to determine if suitable for double lookup
-    T_incr = check_equidistant(T_bs)
-    is_equidistant = T_incr != 0.0
+    x_incr = check_equidistant(x_bs)
+    is_equidistant = x_incr != 0.0
 
     # Initialize result with common fields
     result = {
-        "T_bs": T_bs,
-        "E_bs": E_bs,
+        "x_bs": x_bs,
+        "y_bs": y_bs,
         "method": "binary_search",
         "is_equidistant": is_equidistant,
-        "increment": T_incr if is_equidistant else 0.0,
+        "increment": x_incr if is_equidistant else 0.0,
         "has_warnings": has_warnings
     }
 
     # If temperature is equidistant, prepare for double lookup
     if is_equidistant:
         if verbose:
-            print(f"Temperature array is equidistant with increment {T_incr}, using double lookup")
+            print(f"x array is equidistant with increment {x_incr}, using double lookup")
 
         try:
             # Create equidistant energy array and mapping
-            E_eq, inv_delta_E_eq = E_eq_from_E_neq(E_bs)
-            idx_mapping = create_idx_mapping(E_bs, E_eq)
+            y_eq, inv_delta_y_eq = y_eq_from_y_neq(y_bs)
+            idx_mapping = create_idx_mapping(y_bs, y_eq)
 
             result.update({
-                "T_eq": T_bs,
-                "E_neq": E_bs,
-                "E_eq": E_eq,
-                "inv_delta_E_eq": inv_delta_E_eq,
+                "x_eq": x_bs,
+                "y_neq": y_bs,
+                "y_eq": y_eq,
+                "inv_delta_y_eq": inv_delta_y_eq,
                 "idx_map": idx_mapping,
                 "method": "double_lookup"
             })
@@ -430,31 +430,31 @@ def prepare_interpolation_arrays(T_array: np.ndarray, E_array: np.ndarray, verbo
                 print(f"Warning: Failed to create double lookup tables: {e}")
                 print("Falling back to binary search method")
     elif verbose:
-        print("Temperature array is not equidistant, using binary search")
+        print("x array is not equidistant, using binary search")
 
     return result
 '''
     # Determine if suitable for double lookup (temperature must be equidistant)
-    T_diffs = np.diff(T_bs)
-    is_equidistant = np.allclose(T_diffs, T_diffs[0], rtol=1e-5)
+    x_diffs = np.diff(x_bs)
+    is_equidistant = np.allclose(x_diffs, x_diffs[0], rtol=1e-5)
 
     result = {
-        "T_bs": T_bs,
-        "E_bs": E_bs,
+        "x_bs": x_bs,
+        "y_bs": y_bs,
         "method": "binary_search"
     }
 
     # If temperature is equidistant, prepare for double lookup
     if is_equidistant:
         # Create equidistant energy array and mapping
-        E_eq, inv_delta_E_eq = E_eq_from_E_neq(E_bs)
-        idx_mapping = create_idx_mapping(E_bs, E_eq)
+        y_eq, inv_delta_y_eq = y_eq_from_y_neq(y_bs)
+        idx_mapping = create_idx_mapping(y_bs, y_eq)
 
         result.update({
-            "T_eq": T_bs,
-            "E_neq": E_bs,
-            "E_eq": E_eq,
-            "inv_delta_E_eq": inv_delta_E_eq,
+            "x_eq": x_bs,
+            "y_neq": y_bs,
+            "y_eq": y_eq,
+            "inv_delta_y_eq": inv_delta_y_eq,
             "idx_map": idx_mapping,
             "method": "double_lookup"
         })
