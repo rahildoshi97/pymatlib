@@ -164,4 +164,11 @@ int main(int argc, char** argv)
 }
 }
 
-int main(int argc, char** argv) { walberla::main(argc, argv); }
+int main(int argc, char** argv)
+{
+   walberla::main(argc, argv);
+   constexpr double E = 8.32237831007E+09;
+   constexpr SS304L alloy;
+   const double result = alloy.interpolate(E);
+   std::cout << result << std::endl;
+}

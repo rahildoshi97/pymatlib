@@ -7,10 +7,11 @@ from importlib.resources import files
 # sys.path.append(walberla_dir)
 from pystencilssfg import SourceFileGenerator
 from sfg_walberla import Sweep
-from pymatlib.data.alloys.SS304L import SS304L
+# from pymatlib.data.alloys.SS304L import SS304L
 from pymatlib.core.yaml_parser import create_alloy_from_yaml
 from pymatlib.core.assignment_converter import assignment_converter
 from pymatlib.core.codegen.interpolation_array_container import InterpolationArrayContainer
+from pymatlib.core.property_array_extractor import PropertyArrayExtractor
 
 with SourceFileGenerator() as sfg:
     data_type = "float64"  # if ctx.double_accuracy else "float32"
@@ -35,12 +36,13 @@ with SourceFileGenerator() as sfg:
     from importlib.resources import files
     # Access the YAML file as a package resource
     yaml_path = files('pymatlib.data.alloys.SS304L').joinpath('SS304L.yaml')
-    mat = create_alloy_from_yaml(yaml_path, u.center())
+    # Create alloy and get temperature array
+    mat, temperature_array = create_alloy_from_yaml(yaml_path, u.center())
     # yaml_path_1 = files('pymatlib.data.alloys.SS304L').joinpath('SS304L_1.yaml')
     # mat1 = create_alloy_from_yaml(yaml_path_1, u.center())
-
-    # arr_container = DoubleLookupArrayContainer("SS304L", mat.temperature_array, mat.energy_density_array)
-    arr_container = InterpolationArrayContainer.from_material("SS304L", mat)
+    # Create property extractor with the alloy and temperature array
+    array_extractor = PropertyArrayExtractor(mat, temperature_array, u.center)
+    arr_container = InterpolationArrayContainer("SS304L", temperature_array, array_extractor.energy_density_array)
     sfg.generate(arr_container)
     # arr_container = InterpolationArrayContainer.from_material("SS304L_1", mat1)
     # sfg.generate(arr_container)
