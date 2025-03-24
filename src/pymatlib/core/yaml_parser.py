@@ -8,7 +8,7 @@ from pymatlib.core.interpolators import interpolate_property
 from pymatlib.core.data_handler import read_data_from_file
 from pymatlib.core.models import (density_by_thermal_expansion,
                                   thermal_diffusivity_by_heat_conductivity,
-                                  energy_density_standard, energy_density_enthalpy_based, energy_density_total_enthalpy)
+                                  energy_density)
 from pymatlib.core.typedefs import MaterialProperty
 from ruamel.yaml import YAML, constructor, scanner
 from difflib import get_close_matches
@@ -20,7 +20,7 @@ class PropertyType(Enum):
     FILE = auto()
     KEY_VAL = auto()
     COMPUTE = auto()
-    TUPLE_STRING = auto()
+    # TUPLE_STRING = auto()
     INVALID = auto()
 
 
@@ -35,16 +35,16 @@ class MaterialConfigParser:
     ABSOLUTE_ZERO = 0.0  # Kelvin
 
     # Define valid properties as class-level constants
-    VALID_PROPERTIES = {
+    VALID_YAML_PROPERTIES = {
         'base_temperature',
         'base_density',
         'density',
         'dynamic_viscosity',
         'energy_density',
-        'energy_density_solidus',
-        'energy_density_liquidus',
-        'energy_density_temperature_array',
-        'energy_density_array',
+        # 'energy_density_solidus',
+        # 'energy_density_liquidus',
+        # 'energy_density_temperature_array',
+        # 'energy_density_array',
         'heat_capacity',
         'heat_conductivity',
         'kinematic_viscosity',
@@ -52,8 +52,8 @@ class MaterialConfigParser:
         'latent_heat_of_vaporization',
         'specific_enthalpy',
         'surface_tension',
-        'temperature',
-        'temperature_array',
+        # 'temperature',
+        # 'temperature_array',
         'thermal_diffusivity',
         'thermal_expansion_coefficient',
     }
@@ -76,6 +76,8 @@ class MaterialConfigParser:
         self.base_dir = Path(yaml_path).parent
         self.config: Dict[str, Any] = self._load_yaml()
         self._validate_config()
+        self._process_temperature_range(self.config['temperature_range'])
+        # print(self.temperature_array)
 
     def _load_yaml(self) -> Dict[str, Any]:
         """Load and parse YAML file.
@@ -115,16 +117,40 @@ class MaterialConfigParser:
         if not isinstance(self.config, dict):
             # raise ValueError("Root YAML element must be a mapping")
             raise ValueError("The YAML file must start with a dictionary/object structure with key-value pairs, not a list or scalar value")
-        if 'properties' not in self.config:
-            raise ValueError("Missing 'properties' section in configuration")
+        self._validate_required_fields()
+        # if 'properties' not in self.config:
+            # raise ValueError("Missing 'properties' section in configuration")
         properties = self.config.get('properties', {})
         if not isinstance(properties, dict):
             # raise ValueError("'properties' must be a mapping")
             raise ValueError("The 'properties' section in your YAML file must be a dictionary with key-value pairs")
         self._validate_property_names(properties)
-        self._validate_required_fields()
+        # self._validate_required_fields()
         # self._validate_property_types(properties)
         # self._validate_property_values(properties)
+
+    def _validate_required_fields(self) -> None:
+        """
+        Validate required configuration fields.
+        Raises:
+            ValueError: If any required field is missing.
+        """
+        required_fields = {'name', 'composition', 'solidus_temperature', 'liquidus_temperature', 'temperature_range', 'properties'}
+        missing_fields = required_fields - set(self.config.keys())
+        if missing_fields:
+            raise ValueError(f"Missing required fields: {', '.join(missing_fields)}")
+        # Check for extra fields
+        extra_fields = set(self.config.keys()) - required_fields
+        if extra_fields:
+            suggestions = {
+                field: get_close_matches(field, required_fields, n=1, cutoff=0.6)
+                for field in extra_fields
+            }
+            error_msg = "Extra fields found in configuration:\n"
+            for field, matches in suggestions.items():
+                suggestion = f" (did you mean '{matches[0]}'?)" if matches else ""
+                error_msg += f"  - '{field}'{suggestion}\n"
+            raise ValueError(error_msg)
 
     def _validate_property_names(self, properties: Dict[str, Any]) -> None:
         """
@@ -134,10 +160,10 @@ class MaterialConfigParser:
         Raises:
             ValueError: If any property name is not in VALID_PROPERTIES.
         """
-        invalid_props = set(properties.keys()) - self.VALID_PROPERTIES
+        invalid_props = set(properties.keys()) - self.VALID_YAML_PROPERTIES
         if invalid_props:
             suggestions = {
-                prop: get_close_matches(prop, self.VALID_PROPERTIES, n=1, cutoff=0.6)
+                prop: get_close_matches(prop, self.VALID_YAML_PROPERTIES, n=1, cutoff=0.6)
                 for prop in invalid_props
             }
             error_msg = "Invalid properties found:\n"
@@ -146,16 +172,67 @@ class MaterialConfigParser:
                 error_msg += f"  - '{prop}'{suggestion}\n"
             raise ValueError(error_msg)
 
-    def _validate_required_fields(self) -> None:
+    ##################################################
+    # Temperature Array Processing
+    ##################################################
+
+    def _process_temperature_range(self, array_def: List[Union[float, int]]) -> np.ndarray:
         """
-        Validate required configuration fields.
+        Process temperature array definition with format [start, end, points/delta].
+        Args:
+            array_def (List[Union[float, int]]): A list defining the temperature array in the format
+                                                 [start, end, points/delta].
+        Returns:
+            np.ndarray: An array of temperature values.
         Raises:
-            ValueError: If any required field is missing.
+            ValueError: If the array definition is invalid, improperly formatted,
+                        or contains physically impossible temperatures.
+        Examples:
+            >>> self._process_temperature_range([300, 3000, 5])
+            array([ 300., 975., 1650., 2325., 3000.])
+            >>> self._process_temperature_range([3000, 300, -1350.])
+            array([3000., 1650., 300.])
         """
-        required_fields = {'name', 'composition', 'solidus_temperature', 'liquidus_temperature'}
-        missing_fields = required_fields - set(self.config.keys())
-        if missing_fields:
-            raise ValueError(f"Missing required fields: {', '.join(missing_fields)}")
+        if not (isinstance(array_def, list) and len(array_def) == 3):
+            raise ValueError("Temperature array must be defined as [start, end, points/delta]")
+        try:
+            start, end, step = float(array_def[0]), float(array_def[1]), array_def[2]
+            if start <= self.ABSOLUTE_ZERO or end <= self.ABSOLUTE_ZERO:
+                raise ValueError(f"Temperature must be above absolute zero ({self.ABSOLUTE_ZERO}K)")
+            if abs(float(step)) < self.EPSILON:
+                raise ValueError("Delta or number of points cannot be zero.")
+            # Check if step represents delta (float) or points (int)
+            if isinstance(step, float):
+                temperature_array = self._process_float_step(start, end, step)
+            else:
+                temperature_array = self._process_int_step(start, end, int(step))
+            self.temperature_array = temperature_array  # Store the temperature array
+            # print(self.temperature_array)
+            return temperature_array
+        except ValueError as e:
+            raise ValueError(f"Invalid temperature array definition \n -> {e}")
+
+    @staticmethod
+    def _process_float_step(start: float, end: float, delta: float) -> np.ndarray:
+        """Process temperature array with float step (delta)."""
+        print(f"Processing TA as float: start={start}, end={end}, delta={delta}")
+        if start < end and delta <= 0:
+            raise ValueError("Delta must be positive for increasing range")
+        if start > end and delta >= 0:
+            raise ValueError("Delta must be negative for decreasing range")
+        max_delta = abs(end - start)
+        if abs(delta) > max_delta:
+            raise ValueError(f"Absolute value of delta ({abs(delta)}) is too large for the range. It should be <= {max_delta}")
+        return np.arange(start, end + delta/2, delta)
+
+    def _process_int_step(self, start: float, end: float, points: int) -> np.ndarray:
+        """Process temperature array with integer step (number of points)."""
+        print(f"Processing TA as int: start={start}, end={end}, points={points}")
+        if points <= 0:
+            raise ValueError(f"Number of points must be positive, got {points}!")
+        if points < self.MIN_POINTS:
+            raise ValueError(f"Number of points must be at least {self.MIN_POINTS}, got {points}!")
+        return np.linspace(start, end, points)
 
     #TODO: Deprecated!
     def _validate_property_types(self, properties):
@@ -219,12 +296,12 @@ class MaterialConfigParser:
         """
         # Define property constraints with SI units
         BASE_PROPERTIES = {'base_temperature', 'base_density'}  # always single float values
-        POSITIVE_PROPERTIES = {'density', 'heat_capacity', 'heat_conductivity', 'temperature',
+        POSITIVE_PROPERTIES = {'density', 'heat_capacity', 'heat_conductivity',
                                'dynamic_viscosity', 'kinematic_viscosity', 'thermal_diffusivity',
                                'surface_tension'}
-        NON_NEGATIVE_PROPERTIES = {'latent_heat_of_fusion', 'latent_heat_of_vaporization', 'energy_density',
-                                   'energy_density_solidus', 'energy_density_liquidus', 'energy_density_array'}
-        ARRAY_PROPERTIES = {'temperature_array', 'energy_density_temperature_array', 'energy_density_array'}
+        NON_NEGATIVE_PROPERTIES = {'latent_heat_of_fusion', 'latent_heat_of_vaporization', 'energy_density',}
+                                   # 'energy_density_solidus', 'energy_density_liquidus'}
+        # ARRAY_PROPERTIES = {'temperature_array', 'energy_density_array'}
 
         # Property-specific range constraints
         PROPERTY_RANGES = {
@@ -233,10 +310,10 @@ class MaterialConfigParser:
             'density': (100, 22000),  # kg/m³
             'dynamic_viscosity': (1e-4, 1e5),  # Pa·s
             'energy_density': (0, 1e8),  # J/m³
-            'energy_density_solidus': (0, 1e8),  # J/m³
-            'energy_density_liquidus': (0, 1e8),  # J/m³
-            'energy_density_temperature_array': (0, 5000),  # K
-            'energy_density_array': (0, 1e8),  # J/m³
+            # 'energy_density_solidus': (0, 1e8),  # J/m³
+            # 'energy_density_liquidus': (0, 1e8),  # J/m³
+            # 'energy_density_temperature_array': (0, 5000),  # K
+            # 'energy_density_array': (0, 1e8),  # J/m³
             'heat_capacity': (100, 10000),  # J/(kg·K)
             'heat_conductivity': (1, 600),  # W/(m·K)
             'kinematic_viscosity': (1e-8, 1e-3),  # m²/s
@@ -244,12 +321,11 @@ class MaterialConfigParser:
             'latent_heat_of_vaporization': (50000, 12000000),  # J/kg
             'specific_enthalpy': (0, 15000000),  # J/kg
             'surface_tension': (0.1, 3.0),  # N/m
-            'temperature': (0, 5000),  # K
-            'temperature_array': (0, 5000),  # K
+            # 'temperature': (0, 5000),  # K
+            # 'temperature_array': (0, 5000),  # K
             'thermal_diffusivity': (1e-8, 1e-3),  # m²/s
             'thermal_expansion_coefficient': (-3e-5, 3e-5),  # 1/K
         }
-
         try:
             # Handle arrays (from file or key-val properties)
             if isinstance(value, np.ndarray):
@@ -258,7 +334,6 @@ class MaterialConfigParser:
                     raise ValueError(f"Property '{prop}' contains NaN values.")
                 if np.isinf(value).any():
                     raise ValueError(f"Property '{prop}' contains infinite values.")
-
                 # Property-specific validations for arrays
                 if prop in POSITIVE_PROPERTIES:
                     if (value <= 0).any():
@@ -266,14 +341,12 @@ class MaterialConfigParser:
                         bad_values = value[value <= 0]
                         raise ValueError(f"All '{prop}' values must be positive. Found {len(bad_indices)} invalid values "
                                          f"at indices {bad_indices}: {bad_values}.")
-
-                if prop in NON_NEGATIVE_PROPERTIES or prop in ARRAY_PROPERTIES:
+                if prop in NON_NEGATIVE_PROPERTIES:  # or prop in ARRAY_PROPERTIES:
                     if (value < 0).any():
                         bad_indices = np.where(value < 0)[0]
                         bad_values = value[value < 0]
                         raise ValueError(f"All '{prop}' values must be non-negative. Found {len(bad_indices)} invalid values "
                                          f"at indices {bad_indices}: {bad_values}.")
-
                 # Check range constraints if applicable
                 if prop in PROPERTY_RANGES:
                     min_val, max_val = PROPERTY_RANGES[prop]
@@ -282,7 +355,6 @@ class MaterialConfigParser:
                         out_values = value[out_of_range]
                         raise ValueError(f"'{prop}' contains values outside expected range ({min_val} to {max_val}) "
                                          f"\n -> Found {len(out_of_range)} out-of-range values at indices {out_of_range}: {out_values}")
-
             # Handle single values (from constant or computed properties)
             else:
                 # Check for NaN or infinite values
@@ -290,29 +362,55 @@ class MaterialConfigParser:
                     raise ValueError(f"Property '{prop}' is NaN.")
                 if np.isinf(value):
                     raise ValueError(f"Property '{prop}' is infinite.")
-
                 # Type checking
                 if not isinstance(value, float):
                     raise TypeError(f"Property '{prop}' must be a float, got {type(value).__name__}. "
                                     f"\n -> Please use decimal notation (e.g., 1.0 instead of 1) or scientific notation.")
-
                 # Property-specific validations for single values
                 if prop in BASE_PROPERTIES or prop in POSITIVE_PROPERTIES:
                     if value <= 0:
                         raise ValueError(f"Property '{prop}' must be positive, got {value}.")
-
                 if prop in NON_NEGATIVE_PROPERTIES:
                     if value < 0:
                         raise ValueError(f"Property '{prop}' must be non-negative, got {value}.")
-
                 # Check range constraints if applicable
                 if prop in PROPERTY_RANGES:
                     min_val, max_val = PROPERTY_RANGES[prop]
                     if value < min_val or value > max_val:
                         raise ValueError(f"Property '{prop}' value {value} is outside expected range ({min_val} to {max_val}).")
-
         except Exception as e:
             raise ValueError(f"Failed to validate property value \n -> {e}")
+
+    def _validate_temperature_range(self, prop: str, temp_array: np.ndarray) -> None:
+        """
+        Validate that temperature arrays from properties fall within the global temperature range.
+        Args:
+            prop (str): The name of the property being validated
+            temp_array (np.ndarray): The temperature array to validate
+        Raises:
+            ValueError: If temperature values fall outside the global temperature range
+        """
+        # Extract global temperature range from config
+        # temp_range = self.config.get('temperature_range', [])
+        temp_range = self.temperature_array
+        min_temp, max_temp = np.min(temp_range), np.max(temp_range)
+        # print(min_temp, max_temp)
+        # Check for temperatures outside the global range
+        if ((temp_array < min_temp) | (temp_array > max_temp)).any():
+            out_of_range = np.where((temp_array < min_temp) | (temp_array > max_temp))[0]
+            out_values = temp_array[out_of_range]
+            # Create a more detailed error message
+            if len(out_of_range) > 5:
+                # Show just a few examples if there are many out-of-range values
+                sample_indices = out_of_range[:5]
+                sample_values = temp_array[sample_indices]
+                raise ValueError(f"Property '{prop}' contains temperature values outside global range [{min_temp}, {max_temp}] "
+                                 f"\n -> Found {len(out_of_range)} out-of-range values, first 5 at indices {sample_indices}: {sample_values}"
+                                 f"\n -> Min value: {temp_array.min()}, Max value: {temp_array.max()}")
+            else:
+                # Show all out-of-range values if there aren't too many
+                raise ValueError(f"Property '{prop}' contains temperature values outside global range [{min_temp}, {max_temp}] "
+                                 f"\n -> Found {len(out_of_range)} out-of-range values at indices {out_of_range}: {out_values}")
 
     ##################################################
     # Alloy Creation
@@ -482,8 +580,8 @@ class MaterialConfigParser:
                 return PropertyType.KEY_VAL
             elif self._is_compute_property(config):
                 return PropertyType.COMPUTE
-            elif prop_name == 'energy_density_temperature_array' and isinstance(config, str) and config.startswith('(') and config.endswith(')'):
-                return PropertyType.TUPLE_STRING
+            # elif prop_name == 'energy_density_temperature_array' and isinstance(config, str) and config.startswith('(') and config.endswith(')'):
+                # return PropertyType.TUPLE_STRING
             else:
                 return PropertyType.INVALID
         except Exception as e:
@@ -504,7 +602,7 @@ class MaterialConfigParser:
             PropertyType.FILE: [],
             PropertyType.KEY_VAL: [],
             PropertyType.COMPUTE: [],
-            PropertyType.TUPLE_STRING: []
+            # PropertyType.TUPLE_STRING: []
         }
         for prop_name, config in properties.items():
             try:
@@ -543,10 +641,9 @@ class MaterialConfigParser:
                         self._process_key_val_property(alloy, prop_name, config, T)
                     elif prop_type == PropertyType.COMPUTE:
                         self._process_computed_property(alloy, prop_name, T)
-                    elif prop_type == PropertyType.TUPLE_STRING:
+                    # elif prop_type == PropertyType.TUPLE_STRING:
                         # Handle tuple string properties if needed
-                        pass
-
+                        # pass
         except Exception as e:
             raise ValueError(f"Failed to process properties \n -> {e}")
 
@@ -658,6 +755,8 @@ class MaterialConfigParser:
                 alloy.energy_density_array = prop_array
                 alloy.energy_density_solidus = material_property.evalf(T, alloy.temperature_solidus)
                 alloy.energy_density_liquidus = material_property.evalf(T, alloy.temperature_liquidus)'''
+            # Validate the temperature array
+            self._validate_temperature_range(prop_name, temp_array)
             # Validate the property array
             self._validate_property_value(prop_name, prop_array)
             self._process_property_data(alloy, prop_name, T, temp_array, prop_array)
@@ -684,6 +783,8 @@ class MaterialConfigParser:
             val_array = np.array(prop_config['val'], dtype=float)
             if len(key_array) != len(val_array):
                 raise ValueError(f"Length mismatch in {prop_name}: key and val arrays must have same length")
+            # Validate the temperature array
+            self._validate_temperature_range(prop_name, key_array)
             # Validate the value array
             self._validate_property_value(prop_name, val_array)
             self._process_property_data(alloy, prop_name, T, key_array, val_array)
@@ -786,7 +887,7 @@ class MaterialConfigParser:
         try:
             if isinstance(T, sp.Symbol):
                 self._process_symbolic_temperature(alloy, prop_name, T, temp_array, prop_array)
-            elif isinstance(T, (float, int)):
+            elif isinstance(T, float):
                 self._process_constant_temperature(alloy, prop_name, T, temp_array, prop_array)
             else:
                 raise ValueError(f"Unexpected type for T: {type(T)}")
@@ -805,12 +906,12 @@ class MaterialConfigParser:
             prop_array (np.ndarray): Array of property values.
         """
         # If T is symbolic, store the full temperature array if not already set then interpolate
-        if getattr(alloy, 'temperature_array', None) is None or len(alloy.temperature_array) == 0:
-            alloy.temperature_array = temp_array
+        # if getattr(alloy, 'temperature_array', None) is None or len(alloy.temperature_array) == 0:
+            # alloy.temperature_array = temp_array
         material_property = interpolate_property(T, temp_array, prop_array)
         setattr(alloy, prop_name, material_property)
         if prop_name == 'energy_density':
-            self._process_energy_density(alloy, material_property, T, temp_array, prop_array)
+            self._process_energy_density(alloy, material_property, T)
 
     @staticmethod
     def _process_constant_temperature(alloy: Alloy, prop_name: str, T: Union[float, int], temp_array: np.ndarray, prop_array: np.ndarray) -> None:
@@ -830,18 +931,18 @@ class MaterialConfigParser:
         setattr(alloy, prop_name, material_property)
 
     @staticmethod
-    def _process_energy_density(alloy: Alloy, material_property: Any, T: sp.Symbol, temp_array: np.ndarray, prop_array: np.ndarray) -> None:
+    def _process_energy_density(alloy: Alloy, material_property: Any, T: sp.Symbol) -> None:
         """
         Process additional properties for energy density.
         Args:
             alloy (Alloy): The alloy object to update.
             material_property (Any): The interpolated material property.
             T (sp.Symbol): Symbolic temperature.
-            temp_array (np.ndarray): Array of temperature values.
-            prop_array (np.ndarray): Array of property values.
+            # temp_array (np.ndarray): Array of temperature values.
+            # prop_array (np.ndarray): Array of property values.
         """
-        alloy.energy_density_temperature_array = temp_array
-        alloy.energy_density_array = prop_array
+        # alloy.energy_density_temperature_array = temp_array
+        # alloy.energy_density_array = prop_array
         alloy.energy_density_solidus = material_property.evalf(T, alloy.temperature_solidus)
         alloy.energy_density_liquidus = material_property.evalf(T, alloy.temperature_liquidus)
 
@@ -894,7 +995,7 @@ class MaterialConfigParser:
         setattr(alloy, prop_name, material_property)
         # Handle special case for energy_density
         if prop_name == 'energy_density' and isinstance(T, sp.Symbol):
-            self._handle_energy_density(alloy, material_property, T, method_dependencies)
+            self._handle_energy_density(alloy, material_property, T)
 
     @staticmethod
     def _get_computation_methods(alloy: Alloy, T: Union[float, sp.Symbol]):
@@ -923,20 +1024,9 @@ class MaterialConfigParser:
                 )
             },
             'energy_density': {
-                'default': lambda: energy_density_standard(
-                    T,
-                    alloy.density,
-                    alloy.heat_capacity,
-                    alloy.latent_heat_of_fusion
-                ),
-                'enthalpy_based': lambda: energy_density_enthalpy_based(
+                'default': lambda: energy_density(
                     alloy.density,
                     alloy.specific_enthalpy,
-                    alloy.latent_heat_of_fusion
-                ),
-                'total_enthalpy': lambda: energy_density_total_enthalpy(
-                    alloy.density,
-                    alloy.specific_enthalpy
                 ),
             },
         }
@@ -957,9 +1047,9 @@ class MaterialConfigParser:
                 'default': ['heat_conductivity', 'density', 'heat_capacity'],
             },
             'energy_density': {
-                'default': ['density', 'heat_capacity', 'latent_heat_of_fusion'],
-                'enthalpy_based': ['density', 'specific_enthalpy', 'latent_heat_of_fusion'],
-                'total_enthalpy': ['density', 'specific_enthalpy'],
+                'default': ['density', 'specific_enthalpy'],
+                # 'enthalpy_based': ['density', 'specific_enthalpy', 'latent_heat_of_fusion'],
+                # 'total_enthalpy': ['density', 'specific_enthalpy'],
             },
         }
 
@@ -990,7 +1080,7 @@ class MaterialConfigParser:
         if missing_deps:
             raise ValueError(f"Cannot compute {prop_name}. Missing dependencies: {missing_deps}")
 
-    def _handle_energy_density(self, alloy: Alloy, material_property: MaterialProperty, T: sp.Symbol, dependencies: List[str]):
+    def _handle_energy_density(self, alloy: Alloy, material_property: MaterialProperty, T: sp.Symbol):
         """
         Handle the special case of energy density computation.
         This method computes additional properties related to energy density when T is symbolic.
@@ -999,7 +1089,7 @@ class MaterialConfigParser:
             alloy (Alloy): The alloy object to process.
             material_property (MaterialProperty): The computed energy density property.
             T (sp.Symbol): The symbolic temperature variable.
-            dependencies (List[str]): List of dependencies for energy density computation.
+            # dependencies (List[str]): List of dependencies for energy density computation.
         Raises:
             ValueError: If T is not symbolic or if energy_density_temperature_array is not defined in the config.
         """
@@ -1007,86 +1097,34 @@ class MaterialConfigParser:
         if not isinstance(T, sp.Symbol):
             raise ValueError("_handle_energy_density should only be called with symbolic T")
         # Check dependencies
-        deps_to_check = [getattr(alloy, dep) for dep in dependencies if hasattr(alloy, dep)]
-        if any(isinstance(dep, MaterialProperty) for dep in deps_to_check):
-            if 'energy_density_temperature_array' not in self.config['properties']:
-                raise ValueError(f"energy_density_temperature_array must be defined when energy_density is computed with symbolic T")
+        # deps_to_check = [getattr(alloy, dep) for dep in dependencies if hasattr(alloy, dep)]
+        # if any(isinstance(dep, MaterialProperty) for dep in deps_to_check):
+            # if 'energy_density_temperature_array' not in self.config['properties']:
+              # raise ValueError(f"energy_density_temperature_array must be defined when energy_density is computed with symbolic T")
             # Process energy_density_temperature_array
-            edta = self.config['properties']['energy_density_temperature_array']
-            alloy.energy_density_temperature_array = self._process_edta(edta)
-        if len(alloy.energy_density_temperature_array) >= 2:
-            alloy.energy_density_array = material_property.evalf(T, alloy.energy_density_temperature_array)
+            # ta = self.config['temperature_range']
+            # alloy.temperature_array = self._process_temperature_array(ta)
+        if len(self.temperature_array) >= 2:
+            # alloy.energy_density_array = material_property.evalf(T, self.temperature_array)
             alloy.energy_density_solidus = material_property.evalf(T, alloy.temperature_solidus)
             alloy.energy_density_liquidus = material_property.evalf(T, alloy.temperature_liquidus)
-
-    ##################################################
-    # Energy Density Temperature Array Processing
-    ##################################################
-
-    def _process_edta(self, array_def: str) -> np.ndarray:
-        """
-        Process temperature array definition with format (start, end, points/delta).
-        Args:
-            array_def (str): A string defining the temperature array in the format
-                             "(start, end, points/delta)".
-        Returns:
-            np.ndarray: An array of temperature values.
-        Raises:
-            ValueError: If the array definition is invalid, improperly formatted,
-                        or contains physically impossible temperatures.
-        Examples:
-            >>> self._process_edta("(300, 3000, 5)")
-            array([ 300., 975., 1650., 2325., 3000.])
-            >>> self._process_edta("(3000, 300, -1350.)")
-            array([3000., 1650., 300.])
-        """
-        if not (isinstance(array_def, str) and array_def.startswith('(') and array_def.endswith(')')):
-            raise ValueError("Temperature array must be defined as (start, end, points/delta)")
-        try:
-            # Parse the tuple string
-            values = [v.strip() for v in array_def.strip('()').split(',')]
-            if len(values) != 3:
-                raise ValueError("'energy_density_temperature_array' must be a tuple of three comma-separated values representing (start, end, points/step)")
-            start, end, step = float(values[0]), float(values[1]), values[2]
-            if start <= self.ABSOLUTE_ZERO or end <= self.ABSOLUTE_ZERO:
-                raise ValueError(f"Temperature must be above absolute zero ({self.ABSOLUTE_ZERO}K)")
-            if abs(float(step)) < self.EPSILON:
-                raise ValueError("Delta or number of points cannot be zero.")
-            # Check if step represents delta (float) or points (int)
-            if '.' in step or 'e' in step.lower():
-                return self._process_float_step(start, end, float(step))
-            else:
-                return self._process_int_step(start, end, int(step))
-        except ValueError as e:
-            raise ValueError(f"Invalid temperature array definition \n -> {e}")
-
-    @staticmethod
-    def _process_float_step(start: float, end: float, delta: float) -> np.ndarray:
-        """Process temperature array with float step (delta)."""
-        print(f"Processing EDTA as float: start={start}, end={end}, delta={delta}")
-        if start < end and delta <= 0:
-            raise ValueError("Delta must be positive for increasing range")
-        if start > end and delta >= 0:
-            raise ValueError("Delta must be negative for decreasing range")
-        max_delta = abs(end - start)
-        if abs(delta) > max_delta:
-            raise ValueError(f"Absolute value of delta ({abs(delta)}) is too large for the range. It should be <= {max_delta}")
-        return np.arange(start, end + delta/2, delta)
-
-    def _process_int_step(self, start: float, end: float, points: int) -> np.ndarray:
-        """Process temperature array with integer step (number of points)."""
-        print(f"Processing EDTA as int: start={start}, end={end}, points={points}")
-        if points <= 0:
-            raise ValueError(f"Number of points must be positive, got {points}!")
-        if points < self.MIN_POINTS:
-            raise ValueError(f"Number of points must be at least {self.MIN_POINTS}, got {points}!")
-        return np.linspace(start, end, points)
 
 ##################################################
 # External Function
 ##################################################
 
 def create_alloy_from_yaml(yaml_path: Union[str, Path], T: Union[float, sp.Symbol]) -> Alloy:
-    """Create alloy instance from YAML configuration file"""
+    """
+    Create alloy instance from YAML configuration file
+    Args:
+        yaml_path: Path to the YAML configuration file
+        T: Temperature value or symbol for property evaluation
+    Returns:
+        Tuple containing the alloy instance and the temperature array
+    """
     parser = MaterialConfigParser(yaml_path)
-    return parser.create_alloy(T)
+    print(parser.config['name'])
+    # print(parser.temperature_array)
+    alloy = parser.create_alloy(T)
+    temp_array = parser.temperature_array
+    return alloy, temp_array
