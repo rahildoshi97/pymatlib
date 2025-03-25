@@ -75,15 +75,17 @@ def _prepare_material_expressions(*properties):
     """Prepare expressions and collect assignments from material properties."""
     sub_assignments = []
     expressions = []
-
     for prop in properties:
         if isinstance(prop, MaterialProperty):
             sub_assignments.extend(prop.assignments)
             expressions.append(prop.expr)
         else:
             expressions.append(sympy_wrapper(prop))
-
-    return expressions, sub_assignments
+    # If there's only one expression, return it directly instead of in a list
+    if len(expressions) == 1:
+        return expressions[0], sub_assignments
+    else:
+        return expressions, sub_assignments
 
 
 def density_by_thermal_expansion(
@@ -119,10 +121,12 @@ def density_by_thermal_expansion(
         # raise ValueError(f"Thermal expansion coefficient must be between -3e-5 and 0.001, got {thermal_expansion_coefficient}")
 
     try:
-        tec_expr = thermal_expansion_coefficient.expr if isinstance(thermal_expansion_coefficient, MaterialProperty) else sympy_wrapper(thermal_expansion_coefficient)
-        sub_assignments = thermal_expansion_coefficient.assignments if isinstance(thermal_expansion_coefficient, MaterialProperty) else []
-        density = density_base * (1 + tec_expr * (temperature - temperature_base)) ** (-3)
-        return MaterialProperty(density, sub_assignments)
+        tec_expr, sub_assignments \
+            = _prepare_material_expressions(thermal_expansion_coefficient)
+        # tec_expr = thermal_expansion_coefficient.expr if isinstance(thermal_expansion_coefficient, MaterialProperty) else sympy_wrapper(thermal_expansion_coefficient)
+        # sub_assignments = thermal_expansion_coefficient.assignments if isinstance(thermal_expansion_coefficient, MaterialProperty) else []
+        density_expr = density_base * (1 + tec_expr * (temperature - temperature_base)) ** (-3)
+        return MaterialProperty(density_expr, sub_assignments)
     except ZeroDivisionError:
         raise ValueError("Division by zero encountered in density calculation")
 
@@ -155,6 +159,32 @@ def thermal_diffusivity_by_heat_conductivity(
         return MaterialProperty(thermal_diffusivity, sub_assignments)
     except ZeroDivisionError:
         raise ValueError("Division by zero encountered in thermal diffusivity calculation")
+
+
+# TODO: Add models for specific_enthalpy (h)
+def specific_enthalpy_sensible(
+        temperature: Union[float, sp.Symbol],
+        heat_capacity: Union[float, MaterialProperty]) \
+        -> MaterialProperty:
+
+    heat_capacity_expr, sub_assignments \
+        = _prepare_material_expressions(heat_capacity)
+
+    specific_enthalpy_expr = temperature * heat_capacity_expr
+    return MaterialProperty(specific_enthalpy_expr, sub_assignments)
+
+
+def specific_enthalpy_with_latent_heat(
+        temperature: Union[float, sp.Symbol],
+        heat_capacity: Union[float, MaterialProperty],
+        latent_heat: Union[float, MaterialProperty]) \
+        -> MaterialProperty:
+
+    (heat_capacity_expr, latent_heat_expr), sub_assignments \
+        = _prepare_material_expressions(heat_capacity, latent_heat)
+
+    specific_enthalpy_expr = temperature * heat_capacity_expr + latent_heat_expr
+    return MaterialProperty(specific_enthalpy_expr, sub_assignments)
 
 
 def energy_density(

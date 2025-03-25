@@ -14,6 +14,10 @@ from ruamel.yaml import YAML, constructor, scanner
 from difflib import get_close_matches
 from enum import Enum, auto
 
+from pymatlib.core.models import specific_enthalpy_sensible
+
+from pymatlib.core.models import specific_enthalpy_with_latent_heat
+
 
 class PropertyType(Enum):
     CONSTANT = auto()
@@ -1023,6 +1027,17 @@ class MaterialConfigParser:
                     alloy.heat_capacity
                 )
             },
+            'specific_enthalpy': {
+                'default': lambda: specific_enthalpy_sensible(
+                    T,
+                    alloy.heat_capacity
+                ),
+                'latent_heat_based': lambda: specific_enthalpy_with_latent_heat(
+                    T,
+                    alloy.heat_capacity,
+                    alloy.latent_heat_of_fusion
+                )
+            },
             'energy_density': {
                 'default': lambda: energy_density(
                     alloy.density,
@@ -1045,6 +1060,10 @@ class MaterialConfigParser:
             },
             'thermal_diffusivity': {
                 'default': ['heat_conductivity', 'density', 'heat_capacity'],
+            },
+            'specific_enthalpy': {
+                'default': ['heat_capacity'],
+                'latent_heat_based': ['heat_capacity', 'latent_heat_of_fusion'],
             },
             'energy_density': {
                 'default': ['density', 'specific_enthalpy'],
