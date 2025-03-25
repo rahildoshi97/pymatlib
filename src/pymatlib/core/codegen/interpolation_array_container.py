@@ -7,27 +7,27 @@ from pymatlib.core.interpolators import prepare_interpolation_arrays
 
 
 class InterpolationArrayContainer(CustomGenerator):
-    """Container for energy-temperature interpolation arrays and methods.
+    """Container for x-y interpolation arrays and methods.
 
-    This class stores temperature and energy density arrays and generates C++ code
-    for efficient bilateral conversion between these properties. It supports both
+    This class stores x and y arrays and generates C++ code
+    for efficient conversion to compute y for a given x. It supports both
     binary search interpolation (O(log n)) and double lookup interpolation (O(1))
     with automatic method selection based on data characteristics.
 
     Attributes:
         name (str): Name for the generated C++ class.
-        T_array (np.ndarray): Array of temperature values (must be monotonically increasing).
-        E_array (np.ndarray): Array of energy density values corresponding to T_array.
+        x_array (np.ndarray): Array of x values (must be monotonically increasing).
+        y_array (np.ndarray): Array of y values corresponding to x_array.
         method (str): Interpolation method selected ("binary_search" or "double_lookup").
-        T_bs (np.ndarray): Temperature array prepared for binary search.
-        E_bs (np.ndarray): Energy array prepared for binary search.
+        x_bs (np.ndarray): x array prepared for binary search.
+        y_bs (np.ndarray): y array prepared for binary search.
         has_double_lookup (bool): Whether double lookup interpolation is available.
 
     If has_double_lookup is True, the following attributes are also available:
-        T_eq (np.ndarray): Equidistant temperature array for double lookup.
-        E_neq (np.ndarray): Non-equidistant energy array for double lookup.
-        E_eq (np.ndarray): Equidistant energy array for double lookup.
-        inv_delta_E_eq (float): Inverse of the energy step size for double lookup.
+        x_eq (np.ndarray): Equidistant x array for double lookup.
+        y_neq (np.ndarray): Non-equidistant y array for double lookup.
+        y_eq (np.ndarray): Equidistant y array for double lookup.
+        inv_delta_y_eq (float): Inverse of the y step size for double lookup.
         idx_map (np.ndarray): Index mapping array for double lookup.
 
     Examples:
@@ -44,14 +44,14 @@ class InterpolationArrayContainer(CustomGenerator):
         >>>     container = InterpolationArrayContainer("MyMaterial", T, E)
         >>>     sfg.generate(container)
     """
-    def __init__(self, name: str, temperature_array: np.ndarray, energy_density_array: np.ndarray):
+    def __init__(self, name: str, x_array: np.ndarray, y_array: np.ndarray):
         """Initialize the interpolation container.
         Args:
             name (str): Name for the generated C++ class.
-            temperature_array (np.ndarray): Array of temperature values (K).
+            x_array (np.ndarray): Array of x values.
                 Must be monotonically increasing.
-            energy_density_array (np.ndarray): Array of energy density values (J/m³)
-                corresponding to temperature_array.
+            y_array (np.ndarray): Array of y values
+                corresponding to x_array.
         Raises:
             ValueError: If arrays are empty, have different lengths, or are not monotonic.
             TypeError: If name is not a string or arrays are not numpy arrays.
@@ -65,46 +65,34 @@ class InterpolationArrayContainer(CustomGenerator):
         if not re.match(r'^[a-zA-Z_][a-zA-Z0-9_]*$', name):
             raise ValueError(f"'{name}' is not a valid C++ class name")
 
-        if not isinstance(temperature_array, np.ndarray) or not isinstance(energy_density_array, np.ndarray):
+        if not isinstance(x_array, np.ndarray) or not isinstance(y_array, np.ndarray):
             raise TypeError("Temperature and energy arrays must be numpy arrays")
 
         self.name = name
-        self.T_array = temperature_array
-        self.E_array = energy_density_array
+        self.x_array = x_array
+        self.y_array = y_array
 
         # Prepare arrays and determine best method
         try:
-            self.data = prepare_interpolation_arrays(T_array=self.T_array, E_array=self.E_array, verbose=False)
+            self.data = prepare_interpolation_arrays(x_array=self.x_array, y_array=self.y_array, verbose=False)
             self.method = self.data["method"]
 
             # Store arrays for binary search (always available)
-            self.T_bs = self.data["T_bs"]
-            self.E_bs = self.data["E_bs"]
+            self.x_bs = self.data["x_bs"]
+            self.y_bs = self.data["y_bs"]
 
             # Store arrays for double lookup if available
             if self.method == "double_lookup":
-                self.T_eq = self.data["T_eq"]
-                self.E_neq = self.data["E_neq"]
-                self.E_eq = self.data["E_eq"]
-                self.inv_delta_E_eq = self.data["inv_delta_E_eq"]
+                self.x_eq = self.data["x_eq"]
+                self.y_neq = self.data["y_neq"]
+                self.y_eq = self.data["y_eq"]
+                self.inv_delta_y_eq = self.data["inv_delta_y_eq"]
                 self.idx_map = self.data["idx_map"]
                 self.has_double_lookup = True
             else:
                 self.has_double_lookup = False
         except Exception as e:
             raise ValueError(f"Failed to prepare interpolation arrays: {e}") from e
-
-    @classmethod
-    def from_material(cls, name: str, material):
-        """Create an interpolation container from a material object.
-        Args:
-            name (str): Name for the generated C++ class.
-            material: Material object with temperature and energy properties.
-                Must have energy_density_temperature_array and energy_density_array attributes.
-        Returns:
-            InterpolationArrayContainer: Container with arrays for interpolation.
-        """
-        return cls(name, material.energy_density_temperature_array, material.energy_density_array)
 
     def _generate_binary_search(self, sfg: SfgComposer):
         """Generate code for binary search interpolation.
@@ -113,19 +101,19 @@ class InterpolationArrayContainer(CustomGenerator):
         Returns:
             list: List of public members for the C++ class.
         """
-        T_bs_arr_values = ", ".join(str(v) for v in self.T_bs)
-        E_bs_arr_values = ", ".join(str(v) for v in self.E_bs)
+        x_bs_arr_values = ", ".join(str(v) for v in self.x_bs)
+        y_bs_arr_values = ", ".join(str(v) for v in self.y_bs)
 
-        E_target = sfg.var("E_target", "double")
+        y_target = sfg.var("y_target", "double")
 
         return [
             # Binary search arrays
-            f"static constexpr std::array< double, {self.T_bs.shape[0]} > T_bs {{ {T_bs_arr_values} }}; \n"
-            f"static constexpr std::array< double, {self.E_bs.shape[0]} > E_bs {{ {E_bs_arr_values} }}; \n",
+            f"static constexpr std::array< double, {self.x_bs.shape[0]} > x_bs {{ {x_bs_arr_values} }}; \n"
+            f"static constexpr std::array< double, {self.y_bs.shape[0]} > y_bs {{ {y_bs_arr_values} }}; \n",
 
             # Binary search method
             sfg.method("interpolateBS", returns=PsCustomType("[[nodiscard]] double"), inline=True, const=True)(
-                sfg.expr("return interpolate_binary_search_cpp({}, *this);", E_target)
+                sfg.expr("return interpolate_binary_search_cpp({}, *this);", y_target)
             )
         ]
 
@@ -139,24 +127,24 @@ class InterpolationArrayContainer(CustomGenerator):
         if not self.has_double_lookup:
             return []
 
-        T_eq_arr_values = ", ".join(str(v) for v in self.T_eq)
-        E_neq_arr_values = ", ".join(str(v) for v in self.E_neq)
-        E_eq_arr_values = ", ".join(str(v) for v in self.E_eq)
+        x_eq_arr_values = ", ".join(str(v) for v in self.x_eq)
+        y_neq_arr_values = ", ".join(str(v) for v in self.y_neq)
+        y_eq_arr_values = ", ".join(str(v) for v in self.y_eq)
         idx_mapping_arr_values = ", ".join(str(v) for v in self.idx_map)
 
-        E_target = sfg.var("E_target", "double")
+        y_target = sfg.var("y_target", "double")
 
         return [
             # Double lookup arrays
-            f"static constexpr std::array< double, {self.T_eq.shape[0]} > T_eq {{ {T_eq_arr_values} }}; \n"
-            f"static constexpr std::array< double, {self.E_neq.shape[0]} > E_neq {{ {E_neq_arr_values} }}; \n"
-            f"static constexpr std::array< double, {self.E_eq.shape[0]} > E_eq {{ {E_eq_arr_values} }}; \n"
-            f"static constexpr double inv_delta_E_eq = {self.inv_delta_E_eq}; \n"
+            f"static constexpr std::array< double, {self.x_eq.shape[0]} > x_eq {{ {x_eq_arr_values} }}; \n"
+            f"static constexpr std::array< double, {self.y_neq.shape[0]} > y_neq {{ {y_neq_arr_values} }}; \n"
+            f"static constexpr std::array< double, {self.y_eq.shape[0]} > y_eq {{ {y_eq_arr_values} }}; \n"
+            f"static constexpr double inv_delta_y_eq = {self.inv_delta_y_eq}; \n"
             f"static constexpr std::array< int, {self.idx_map.shape[0]} > idx_map {{ {idx_mapping_arr_values} }}; \n",
 
             # Double lookup method
             sfg.method("interpolateDL", returns=PsCustomType("[[nodiscard]] double"), inline=True, const=True)(
-                sfg.expr("return interpolate_double_lookup_cpp({}, *this);", E_target)
+                sfg.expr("return interpolate_double_lookup_cpp({}, *this);", y_target)
             )
         ]
 
@@ -178,17 +166,17 @@ class InterpolationArrayContainer(CustomGenerator):
             public_members.extend(self._generate_double_lookup(sfg))
 
         # Add interpolate method that uses recommended approach
-        E_target = sfg.var("E_target", "double")
+        y_target = sfg.var("y_target", "double")
         if self.has_double_lookup:
             public_members.append(
                 sfg.method("interpolate", returns=PsCustomType("[[nodiscard]] double"), inline=True, const=True)(
-                    sfg.expr("return interpolate_double_lookup_cpp({}, *this);", E_target)
+                    sfg.expr("return interpolate_double_lookup_cpp({}, *this);", y_target)
                 )
             )
         else:
             public_members.append(
                 sfg.method("interpolate", returns=PsCustomType("[[nodiscard]] double"), inline=True, const=True)(
-                    sfg.expr("return interpolate_binary_search_cpp({}, *this);", E_target)
+                    sfg.expr("return interpolate_binary_search_cpp({}, *this);", y_target)
                 )
             )
 

@@ -52,14 +52,17 @@ def _prepare_material_expressions(*properties):
     """Prepare expressions and collect assignments from material properties."""
     sub_assignments = []
     expressions = []
-
     for prop in properties:
         if isinstance(prop, MaterialProperty):
             sub_assignments.extend(prop.assignments)
             expressions.append(prop.expr)
         else:
             expressions.append(sympy_wrapper(prop))
-    return expressions, sub_assignments
+    # If there's only one expression, return it directly instead of in a list
+    if len(expressions) == 1:
+        return expressions[0], sub_assignments
+    else:
+        return expressions, sub_assignments
 
 
 def density_by_thermal_expansion(
@@ -88,10 +91,10 @@ def density_by_thermal_expansion(
     if isinstance(temperature, ArrayTypes):
         raise TypeError(f"Incompatible input type for temperature. Expected float or sp.Expr, got {type(temperature)}")
     try:
-        tec_expr = thermal_expansion_coefficient.expr if isinstance(thermal_expansion_coefficient, MaterialProperty) else sympy_wrapper(thermal_expansion_coefficient)
-        sub_assignments = thermal_expansion_coefficient.assignments if isinstance(thermal_expansion_coefficient, MaterialProperty) else []
-        density = density_base * (1 + tec_expr * (temperature - temperature_base)) ** (-3)
-        return MaterialProperty(density, sub_assignments)
+        tec_expr, sub_assignments \
+            = _prepare_material_expressions(thermal_expansion_coefficient)
+        density_expr = density_base * (1 + tec_expr * (temperature - temperature_base)) ** (-3)
+        return MaterialProperty(density_expr, sub_assignments)
     except ZeroDivisionError:
         raise ValueError("Division by zero encountered in density calculation")
 
@@ -123,42 +126,32 @@ def thermal_diffusivity_by_heat_conductivity(
         raise ValueError("Division by zero encountered in thermal diffusivity calculation")
 
 
-def energy_density_standard(
+def specific_enthalpy_sensible(
         temperature: Union[float, sp.Symbol],
-        density: Union[float, MaterialProperty],
+        heat_capacity: Union[float, MaterialProperty]) \
+        -> MaterialProperty:
+
+    heat_capacity_expr, sub_assignments \
+        = _prepare_material_expressions(heat_capacity)
+
+    specific_enthalpy_expr = temperature * heat_capacity_expr
+    return MaterialProperty(specific_enthalpy_expr, sub_assignments)
+
+
+def specific_enthalpy_with_latent_heat(
+        temperature: Union[float, sp.Symbol],
         heat_capacity: Union[float, MaterialProperty],
         latent_heat: Union[float, MaterialProperty]) \
         -> MaterialProperty:
 
-    (density_expr, heat_capacity_expr, latent_heat_expr), sub_assignments \
-        = _prepare_material_expressions(density, heat_capacity, latent_heat)
+    (heat_capacity_expr, latent_heat_expr), sub_assignments \
+        = _prepare_material_expressions(heat_capacity, latent_heat)
 
-    density_expr = density.expr if isinstance(density, MaterialProperty) else sympy_wrapper(density)
-    heat_capacity_expr = heat_capacity.expr if isinstance(heat_capacity, MaterialProperty) else sympy_wrapper(heat_capacity)
-    latent_heat_expr = latent_heat.expr if isinstance(latent_heat, MaterialProperty) else sympy_wrapper(latent_heat)
-
-    energy_density_expr = density_expr * (temperature * heat_capacity_expr + latent_heat_expr)
-    return MaterialProperty(energy_density_expr, sub_assignments)
+    specific_enthalpy_expr = temperature * heat_capacity_expr + latent_heat_expr
+    return MaterialProperty(specific_enthalpy_expr, sub_assignments)
 
 
-# For backward compatibility
-energy_density = energy_density_standard
-
-
-def energy_density_enthalpy_based(
-        density: Union[float, MaterialProperty],
-        specific_enthalpy: Union[float, MaterialProperty],
-        latent_heat: Union[float, MaterialProperty]) \
-        -> MaterialProperty:
-
-    (density_expr, specific_enthalpy_expr, latent_heat_expr), sub_assignments \
-        = _prepare_material_expressions(density, specific_enthalpy, latent_heat)
-
-    energy_density_expr = density_expr * (specific_enthalpy_expr + latent_heat_expr)
-    return MaterialProperty(energy_density_expr, sub_assignments)
-
-
-def energy_density_total_enthalpy(
+def energy_density(
         density: Union[float, MaterialProperty],
         specific_enthalpy: Union[float, MaterialProperty]) \
         -> MaterialProperty:
