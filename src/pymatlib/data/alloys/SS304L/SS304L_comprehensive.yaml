@@ -40,7 +40,7 @@ properties:
   # 3.2 Key-val pair with references to defined temperatures
   latent_heat_of_fusion:
     key: [solidus_temperature, liquidus_temperature]
-    val: [171401, 0]
+    val: [0, 171401]
 
   # 3.3 Key-val pair with tuple for temperature generation (increment)
   thermal_expansion_coefficient:
