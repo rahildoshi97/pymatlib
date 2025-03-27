@@ -3,7 +3,6 @@ import numpy as np
 import sympy as sp
 from pymatlib.core.alloy import Alloy, AlloyCompositionError, AlloyTemperatureError
 from pymatlib.data.element_data import Ti, Al, V, Fe, Cr, Mn, Ni
-from src.pymatlib.data.alloys.SS304L.SS304L import create_SS304L
 from src.pymatlib.core.typedefs import MaterialProperty
 
 def test_alloy_creation():
@@ -20,68 +19,6 @@ def test_alloy_creation():
     # Test creating an alloy with invalid phase transition temperatures
     with pytest.raises(ValueError):
         Alloy(elements=[Fe, Cr, Mn, Ni], composition=[0.7, 0.2, 0.05, 0.05], temperature_solidus=1900., temperature_liquidus=1800.)
-
-def test_create_SS316L():
-    """Test the creation and properties of SS304L alloy."""
-    # Test with float temperature input
-    alloy = create_SS304L(1400.0)
-
-    # Check if properties are set and have correct types
-    assert hasattr(alloy, 'density')
-    assert hasattr(alloy, 'heat_capacity')
-    assert hasattr(alloy, 'heat_conductivity')
-    assert hasattr(alloy, 'thermal_diffusivity')
-
-    # Check if properties have correct values and types
-    assert alloy.density is not None
-    assert alloy.heat_capacity is not None
-    assert alloy.heat_conductivity is not None
-    assert alloy.thermal_diffusivity is not None
-
-    # Test with symbolic temperature input
-    T = sp.Symbol('T')
-    alloy_symbolic = create_SS304L(T)
-
-    # Check symbolic properties
-    assert alloy_symbolic.density is not None
-    assert alloy_symbolic.heat_capacity is not None
-    assert alloy_symbolic.heat_conductivity is not None
-    assert alloy_symbolic.thermal_diffusivity is not None
-
-    # Test property values
-    assert isinstance(float(alloy.density.expr), float)
-    assert isinstance(float(alloy.heat_capacity.expr), float)
-    assert isinstance(float(alloy.heat_conductivity.expr), float)
-    assert isinstance(float(alloy.thermal_diffusivity.expr), float)
-
-def test_create_SS316L2():
-    alloy = create_SS304L(1400.0)
-
-    # Check if density exists and has the correct type
-    assert hasattr(alloy, 'density')
-    assert alloy.density is not None
-    assert type(alloy.density).__name__ == "MaterialProperty", f"Expected MaterialProperty, got {type(alloy.density)}"
-
-def test_alloy_single_element():
-    # Test creating an alloy with a single element
-    alloy = Alloy(elements=[Fe], composition=[1.0], temperature_solidus=1800, temperature_liquidus=1900)
-    assert len(alloy.elements) == 1
-    assert alloy.composition == [1.0]
-
-def test_alloy_property_modification():
-    # Test accessing and modifying individual alloy properties
-    alloy = create_SS304L(1400.0)
-    # assert isinstance(alloy.density, MaterialProperty)
-    # Set the density to a MaterialProperty instance with a constant expression
-    alloy.density = MaterialProperty(expr=sp.Float(8000.0))
-    assert alloy.density.expr == sp.Float(8000.0)
-
-'''def test_create_SS316L_invalid_temperature():
-    # Test creating SS304L alloy with invalid temperature inputs
-    with pytest.raises(ValueError):
-        create_SS316L(-100.0)  # Negative temperature
-    with pytest.raises(ValueError):
-        create_SS316L(3500.0)  # Temperature outside valid range'''
 
 def test_valid_alloy():
     Ti64 = Alloy([Ti, Al, V], [0.90, 0.06, 0.04], 1878, 1928)

@@ -10,18 +10,27 @@ composition:
 solidus_temperature: 1605.
 liquidus_temperature: 1735.
 
+# temperature_range: [300, 3000, 541]  # 541 (int) -> points
+#OR
+temperature_range: [300, 3000, 5.0]  # 5.0 (float) -> increment
+
 properties:
   # 1. Constant float property
   density: compute  # kg/m³
 
   # 2.1 File-based property (simple format)
-  heat_conductivity: ./heat_conductivity_temperature.txt
+  # heat_conductivity: ./heat_conductivity_temperature.txt
 
   # 2.2 File-based property (advanced format)
   specific_enthalpy:
     file: ./304L_Erstarrungsdaten_edited.xlsx
     temp_col: T (K)
     prop_col: Enthalpy (J/kg)
+
+  heat_conductivity:
+    file: ./304L_Erstarrungsdaten_edited.xlsx
+    temp_col: T (K)
+    prop_col: Thermal conductivity (W/(m*K))-TOTAL-10000.0(K/s)
 
   # 3.1 Key-val pair with explicit temperature list
   heat_capacity:
@@ -31,7 +40,7 @@ properties:
   # 3.2 Key-val pair with references to defined temperatures
   latent_heat_of_fusion:
     key: [solidus_temperature, liquidus_temperature]
-    val: [171401, 0]
+    val: [0, 171401]
 
   # 3.3 Key-val pair with tuple for temperature generation (increment)
   thermal_expansion_coefficient:
@@ -47,14 +56,7 @@ properties:
   thermal_diffusivity: compute  # k/(rho*cp)
 
   # 4.2 Computed property (advanced format with model selection)
-  energy_density:
-    compute: total_enthalpy
-
-  # Required for energy_density computation (with number of points)
-  # energy_density_temperature_array: (300, 3000, 541)
-
-  # Alternative specification (with temperature increment)
-  energy_density_temperature_array: (300, 3000, 5.0)
+  energy_density: compute
 
   # Properties required for density computation by thermal expansion
   base_temperature: 2273.

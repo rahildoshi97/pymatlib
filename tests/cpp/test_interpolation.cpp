@@ -201,9 +201,9 @@ void test_performance() {
     // Generate random values
     std::random_device rd;
     std::mt19937 gen(rd());
-    constexpr double E_min = SS304L::E_neq.front() * 0.8;
-    constexpr double E_max = SS304L::E_neq.back() * 1.2;
-    std::uniform_real_distribution<double> dist(E_min, E_max);
+    constexpr double y_min = SS304L::y_neq.front() * 0.8;
+    constexpr double y_max = SS304L::y_neq.back() * 1.2;
+    std::uniform_real_distribution<double> dist(y_min, y_max);
 
     // Fill random energies
     for(auto& E : random_energies) {

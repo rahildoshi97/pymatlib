@@ -5,15 +5,15 @@
 
 template<typename ArrayContainer>
 double interpolate_binary_search_cpp(
-    double E_target,
+    double y_target,
     const ArrayContainer& arrs) {
 
     static constexpr double EPSILON = 1e-6;
-    const size_t n = arrs.T_bs.size();
+    const size_t n = arrs.x_bs.size();
 
     // Quick boundary checks
-    if (E_target <= arrs.E_bs[0]) return arrs.T_bs[0];
-    if (E_target >= arrs.E_bs.back()) return arrs.T_bs.back();
+    if (y_target <= arrs.y_bs[0]) return arrs.x_bs[0];
+    if (y_target >= arrs.y_bs.back()) return arrs.x_bs.back();
 
     // Binary search
     size_t left = 0;
@@ -22,11 +22,11 @@ double interpolate_binary_search_cpp(
     while (right - left > 1) {
         const size_t mid = left + (right - left) / 2;
 
-        if (std::abs(arrs.E_bs[mid] - E_target) < EPSILON) {
-            return arrs.T_bs[mid];
+        if (std::abs(arrs.y_bs[mid] - y_target) < EPSILON) {
+            return arrs.x_bs[mid];
         }
 
-        if (arrs.E_bs[mid] > E_target) {
+        if (arrs.y_bs[mid] > y_target) {
             right = mid;
         } else {
             left = mid;
@@ -34,11 +34,11 @@ double interpolate_binary_search_cpp(
     }
 
     // Linear interpolation
-    const double x0 = arrs.E_bs[right];
-    const double x1 = arrs.E_bs[left];
-    const double y0 = arrs.T_bs[right];
-    const double y1 = arrs.T_bs[left];
+    const double x1 = arrs.y_bs[right];
+    const double x2 = arrs.y_bs[left];
+    const double y1 = arrs.x_bs[right];
+    const double y2 = arrs.x_bs[left];
 
-    const double slope = (y1 - y0) / (x1 - x0);
-    return y0 + slope * (E_target - x0);
+    const double slope = (y2 - y1) / (x2 - x1);
+    return y1 + slope * (y_target - x1);
 }

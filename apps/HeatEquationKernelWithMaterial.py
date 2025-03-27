@@ -4,8 +4,9 @@ from importlib.resources import files
 from pystencilssfg import SourceFileGenerator
 from sfg_walberla import Sweep
 from pymatlib.core.yaml_parser import create_alloy_from_yaml
-from pymatlib.core.assignment_converter import assignment_converter
+from pymatlib.core.property_array_extractor import PropertyArrayExtractor
 from pymatlib.core.codegen.interpolation_array_container import InterpolationArrayContainer
+from pymatlib.core.assignment_converter import assignment_converter
 
 with SourceFileGenerator() as sfg:
     data_type = "float64"  # if ctx.double_accuracy else "float32"
@@ -22,8 +23,9 @@ with SourceFileGenerator() as sfg:
     heat_pde_discretized = heat_pde_discretized.args[1] + heat_pde_discretized.args[0].simplify()
 
     yaml_path = files('pymatlib.data.alloys.SS304L').joinpath('SS304L.yaml')
-    mat = create_alloy_from_yaml(yaml_path, u.center())
-    arr_container = InterpolationArrayContainer.from_material("SS304L", mat)
+    mat, temperature_array = create_alloy_from_yaml(yaml_path, u.center())
+    array_extractor = PropertyArrayExtractor(mat, temperature_array, u.center)
+    arr_container = InterpolationArrayContainer("SS304L", temperature_array, array_extractor.energy_density_array)
     sfg.generate(arr_container)
 
     # Convert assignments to pystencils format
