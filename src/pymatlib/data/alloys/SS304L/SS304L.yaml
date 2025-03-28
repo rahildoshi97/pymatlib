@@ -168,18 +168,18 @@ properties:
   thermal_expansion_coefficient: 16.3e-6
 
   specific_enthalpy:
-    file: ./304L_Erstarrungsdaten_edited.xlsx
-    temp_col: T (K)
-    prop_col: Enthalpy (J/kg)
-
-  latent_heat_of_fusion:
-    file: ./304L_Erstarrungsdaten_edited.xlsx
-    temp_col: T (K)
-    prop_col: Latent heat (J/Kg)
+    compute: default
     #OR
-    # latent_heat_of_fusion:
-    # key: [solidus_temperature, liquidus_temperature]
-    # val: [171401, 0]
+    # compute: latent_heat_based
+
+  # latent_heat_of_fusion:
+    # file: ./304L_Erstarrungsdaten_edited.xlsx
+    # temp_col: T (K)
+    # prop_col: Latent heat (J/Kg)
+  #OR
+  latent_heat_of_fusion:
+    key: [solidus_temperature, liquidus_temperature]
+    val: [0, 171401]
 
 
   # heat_conductivity:
@@ -187,16 +187,16 @@ properties:
     # val: [25, 30, 33, 35]  # corresponding heat_conductivity values
 
 
-    # heat_capacity:
+  # heat_capacity:
     # key: [solidus_temperature, liquidus_temperature]
     # val: [600, 800]
-    #OR
-    # heat_capacity:
+  #OR
+  # heat_capacity:
     # key: (1000, 200)  # generates equidistant values starting 1000 with an increment of 200 until the length of val
     # [1000, 1200, 1400, 1600, 1800, 2000, 2200, 2400, 2600, 2800, 3000, 3200]
     # val: [580, 590, 600, 600, 600, 610, 620, 630, 660, 700, 750, 750]
-    #OR
-    # heat_capacity:
+  #OR
+  # heat_capacity:
     # key: [1000, 1200, 1400, 1600, ...]
     # val: [580, 590, 600, 600, 600, 610, 620, 630, 660, 700, 750, 780, 789, 799, 800, 800, 800, ...]
   #OR
