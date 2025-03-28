@@ -135,18 +135,14 @@ def specific_enthalpy_sensible(
     Calculate specific enthalpy array using heat capacity only.
     h(T_i) = h(T_(i-1)) + c_p(T_i)*(T_i - T_(i-1))
     """
-    print("Entering specific_enthalpy_sensible")
     # Validate temperature array is sorted
     if not np.all(temperature_array[:-1] <= temperature_array[1:]):
         raise ValueError("Temperature array must be sorted in ascending order for correct enthalpy calculation.")
-    # print(temperature_array)
-    print(temperature_array.shape)
     # Initialize enthalpy array
     enthalpy_array = np.zeros_like(temperature_array)
     # Calculate initial enthalpy at the first temperature
     T_0 = temperature_array[0]
     cp_0 = heat_capacity.evalf(T, T_0)
-    print(T_0, cp_0)
 
     # Calculate enthalpy at first temperature point
     enthalpy_array[0] = cp_0 * T_0
@@ -178,19 +174,15 @@ def specific_enthalpy_with_latent_heat(
     Calculate specific enthalpy array using heat capacity and latent heat.
     h(T_i) = h(T_(i-1)) + c_p(T_i)*(T_i - T_(i-1)) + [L(T_i) - L(T_(i-1))]
     """
-    print("Entering specific_enthalpy_with_latent_heat")
     # Validate temperature array is sorted
     if not np.all(temperature_array[:-1] <= temperature_array[1:]):
         raise ValueError("Temperature array must be sorted in ascending order for correct enthalpy calculation.")
-    # print(temperature_array)
-    print(temperature_array.shape)
     # Initialize enthalpy array
     enthalpy_array = np.zeros_like(temperature_array)
     # Calculate initial enthalpy at the first temperature
     T_0 = temperature_array[0]
     cp_0 = heat_capacity.evalf(T, T_0)
     L_0 = latent_heat.evalf(T, T_0)
-    print(T_0, cp_0, L_0)
 
     # Calculate enthalpy at first temperature point
     enthalpy_array[0] = cp_0 * T_0 + L_0

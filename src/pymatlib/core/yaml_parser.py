@@ -195,7 +195,6 @@ class MaterialConfigParser:
                 temperature_array = self._process_int_step(start, end, int(step))
             # Ensure temperature array is in ascending order
             if not np.all(np.diff(temperature_array) >= 0):
-                print("Flipping temperature array")
                 temperature_array = np.flip(temperature_array)
             return temperature_array
         except ValueError as e:
