@@ -163,28 +163,93 @@ def thermal_diffusivity_by_heat_conductivity(
 
 # TODO: Add models for specific_enthalpy (h)
 def specific_enthalpy_sensible(
-        temperature: Union[float, sp.Symbol],
+        T: Union[float, sp.Symbol],
+        temperature_array: np.ndarray,
         heat_capacity: Union[float, MaterialProperty]) \
         -> MaterialProperty:
+    """
+    Calculate specific enthalpy array using heat capacity only.
+    h(T_i) = h(T_(i-1)) + c_p(T_i)*(T_i - T_(i-1))
+    """
+    print("Entering specific_enthalpy_sensible")
+    # Validate temperature array is sorted
+    if not np.all(temperature_array[:-1] <= temperature_array[1:]):
+        raise ValueError("Temperature array must be sorted in ascending order for correct enthalpy calculation.")
+    # print(temperature_array)
+    print(temperature_array.shape)
+    # Initialize enthalpy array
+    enthalpy_array = np.zeros_like(temperature_array)
+    # Calculate initial enthalpy at the first temperature
+    T_0 = temperature_array[0]
+    cp_0 = heat_capacity.evalf(T, T_0)
+    print(T_0, cp_0)
 
-    heat_capacity_expr, sub_assignments \
-        = _prepare_material_expressions(heat_capacity)
+    # Calculate enthalpy at first temperature point
+    enthalpy_array[0] = cp_0 * T_0
 
-    specific_enthalpy_expr = temperature * heat_capacity_expr
-    return MaterialProperty(specific_enthalpy_expr, sub_assignments)
+    # Iterate through temperature points to calculate enthalpy incrementally
+    for i in range(1, len(temperature_array)):
+        T_i = temperature_array[i]
+        T_prev = temperature_array[i-1]
+
+        # Evaluate material properties at current temperature
+        cp_i = heat_capacity.evalf(T, T_i)
+
+        # Calculate enthalpy increment
+        sensible_heat = cp_i * (T_i - T_prev)
+
+        # Update enthalpy
+        enthalpy_array[i] = enthalpy_array[i-1] + sensible_heat
+
+    from pymatlib.core.interpolators import interpolate_property
+    return interpolate_property(T, temperature_array, enthalpy_array)
 
 
 def specific_enthalpy_with_latent_heat(
-        temperature: Union[float, sp.Symbol],
-        heat_capacity: Union[float, MaterialProperty],
-        latent_heat: Union[float, MaterialProperty]) \
-        -> MaterialProperty:
+        T: Union[float, sp.Symbol],
+        temperature_array: np.ndarray,
+        heat_capacity: MaterialProperty,
+        latent_heat: MaterialProperty) -> MaterialProperty:
+    """
+    Calculate specific enthalpy array using heat capacity and latent heat.
+    h(T_i) = h(T_(i-1)) + c_p(T_i)*(T_i - T_(i-1)) + [L(T_i) - L(T_(i-1))]
+    """
+    print("Entering specific_enthalpy_with_latent_heat")
+    # Validate temperature array is sorted
+    if not np.all(temperature_array[:-1] <= temperature_array[1:]):
+        raise ValueError("Temperature array must be sorted in ascending order for correct enthalpy calculation.")
+    # print(temperature_array)
+    print(temperature_array.shape)
+    # Initialize enthalpy array
+    enthalpy_array = np.zeros_like(temperature_array)
+    # Calculate initial enthalpy at the first temperature
+    T_0 = temperature_array[0]
+    cp_0 = heat_capacity.evalf(T, T_0)
+    L_0 = latent_heat.evalf(T, T_0)
+    print(T_0, cp_0, L_0)
 
-    (heat_capacity_expr, latent_heat_expr), sub_assignments \
-        = _prepare_material_expressions(heat_capacity, latent_heat)
+    # Calculate enthalpy at first temperature point
+    enthalpy_array[0] = cp_0 * T_0 + L_0
 
-    specific_enthalpy_expr = temperature * heat_capacity_expr + latent_heat_expr
-    return MaterialProperty(specific_enthalpy_expr, sub_assignments)
+    # Iterate through temperature points to calculate enthalpy incrementally
+    for i in range(1, len(temperature_array)):
+        T_i = temperature_array[i]
+        T_prev = temperature_array[i-1]
+
+        # Evaluate material properties at current temperature
+        cp_i = heat_capacity.evalf(T, T_i)
+        L_i = latent_heat.evalf(T, T_i)
+        L_prev = latent_heat.evalf(T, T_prev)
+
+        # Calculate enthalpy increment
+        sensible_heat = cp_i * (T_i - T_prev)
+        latent_heat_change = L_i - L_prev
+
+        # Update enthalpy
+        enthalpy_array[i] = enthalpy_array[i-1] + sensible_heat + latent_heat_change
+
+    from pymatlib.core.interpolators import interpolate_property
+    return interpolate_property(T, temperature_array, enthalpy_array)
 
 
 def energy_density(
