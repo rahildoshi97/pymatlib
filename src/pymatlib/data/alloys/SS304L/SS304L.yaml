@@ -182,9 +182,14 @@ properties:
     # temp_col: T (K)
     # prop_col: Latent heat (J/Kg)
   #OR
-  latent_heat_of_fusion:
-    key: [solidus_temperature, liquidus_temperature]
-    val: [0, 171401]
+  latent_heat_of_fusion: 171401.
+
+
+  latent_heat_of_vaporization: 171401.
+  #OR
+  # latent_heat_of_vaporization:
+    # key: [liquidus_temperature, liquidus_temperature+300]
+    # val: [0, 171401]
 
 
   # heat_conductivity:
