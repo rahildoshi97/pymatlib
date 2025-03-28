@@ -173,18 +173,18 @@ properties:
   thermal_expansion_coefficient: 16.3e-6
 
   specific_enthalpy:
-    file: ./304L_Erstarrungsdaten_edited.xlsx
-    temp_col: T (K)
-    prop_col: Enthalpy (J/kg)
+    compute: default
+    #OR
+    # compute: latent_heat_based
 
-  latent_heat_of_fusion:
-    file: ./304L_Erstarrungsdaten_edited.xlsx
-    temp_col: T (K)
-    prop_col: Latent heat (J/Kg)
-  #OR
   # latent_heat_of_fusion:
-    # key: [solidus_temperature, liquidus_temperature]
-    # val: [171401, 0]
+    # file: ./304L_Erstarrungsdaten_edited.xlsx
+    # temp_col: T (K)
+    # prop_col: Latent heat (J/Kg)
+  #OR
+  latent_heat_of_fusion:
+    key: [solidus_temperature, liquidus_temperature]
+    val: [0, 171401]
 
 
   # heat_conductivity:
