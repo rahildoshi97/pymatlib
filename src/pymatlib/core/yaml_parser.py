@@ -80,7 +80,7 @@ class MaterialConfigParser:
         self.base_dir = Path(yaml_path).parent
         self.config: Dict[str, Any] = self._load_yaml()
         self._validate_config()
-        self._process_temperature_range(self.config['temperature_range'])
+        self.temperature_array = self._process_temperature_range(self.config['temperature_range'])
         # print(self.temperature_array)
 
     def _load_yaml(self) -> Dict[str, Any]:
@@ -210,8 +210,11 @@ class MaterialConfigParser:
                 temperature_array = self._process_float_step(start, end, step)
             else:
                 temperature_array = self._process_int_step(start, end, int(step))
-            self.temperature_array = temperature_array  # Store the temperature array
-            # print(self.temperature_array)
+            # print(temperature_array)
+            # Ensure temperature array is in ascending order
+            if not np.all(np.diff(temperature_array) >= 0):
+                print("Flipping temperature array")
+                temperature_array = np.flip(temperature_array)
             return temperature_array
         except ValueError as e:
             raise ValueError(f"Invalid temperature array definition \n -> {e}")
@@ -1001,8 +1004,8 @@ class MaterialConfigParser:
         if prop_name == 'energy_density' and isinstance(T, sp.Symbol):
             self._handle_energy_density(alloy, material_property, T)
 
-    @staticmethod
-    def _get_computation_methods(alloy: Alloy, T: Union[float, sp.Symbol]):
+    # @staticmethod
+    def _get_computation_methods(self, alloy: Alloy, T: Union[float, sp.Symbol]):
         """
         Get the computation methods for various properties of the alloy.
         Args:
@@ -1030,10 +1033,12 @@ class MaterialConfigParser:
             'specific_enthalpy': {
                 'default': lambda: specific_enthalpy_sensible(
                     T,
+                    self.temperature_array,
                     alloy.heat_capacity
                 ),
                 'latent_heat_based': lambda: specific_enthalpy_with_latent_heat(
                     T,
+                    self.temperature_array,
                     alloy.heat_capacity,
                     alloy.latent_heat_of_fusion
                 )
@@ -1145,5 +1150,5 @@ def create_alloy_from_yaml(yaml_path: Union[str, Path], T: Union[float, sp.Symbo
     print(parser.config['name'])
     # print(parser.temperature_array)
     alloy = parser.create_alloy(T)
-    temp_array = parser.temperature_array
-    return alloy, temp_array
+    temperature_array = parser.temperature_array
+    return alloy, temperature_array
