@@ -249,7 +249,7 @@ class MaterialConfigParser:
             'heat_conductivity': (1, 600),  # W/(m·K)
             'kinematic_viscosity': (1e-8, 1e-3),  # m²/s
             'latent_heat_of_fusion': (0, 600000),  # J/kg
-            'latent_heat_of_vaporization': (50000, 12000000),  # J/kg
+            'latent_heat_of_vaporization': (0, 12000000),  # J/kg
             'specific_enthalpy': (0, 15000000),  # J/kg
             'surface_tension': (0.1, 3.0),  # N/m
             'thermal_diffusivity': (1e-8, 1e-3),  # m²/s
@@ -563,7 +563,9 @@ class MaterialConfigParser:
             categorized_properties = self._categorize_properties(properties)
             for prop_type, prop_list in categorized_properties.items():
                 for prop_name, config in prop_list:
-                    if prop_type == PropertyType.CONSTANT:
+                    if prop_type == PropertyType.CONSTANT and prop_name in ['latent_heat_of_fusion', 'latent_heat_of_vaporization']:
+                        self._process_latent_heat_constant(alloy, prop_name, config, T)
+                    elif prop_type == PropertyType.CONSTANT:
                         self._process_constant_property(alloy, prop_name, config)
                     elif prop_type == PropertyType.FILE:
                         self._process_file_property(alloy, prop_name, config, T)
@@ -575,6 +577,43 @@ class MaterialConfigParser:
             raise ValueError(f"Failed to process properties \n -> {e}")
 
 ########################################################################################################################
+
+    def _process_latent_heat_constant(self, alloy: Alloy, prop_name: str, prop_config: Union[float, str], T: Union[float, sp.Symbol]) -> None:
+        """
+        Process latent heat properties when provided as constants.
+        This automatically expands them to key-val pairs using solidus and liquidus temperatures.
+        Args:
+            alloy (Alloy): The alloy object to update.
+            prop_name (str): The name of the property to set ('latent_heat_of_fusion' or 'latent_heat_of_vaporization').
+            prop_config (Union[float, str]): The constant latent heat value.
+            T (Union[float, sp.Symbol]): Temperature value or symbol.
+        """
+        try:
+            # Convert to float
+            latent_heat_value = float(prop_config)
+            # Validate the value
+            self._validate_property_value(prop_name, latent_heat_value)
+            # Create expanded key-val configuration
+            if prop_name == 'latent_heat_of_fusion':
+                # For fusion, heat is absorbed between solidus and liquidus
+                expanded_config = {
+                    'key': ['solidus_temperature', 'liquidus_temperature'],
+                    'val': [0, latent_heat_value]
+                }
+            elif prop_name == 'latent_heat_of_vaporization':
+                # For vaporization, heat is absorbed at boiling point
+                # Assume boiling happens after liquidus temperature
+                expanded_config = {
+                    'key': ['liquidus_temperature', 'liquidus_temperature+300'],
+                    'val': [0, latent_heat_value]
+                }
+            else:
+                raise ValueError(f"Unsupported latent heat property: {prop_name}")
+            # Process using the standard key-val method
+            self._process_key_val_property(alloy, prop_name, expanded_config, T)
+        except (ValueError, TypeError) as e:
+            error_msg = f"Failed to process {prop_name} constant \n -> {e}"
+            raise ValueError(error_msg) from e
 
     @staticmethod
     def _process_constant_property(alloy: Alloy, prop_name: str, prop_config: Union[float, str]) -> None:
@@ -718,10 +757,38 @@ class MaterialConfigParser:
             processed_key = []
             for k in key_def:
                 if isinstance(k, str):
+                    # Handle base temperature references
                     if k == 'solidus_temperature':
                         processed_key.append(alloy.temperature_solidus)
                     elif k == 'liquidus_temperature':
                         processed_key.append(alloy.temperature_liquidus)
+                    # Handle temperature expressions like 'liquidus_temperature+300'
+                    elif '+' in k:
+                        # Split the string into base and offset
+                        base, offset = k.split('+')
+                        offset_value = float(offset)
+                        # Get the base temperature
+                        if base == 'solidus_temperature':
+                            base_value = alloy.temperature_solidus
+                        elif base == 'liquidus_temperature':
+                            base_value = alloy.temperature_liquidus
+                        else:
+                            base_value = float(base)
+                        # Calculate the final temperature
+                        processed_key.append(base_value + offset_value)
+                    elif '-' in k:
+                        # Split the string into base and offset
+                        base, offset = k.split('-')
+                        offset_value = -float(offset)
+                        # Get the base temperature
+                        if base == 'solidus_temperature':
+                            base_value = alloy.temperature_solidus
+                        elif base == 'liquidus_temperature':
+                            base_value = alloy.temperature_liquidus
+                        else:
+                            base_value = float(base)
+                        # Calculate the final temperature
+                        processed_key.append(base_value + offset_value)
                     else:
                         processed_key.append(float(k))
                 else:
