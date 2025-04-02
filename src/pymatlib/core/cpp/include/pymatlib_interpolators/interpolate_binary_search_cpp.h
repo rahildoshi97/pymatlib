@@ -33,12 +33,13 @@ double interpolate_binary_search_cpp(
         }
     }
 
-    // Linear interpolation
-    const double x1 = arrs.y_bs[right];
-    const double x2 = arrs.y_bs[left];
-    const double y1 = arrs.x_bs[right];
-    const double y2 = arrs.x_bs[left];
+    // Get interpolation points
+    const double x1 = arrs.x_bs[left];
+    const double x2 = arrs.x_bs[right];
+    const double y1 = arrs.y_bs[left];
+    const double y2 = arrs.y_bs[right];
 
-    const double slope = (y2 - y1) / (x2 - x1);
-    return y1 + slope * (y_target - x1);
+    // Linear interpolation
+    const double inv_slope = (x2 - x1) / (y2 - y1);
+    return x1 + inv_slope * (y_target - y1);
 }
