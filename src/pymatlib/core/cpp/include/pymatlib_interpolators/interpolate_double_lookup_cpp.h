@@ -26,12 +26,12 @@ double interpolate_double_lookup_cpp(
     idx_y_neq += arrs.y_neq[idx_y_neq + 1] < y_target;
 
     // Get interpolation points
-    const double y1 = arrs.y_neq[idx_y_neq];
-    const double y2 = arrs.y_neq[idx_y_neq + 1];
     const double x1 = arrs.x_eq[idx_y_neq];
     const double x2 = arrs.x_eq[idx_y_neq + 1];
+    const double y1 = arrs.y_neq[idx_y_neq];
+    const double y2 = arrs.y_neq[idx_y_neq + 1];
 
     // Linear interpolation
-    const double slope = (x2 - x1) / (y2 - y1);
-    return x1 + slope * (y_target - y1);
+    const double inv_slope = (x2 - x1) / (y2 - y1);
+    return x1 + inv_slope * (y_target - y1);
 }
