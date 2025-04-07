@@ -867,8 +867,6 @@ class MaterialConfigParser:
             alloy (Alloy): The alloy object to update.
             material_property (Any): The interpolated material property.
             T (sp.Symbol): Symbolic temperature.
-            # temp_array (np.ndarray): Array of temperature values.
-            # prop_array (np.ndarray): Array of property values.
         """
         alloy.energy_density_solidus = material_property.evalf(T, alloy.temperature_solidus)
         alloy.energy_density_liquidus = material_property.evalf(T, alloy.temperature_liquidus)
@@ -1016,7 +1014,6 @@ class MaterialConfigParser:
             alloy (Alloy): The alloy object to process.
             material_property (MaterialProperty): The computed energy density property.
             T (sp.Symbol): The symbolic temperature variable.
-            # dependencies (List[str]): List of dependencies for energy density computation.
         Raises:
             ValueError: If T is not symbolic or if energy_density_temperature_array is not defined in the config.
         """
