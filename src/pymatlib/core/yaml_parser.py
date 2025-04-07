@@ -1032,7 +1032,7 @@ class MaterialConfigParser:
 # External Function
 ##################################################
 
-def create_alloy_from_yaml(yaml_path: Union[str, Path], T: Union[float, sp.Symbol]) -> Alloy:
+def create_alloy_from_yaml(yaml_path: Union[str, Path], T: Union[float, sp.Symbol]) -> Tuple[Alloy, np.ndarray]:
     """
     Create alloy instance from YAML configuration file
     Args:
