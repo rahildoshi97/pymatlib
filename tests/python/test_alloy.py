@@ -10,8 +10,8 @@ def test_alloy_creation():
     # Test creating an alloy with valid elemental composition and phase transition temperatures
     alloy = Alloy(elements=[Fe, Cr, Mn, Ni], composition=[0.7, 0.2, 0.05, 0.05], temperature_solidus=1700, temperature_liquidus=1800)
     assert np.allclose(alloy.composition, [0.7, 0.2, 0.05, 0.05])
-    assert alloy.temperature_solidus == 1700.
-    assert alloy.temperature_liquidus == 1800.
+    assert alloy.solidus_temperature == 1700.
+    assert alloy.liquidus_temperature == 1800.
 
     # Test creating an alloy with invalid elemental composition
     with pytest.raises(ValueError):
@@ -104,8 +104,8 @@ def test_single_element_alloy():
 
 '''def test_boundary_temperatures():
     boundary_alloy = Alloy([Ti, Al, V], [0.33, 0.33, 0.34], -273.15, 10000)
-    assert boundary_alloy.temperature_solidus == -273.15
-    assert boundary_alloy.temperature_liquidus == 10000.'''
+    assert boundary_alloy.solidus_temperature == -273.15
+    assert boundary_alloy.liquidus_temperature == 10000.'''
 
 def test_default_properties():
     default_alloy = Alloy([Ti], [1.0], 1878., 1928.)
@@ -141,10 +141,10 @@ def test_calculated_properties():
     alloy = Alloy([Ti], [1.0], 1878., 1928.)
     assert hasattr(alloy, 'atomic_number')
     assert hasattr(alloy, 'atomic_mass')
-    assert hasattr(alloy, 'temperature_boil')
+    assert hasattr(alloy, 'boiling_temperature')
     assert isinstance(alloy.atomic_number, float)
     assert isinstance(alloy.atomic_mass, float)
-    assert isinstance(alloy.temperature_boil, float)
+    assert isinstance(alloy.boiling_temperature, float)
 
 def test_optional_properties_initialization():
     """Test if all optional properties are initialized to None"""

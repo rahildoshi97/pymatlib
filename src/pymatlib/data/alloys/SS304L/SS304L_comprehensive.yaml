@@ -15,8 +15,10 @@ liquidus_temperature: 1735.
 temperature_range: [300, 3000, 5.0]  # 5.0 (float) -> increment
 
 properties:
+  boiling_temperature: 2000.
+
   # 1. Constant float property
-  density: compute  # kg/m³
+  # density: 7950.  # kg/m³
 
   # 2.1 File-based property (simple format)
   # heat_conductivity: ./heat_conductivity_temperature.txt
@@ -26,38 +28,105 @@ properties:
     file: ./304L_Erstarrungsdaten_edited.xlsx
     temp_col: T (K)
     prop_col: Enthalpy (J/kg)
+    bounds: [extrapolate, extrapolate]  # mandatory
+    # default regression if "regression" is not specified
+    regression:  # no default values  # if not specified, create a piecewise with raw data with all points, but add a warning!
+      simplify: before # or 'after' or 'auto' # when to do the regression? before or after the calculations  # for real data  # mandatory??
+      # simplify: after
+      # simplify: auto
+      degree: 2   # polynomial degree of the regression
+      segments: 4  # number of piecewise segments  # or brake points
+      # read all data points from the file, make all computations
 
   heat_conductivity:
     file: ./304L_Erstarrungsdaten_edited.xlsx
     temp_col: T (K)
     prop_col: Thermal conductivity (W/(m*K))-TOTAL-10000.0(K/s)
+    bounds: [extrapolate, extrapolate]
+    regression: # regression is optional
+      simplify: auto
+      # simplify: after
+      # simplify: auto
+      degree: 1   # polynomial degree of the regression
+      segments: 4  # number of piecewise segments
+
+  heat_capacity:
+    file: ./304L_Erstarrungsdaten_edited.xlsx
+    temp_col: T (K)
+    prop_col: Specific heat (J/(Kg K))
+    bounds: [extrapolate, constant]
+    regression: # regression is optional
+      simplify: before
+      degree: 1   # polynomial degree of the regression
+      segments: 4  # number of piecewise segments
 
   # 3.1 Key-val pair with explicit temperature list
-  heat_capacity:
-    key: [1000, 1200, 1400, 1600, 1800, 2000, 2200, 2400, 2600, 2800]
-    val: [580, 590, 600, 600, 600, 610, 620, 630, 660, 700]
+  # heat_capacity:
+    # key: [1000, 1200, 1400, 1600, 1800, 2000, 2200, 2400, 2600, 2800]
+    # val: [580, 590, 600, 600, 600, 610, 620, 630, 660, 700]
+    # bounds: [constant, constant]
+    # regression:  # regression is optional
+      # degree: 1   # polynomial degree of the regression
+      # segments: 4  # number of piecewise segments
 
   # 3.2 Key-val pair with references to defined temperatures
   latent_heat_of_fusion:
-    key: [solidus_temperature, liquidus_temperature]
+    key: [solidus_temperature-5, liquidus_temperature+5]
     val: [0, 171401]
+    bounds: [constant, constant]
+    regression: # regression is optional
+      simplify: after
+      degree: 1   # polynomial degree of the regression
+      segments: 1  # number of piecewise segments
+
+  latent_heat_of_vaporization: 171401.
+    # Following are automatically generated from the above
+    # key: [boiling_temperature-10, boiling_temperature+10]
+    # val: [0, 171401.]
+    # bounds: [constant, constant]
 
   # 3.3 Key-val pair with tuple for temperature generation (increment)
   thermal_expansion_coefficient:
     key: (300, 100)  # Start at 300K and increment by 100K
     val: [16.3e-6, 16.5e-6, 16.8e-6, 17.0e-6, 17.2e-6]
+    bounds: [constant, constant]
+    regression: # regression is optional
+      simplify: after
+      degree: 2   # polynomial degree of the regression
+      segments: 1  # number of piecewise segments
 
   # 3.4 Key-val pair with tuple for temperature generation (decrement)
   dynamic_viscosity:
     key: (1735, -10)  # Start at 1735K and decrement by 10K
     val: [0.005, 0.006, 0.007, 0.008, 0.009]
+    bounds: [constant, constant]
 
   # 4.1 Computed property (simple format)
-  thermal_diffusivity: compute  # k/(rho*cp)
+  thermal_diffusivity:
+    equation: heat_conductivity /(density * heat_capacity)
+    bounds: [constant, constant]
+    # regression:
+      # simplify: before
+      # simplify: after
+      # simplify: auto
+      # degree: 1
+      # segments: 3
+
+  # density: 6591.878918 * (1 + thermal_expansion_coefficient * (T - 2273)) ** (-3)
+
+  density:
+    file: ./304L_Erstarrungsdaten_edited.xlsx
+    temp_col:  T (K)
+    prop_col: Density (kg/(m)^3)
+    bounds: [constant, extrapolate]
+    regression:
+      simplify: after
+      # simplify: after
+      # simplify: auto
+      degree: 2
+      segments: 4
 
   # 4.2 Computed property (advanced format with model selection)
-  energy_density: compute
+  # energy_density: compute
 
-  # Properties required for density computation by thermal expansion
-  base_temperature: 2273.
-  base_density: 6.591878918e3
+# for plotting, take the min and max of all temperatures, no temperature range required

@@ -120,7 +120,7 @@ def create_alloy(T: Union[float, sp.Symbol]) -> Alloy:
     alloy.heat_capacity = interpolate_property(T, heat_capacity_temp_array, heat_capacity_array)
     alloy.latent_heat_of_fusion = interpolate_property(T, alloy.solidification_interval(), np.array([0.0, 260000.0]))
     alloy.energy_density = energy_density(T, alloy.density, alloy.heat_capacity, alloy.latent_heat_of_fusion)
-    print(alloy.energy_density.evalf(T, alloy.temperature_liquidus))
+    print(alloy.energy_density.evalf(T, alloy.liquidus_temperature))
 
     # print("alloy.density:", alloy.density, "type:", type(alloy.density))
     # print("alloy.heat_capacity:", alloy.heat_capacity, "type:", type(alloy.heat_capacity))
@@ -148,7 +148,7 @@ def create_alloy(T: Union[float, sp.Symbol]) -> Alloy:
     check_strictly_increasing(E_neq, "E_neq")
 
     # Online execution
-    E = alloy.energy_density.evalf(T, alloy.temperature_liquidus)
+    E = alloy.energy_density.evalf(T, alloy.liquidus_temperature)
     print(E)
 
     start_time1 = time.perf_counter()
@@ -170,7 +170,7 @@ def create_alloy(T: Union[float, sp.Symbol]) -> Alloy:
     print(f"Execution time: {execution_time3:.8f} seconds")
 
     if not (T_interpolate1 == T_interpolate2 == T_interpolate3):
-        raise ValueError(f"Mismatch value. Temperature value should be {alloy.temperature_liquidus}")
+        raise ValueError(f"Mismatch value. Temperature value should be {alloy.liquidus_temperature}")
 
     E_target_alloy = generate_target_points(float(alloy.energy_density_array[0]), float(alloy.energy_density_array[-1]), 1_000)
     compare_interpolation_methods(E_target_alloy, T_eq, E_neq, E_eq, inv_delta_E_eq, idx_map, 'SS304L')

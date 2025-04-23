@@ -1,0 +1,247 @@
+# The general convention in this file are SI units m, s, kg, A, V, K, etc.
+
+# ====================================================================================================
+
+# To create an alloy, the following inputs are always required:
+# name: alloy_name
+
+# composition:
+#   element_1: composition fraction
+#   element_2: composition fraction
+#   element_3: composition fraction
+
+# solidus_temperature: 1605  # the highest temperature at which an alloy is solid – where melting begins
+
+# liquidus_temperature: 1735  # temperature at which an alloy is completely melted
+
+# ====================================================================================================
+
+# Any material property can be set in four ways:
+
+# 1. constant float properties
+# eg: density: 7950  # kg/m³
+
+
+# 2. file based properties (input via a .txt, .csv or .xlsx file)
+# 2.1. Simple format
+# property_name: path/to/file
+# eg: density: ./density_temperature.txt
+# eg: density: ./density_temperature.csv
+# eg: density: ./density_temperature.xlsx
+# Note: this 'simple format' assigns the first column of the input file to the temperature data (K)
+#       and the second column to the corresponding property data.
+
+# 2.2 Advanced format
+# property_name:
+#   file: ./path/to/file
+#   temp_col: Temperature  # Name of the temperature column
+#   prop_col: Property  # Name of the property column
+# Note: Advanced format is required when you have a file with multiple columns.
+# Note: For .txt files, columns should be space/tab separated
+
+
+# 3. key-val pair properties
+# property_name:
+#   key: list of temperature values or tuple with start and increment/decrement value
+#   val: property values
+# eg: density:
+#       key: [solidus_temperature, liquidus_temperature]   # References to defined temperatures
+#       val: [7262.34, 7037.47]  # Corresponding density values (kg/m³)
+# eg: density:
+#       key: [1735.00, 1730.00, 1720.00, 1715.00, 1710.00, 1700.00, 1695.00, 1690.00]  # Explicit temperature list (K)
+#       val: [7037.470, 7060.150, 7110.460, 7127.680, 7141.620, 7172.590, 7184.010, 7192.780]  # Corresponding values
+# eg: density:
+#       key: (1735.00, -5)  # Start at 1735.00K and decrement by 5K for each value in val
+#       # [1735.00, 1730.00, 1725.00, 1720.00, 1715.00, 1710.00, 1705.00, 1700.00, 1695.00, 1690.00]
+#       val: [7037.470, 7060.150, 7088.800, 7110.460, 7127.680, 7141.620, 7156.800, 7172.590, 7184.010, 7192.780]
+# Note: When using a tuple for key, the generated temperature points will be:
+#       [start, start+increment, start+2*increment, ...] until matching the length of val
+
+
+# 4. computed properties
+# 4.1. Simple format (currently supported for density, thermal_diffusivity, energy_density only)
+# property_name: compute
+# eg: density: compute
+# eg: thermal_diffusivity: compute
+# eg: energy_density: compute
+# Note: simple format uses the default model to compute the property
+# Note: the equations used here are:
+# - Density by thermal expansion: rho(T) = rho_0 / (1 + tec * (T - T_0))^3
+# Required properties: base_temperature, base_density, thermal_expansion_coefficient
+# - Thermal diffusivity by heat conductivity: alpha(T) = k(T) / (rho(T) * c_p(T))
+# Required properties: heat_conductivity, density, heat_capacity
+# - Energy density (standard model): rho(T) * (c_p(T) * T + L)
+# Required properties: density, heat_capacity, latent_heat_of_fusion
+
+# 4.2. Advanced format (currently supported for energy_density only)
+# property_name:
+#   compute: model_name
+# eg: energy_density:
+#       compute: enthalpy_based
+# eg: energy_density:
+#       compute: total_enthalpy
+# Note: the equations used here are:
+# - Energy density (enthalpy_based model): rho(T) * (h(T) + L)
+# Required properties: density, specific_enthalpy, latent_heat_of_fusion
+# - Energy density (total_enthalpy model): rho(T) * h(T)
+# Required properties: density, specific_enthalpy
+
+# Note: If energy_density is a compute method, an additional property 'energy_density_temperature_array' needs to be specified
+# energy_density_temperature_array: (start, stop, third_parameter)
+
+# The third_parameter can be interpreted in two ways:
+# - If it's a float value (e.g., 5.0 or -5.0), it's treated as the temperature increment/decrement between points
+# eg: energy_density_temperature_array: (300, 3000, 5.0) # From 300K to 3000K in steps of 5K
+# eg: energy_density_temperature_array: (3000, 300, -5.0) # From 3000K to 300K in steps of -5K
+
+# - If it's an integer value (e.g., 541), it's treated as the total number of points to generate
+# eg: energy_density_temperature_array: (300, 3000, 541) # 541 evenly spaced points from 300K to 3000K
+# eg: energy_density_temperature_array: (3000, 300, 541) # 541 evenly spaced points from 3000K to 300K
+
+# ====================================================================================================
+
+# Important Notes:
+#   1. If a specific property is defined in multiple ways or multiple times, the parser will throw an error.
+#   2. If required dependencies for computed properties are missing, an error will be raised.
+#   3. Properties will be computed in the correct order regardless of their position in the file.
+#   4. All numerical values must use period (.) as decimal separator, not comma.
+#   5. Interpolation between data points is performed automatically for file-based and key-val properties.
+#   6. To retrieve temperature from energy_density, use the default "interpolate" method from within
+#   the generated class from InterpolationArrayContainer named after the alloy.
+
+# ====================================================================================================
+
+name: SS304L
+
+composition:
+  C: 0.0002
+  Si: 0.0041
+  Mn: 0.016
+  P: 0.00028
+  S: 0.00002
+  Cr: 0.1909
+  N: 0.00095
+  Ni: 0.0806
+  Fe: 0.70695
+
+solidus_temperature: 1605.
+liquidus_temperature: 1735.
+boiling_temperature: 6000
+
+##########################################################################
+
+properties:
+  # if heat capacity data is cleaned by peaks
+  # enthalpy: integrate(heat_capacity, T) + latent_heat_of_fusion + latent_heat_of_vaporization
+  # if peaks are available in heat capacity
+  enthalpy:
+    equation: Integral(heat_capacity, T)
+    bounds:   [extrapolate, extrapolate]
+    regression:          # approximation is optional
+      degree: 1             # polynomial degree of the regression
+      segments: 3           # number of piecewise segments
+
+##########################################################################
+
+  energy_density: density * enthalpy
+
+##########################################################################
+
+  thermal_expansion_coefficient: 16.3e-6
+
+##########################################################################
+
+  density: 7950.
+
+################ OR #################
+
+  density: 6591.878918 * (1 + thermal_expansion_coefficient * (T - 2273)) ** (-3)
+
+################ OR #################
+
+  density:
+    temperature: [1200, 2800]
+    equation:    6591.878918 * (1 + thermal_expansion_coefficient * (T - 2273)) ** (-3)
+    bounds:      [constant, extrapolate]
+
+################ OR #################
+
+  density:
+    file:         ./304L_Erstarrungsdaten_edited.xlsx
+    temperature:  T (K)
+    values:       Density (kg/(m)^3)
+    bounds:       [constant, extrapolate]
+    regression:                 # regression is optional
+      degree:     2             # polynomial degree of the regression
+      segments:   3             # number of piecewise segments
+
+##########################################################################
+
+  heat_conductivity:
+    file:           ./304L_Erstarrungsdaten_edited.xlsx
+    temperature:    T (K)
+    values:         Thermal conductivity (W/(m*K))-TOTAL-10000.0(K/s)
+    bounds:         [extrapolate, extrapolate]
+    regression:             # regression is optional
+      degree: 1             # polynomial degree of the regression
+      segments: 4           # number of piecewise segments
+
+################ OR #################
+
+  heat_conductivity:
+    temperature:    [500, 1700, 3000]
+    equation:       [0.0124137215440647⋅T + 13.0532171803243, 0.0152266213998596⋅T + 4.88433067059347]  # for partially defined equations
+    bounds:         [extrapolate, extrapolate]
+
+################ OR #################
+
+  heat_conductivity:
+    temperature:    [1200, 1800, 2200, 2400]    # temperature values
+    values:         [25, 30, 33, 35]            # corresponding heat_conductivity values -> per default a linear regression
+    # here the regression is optional to reduce the number of segments from the original data by loosing maybe exactness
+    regression:             # regression is optional
+      degree: 1             # polynomial degree of the regression
+      segments: 2           # number of piecewise segments
+      #breaks: [1800, 2200]  # definite break point for linear regression -> not yet implemented
+    bounds:         [extrapolate, extrapolate]
+
+##########################################################################
+
+  heat_capacity:
+    file:           ./304L_Erstarrungsdaten_edited.xlsx
+    temperature:    T (K)
+    values:         Specific heat (J/(Kg K))
+    bounds:         [constant, constant]
+    regression:             # regression is optional
+      degree: 1             # polynomial degree of the regression
+      segments: 5           # number of piecewise segments
+
+##########################################################################
+
+  latent_heat_of_fusion:
+    temperature: [solidus_temperature, liquidus_temperature]
+    values: [0, 171401.]
+    bounds: [constant, constant]
+
+  latent_heat_of_vaporization:
+    temperature: [boiling_temperature - 5, boiling_temperature + 5]
+    values : [0, 171401.]
+    bounds: [constant, constant]
+
+##########################################################################
+
+  thermal_diffusivity:
+    equation:        heat_conductivity / (density * heat_capacity)
+    bounds:          [extrapolate, extrapolate]
+    approximation:             # approximation is optional
+      degree: 1             # polynomial degree of the regression
+      segments: 3           # number of piecewise segments
+      temperature: [500, 3000, 1000]  # temperature range for approximation
+
+
+
+##########################################################################
+
+  electrical_conductivity: heat_conductivity / (LorenzNumber * T)
+
+##########################################################################

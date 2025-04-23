@@ -125,7 +125,7 @@ composition:
   Ni: 0.0806
   Fe: 0.70695
 
-solidus_temperature: 1605.
+solidus_temperature: 1.605e3
 liquidus_temperature: 1735.
 
 # temperature_range: [300, 3000, 541]  # 541 (int) -> points
@@ -150,8 +150,8 @@ properties:
   #density: 7950.
   #OR
   #density: compute  # computed by thermal expansion coefficient, should be acceptable even if TEC is defined later in the file
-  base_temperature: 2273.
-  base_density: 6.591878918e3
+  # base_temperature: 2273.
+  # base_density: 6.591878918e3
   #OR
   density:
     file: ./304L_Erstarrungsdaten_edited.xlsx

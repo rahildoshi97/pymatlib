@@ -45,6 +45,7 @@ setup(
         'pytest>=6.0.0',
         'pystencils@git+https://i10git.cs.fau.de/pycodegen/pystencils.git@v2.0-dev',
         # 'pybind11>=2.6.0',
+        'pwlf>=2.5.1',
     ],
     extras_require={
         'dev': [

@@ -67,6 +67,7 @@ properties:
 ```
 
 2. Load the alloy in Python:
+
 ```python
 from pymatlib.core.yaml_parser import create_alloy_from_yaml
 
@@ -76,10 +77,10 @@ alloy = create_alloy_from_yaml("simple_steel.yaml")
 # Print basic information
 print(f"Alloy: {alloy.name}")
 print(f"Composition: {alloy.composition}")
-print(f"Temperature range: {alloy.temperature_solidus}K - {alloy.temperature_liquidus}K")
+print(f"Temperature range: {alloy.solidus_temperature}K - {alloy.liquidus_temperature}K")
 
 # Get property values at specific temperatures
-temp = 500 # Kelvin
+temp = 500  # Kelvin
 density = alloy.get_property("density", temp)
 conductivity = alloy.get_property("heat_conductivity", temp)
 capacity = alloy.get_property("heat_capacity", temp)

@@ -1,22 +1,27 @@
-from pathlib import Path
+import os
+import re
+import pwlf
 import numpy as np
-from typing import Dict, Any, Union, List, Tuple
 import sympy as sp
+from pathlib import Path
+from enum import Enum, auto
+from difflib import get_close_matches
+from matplotlib import pyplot as plt
+from matplotlib.gridspec import GridSpec
+from typing import Dict, Any, Union, List, Tuple, Set
+from ruamel.yaml import YAML, constructor, scanner
 from pymatlib.core.alloy import Alloy
 from pymatlib.core.elements import ChemicalElement
 from pymatlib.core.interpolators import interpolate_property
 from pymatlib.core.data_handler import read_data_from_file
 from pymatlib.core.models import (density_by_thermal_expansion,
                                   thermal_diffusivity_by_heat_conductivity,
+                                  specific_enthalpy_sensible,
+                                  specific_enthalpy_with_latent_heat,
                                   energy_density)
 from pymatlib.core.typedefs import MaterialProperty
-from ruamel.yaml import YAML, constructor, scanner
-from difflib import get_close_matches
-from enum import Enum, auto
-
-from pymatlib.core.models import specific_enthalpy_sensible
-
-from pymatlib.core.models import specific_enthalpy_with_latent_heat
+from pymatlib.core.pwlfsympy import get_symbolic_conditions
+from pymatlib.core.symbol_registry import SymbolRegistry
 
 
 class PropertyType(Enum):
@@ -24,15 +29,14 @@ class PropertyType(Enum):
     FILE = auto()
     KEY_VAL = auto()
     COMPUTE = auto()
-    # TUPLE_STRING = auto()
     INVALID = auto()
 
 
 class MaterialConfigParser:
 
-    ##################################################
+    ################################################## ##################################################
     # Class Constants and Attributes
-    ##################################################
+    ################################################## ##################################################
 
     MIN_POINTS = 2
     EPSILON = 1e-10  # Small value to handle floating point comparisons
@@ -40,15 +44,12 @@ class MaterialConfigParser:
 
     # Define valid properties as class-level constants
     VALID_YAML_PROPERTIES = {
-        'base_temperature',
-        'base_density',
+        'boiling_temperature',
         'density',
         'dynamic_viscosity',
         'energy_density',
         # 'energy_density_solidus',
         # 'energy_density_liquidus',
-        # 'energy_density_temperature_array',
-        # 'energy_density_array',
         'heat_capacity',
         'heat_conductivity',
         'kinematic_viscosity',
@@ -56,15 +57,13 @@ class MaterialConfigParser:
         'latent_heat_of_vaporization',
         'specific_enthalpy',
         'surface_tension',
-        # 'temperature',
-        # 'temperature_array',
         'thermal_diffusivity',
         'thermal_expansion_coefficient',
     }
 
-    ##################################################
+    ################################################## ##################################################
     # Initialization and YAML Loading
-    ##################################################
+    ################################################## ##################################################
 
     def __init__(self, yaml_path: str | Path) -> None:
         """Initialize parser with YAML file path.
@@ -82,6 +81,8 @@ class MaterialConfigParser:
         self._validate_config()
         self.temperature_array = self._process_temperature_range(self.config['temperature_range'])
         # print(self.temperature_array)
+        # Initialize with empty dict for each property type
+        self.categorized_properties = {prop_type: [] for prop_type in PropertyType}  #TODO: Do we need this?
 
     def _load_yaml(self) -> Dict[str, Any]:
         """Load and parse YAML file.
@@ -106,9 +107,9 @@ class MaterialConfigParser:
         except Exception as e:
             raise ValueError(f"Error parsing {self.yaml_path}: {str(e)}")
 
-    ##################################################
+    ################################################## ##################################################
     # Configuration Validation
-    ##################################################
+    ################################################## ##################################################
 
     def _validate_config(self) -> None:
         """
@@ -122,16 +123,10 @@ class MaterialConfigParser:
             # raise ValueError("Root YAML element must be a mapping")
             raise ValueError("The YAML file must start with a dictionary/object structure with key-value pairs, not a list or scalar value")
         self._validate_required_fields()
-        # if 'properties' not in self.config:
-            # raise ValueError("Missing 'properties' section in configuration")
         properties = self.config.get('properties', {})
         if not isinstance(properties, dict):
-            # raise ValueError("'properties' must be a mapping")
             raise ValueError("The 'properties' section in your YAML file must be a dictionary with key-value pairs")
         self._validate_property_names(properties)
-        # self._validate_required_fields()
-        # self._validate_property_types(properties)
-        # self._validate_property_values(properties)
 
     def _validate_required_fields(self) -> None:
         """
@@ -176,9 +171,9 @@ class MaterialConfigParser:
                 error_msg += f"  - '{prop}'{suggestion}\n"
             raise ValueError(error_msg)
 
-    ##################################################
+    ################################################## ##################################################
     # Temperature Array Processing
-    ##################################################
+    ################################################## ##################################################
 
     def _process_temperature_range(self, array_def: List[Union[float, int]]) -> np.ndarray:
         """
@@ -241,153 +236,6 @@ class MaterialConfigParser:
             raise ValueError(f"Number of points must be at least {self.MIN_POINTS}, got {points}!")
         return np.linspace(start, end, points)
 
-    #TODO: Deprecated!
-    def _validate_property_types(self, properties):
-        for prop_name, config in properties.items():
-            if not (
-                    isinstance(config, float) or (isinstance(config, str) and self._is_numeric(config)) or
-                    self._is_data_file(config) or
-                    self._is_key_val_property(config) or
-                    self._is_compute_property(config) or
-                    (prop_name == 'energy_density_temperature_array' and isinstance(config, str) and config.startswith('(') and config.endswith(')'))
-            ):
-                raise ValueError(f"Invalid configuration for property '{prop_name}': {config}")
-
-    #TODO: Deprecated!
-    @staticmethod
-    def _validate_property_values(properties: Dict[str, Any]) -> None:
-        """
-        Validate property values for type and range constraints.
-        Args:
-            properties (Dict[str, Any]): Dictionary of properties to validate.
-        Raises:
-            ValueError: If any property value is invalid.
-        """
-        for prop_name, prop_value in properties.items():
-            # print(f"prop_name: {prop_name}, type: {type(prop_name)}")
-            # print(f"prop_value: {prop_value}, type: {type(prop_value)}")
-            BASE_PROPERTIES = {'base_temperature', 'base_density'}
-            POSITIVE_PROPERTIES = {'density', 'heat_capacity', 'heat_conductivity', 'specific_enthalpy'}
-            NON_NEGATIVE_PROPERTIES = {'latent_heat'}
-            if prop_value is None or (isinstance(prop_value, str) and prop_value.strip() == ''):
-                raise ValueError(f"Property '{prop_name}' has an empty or undefined value")
-            if prop_name in BASE_PROPERTIES:
-                if not isinstance(prop_value, float) or prop_value <= 0:
-                    raise ValueError(f"'{prop_name}' must be a positive number of type float, "
-                                     f"got {prop_value} of type {type(prop_value).__name__}")
-            if prop_name in POSITIVE_PROPERTIES:
-                if isinstance(prop_value, float) and prop_value <= 0:
-                    raise ValueError(f"'{prop_name}' must be positive, got {prop_value}")
-            if prop_name in NON_NEGATIVE_PROPERTIES:
-                if isinstance(prop_value, float) and prop_value < 0:
-                    raise ValueError(f"'{prop_name}' cannot be negative, got {prop_value}")
-            if prop_name == 'thermal_expansion_coefficient':
-                if isinstance(prop_value, float) and (prop_value < -3e-5 or prop_value > 0.001):
-                    raise ValueError(f"'{prop_name}' value {prop_value} is outside the expected range (-3e-5/K to 0.001/K)")
-            if prop_name == 'energy_density_temperature_array':
-                if not (isinstance(prop_value, str) and prop_value.startswith('(') and prop_value.endswith(')')):
-                    raise ValueError(f"'{prop_name}' must be a tuple of three comma-separated values representing (start, end, points/step)")
-            if prop_name in ['energy_density_solidus', 'energy_density_liquidus']:
-                raise ValueError(f"{prop_name} cannot be set directly. It is computed from other properties")
-
-    @staticmethod
-    def _validate_property_value(prop: str, value: Union[float, np.ndarray]) -> None:
-        """
-        Validate a property value or array of values against physical constraints.
-        Args:
-            prop (str): The name of the property being validated
-            value (Union[float, np.ndarray]): The value or array of values to validate
-        Raises:
-            ValueError: If the property value violates physical constraints
-            TypeError: If the property value has an invalid type
-        """
-        # Define property constraints with SI units
-        BASE_PROPERTIES = {'base_temperature', 'base_density'}  # always single float values
-        POSITIVE_PROPERTIES = {'density', 'heat_capacity', 'heat_conductivity',
-                               'dynamic_viscosity', 'kinematic_viscosity', 'thermal_diffusivity',
-                               'surface_tension'}
-        NON_NEGATIVE_PROPERTIES = {'latent_heat_of_fusion', 'latent_heat_of_vaporization', 'energy_density',}
-                                   # 'energy_density_solidus', 'energy_density_liquidus'}
-        # ARRAY_PROPERTIES = {'temperature_array', 'energy_density_array'}
-
-        # Property-specific range constraints
-        PROPERTY_RANGES = {
-            'base_temperature': (0, 5000),  # K
-            'base_density': (-100, 22000),  # kg/m³
-            'density': (100, 22000),  # kg/m³
-            'dynamic_viscosity': (1e-4, 1e5),  # Pa·s
-            'energy_density': (0, 1e8),  # J/m³
-            # 'energy_density_solidus': (0, 1e8),  # J/m³
-            # 'energy_density_liquidus': (0, 1e8),  # J/m³
-            # 'energy_density_temperature_array': (0, 5000),  # K
-            # 'energy_density_array': (0, 1e8),  # J/m³
-            'heat_capacity': (100, 10000),  # J/(kg·K)
-            'heat_conductivity': (1, 600),  # W/(m·K)
-            'kinematic_viscosity': (1e-8, 1e-3),  # m²/s
-            'latent_heat_of_fusion': (0, 600000),  # J/kg
-            'latent_heat_of_vaporization': (0, 12000000),  # J/kg
-            'specific_enthalpy': (0, 15000000),  # J/kg
-            'surface_tension': (0.1, 3.0),  # N/m
-            # 'temperature': (0, 5000),  # K
-            # 'temperature_array': (0, 5000),  # K
-            'thermal_diffusivity': (1e-8, 1e-3),  # m²/s
-            'thermal_expansion_coefficient': (-3e-5, 3e-5),  # 1/K
-        }
-        try:
-            # Handle arrays (from file or key-val properties)
-            if isinstance(value, np.ndarray):
-                # Check for NaN or infinite values
-                if np.isnan(value).any():
-                    raise ValueError(f"Property '{prop}' contains NaN values.")
-                if np.isinf(value).any():
-                    raise ValueError(f"Property '{prop}' contains infinite values.")
-                # Property-specific validations for arrays
-                if prop in POSITIVE_PROPERTIES:
-                    if (value <= 0).any():
-                        bad_indices = np.where(value <= 0)[0]
-                        bad_values = value[value <= 0]
-                        raise ValueError(f"All '{prop}' values must be positive. Found {len(bad_indices)} invalid values "
-                                         f"at indices {bad_indices}: {bad_values}.")
-                if prop in NON_NEGATIVE_PROPERTIES:  # or prop in ARRAY_PROPERTIES:
-                    if (value < 0).any():
-                        bad_indices = np.where(value < 0)[0]
-                        bad_values = value[value < 0]
-                        raise ValueError(f"All '{prop}' values must be non-negative. Found {len(bad_indices)} invalid values "
-                                         f"at indices {bad_indices}: {bad_values}.")
-                # Check range constraints if applicable
-                if prop in PROPERTY_RANGES:
-                    min_val, max_val = PROPERTY_RANGES[prop]
-                    if ((value < min_val) | (value > max_val)).any():
-                        out_of_range = np.where((value < min_val) | (value > max_val))[0]
-                        out_values = value[out_of_range]
-                        raise ValueError(f"'{prop}' contains values outside expected range ({min_val} to {max_val}) "
-                                         f"\n -> Found {len(out_of_range)} out-of-range values at indices {out_of_range}: {out_values}")
-            # Handle single values (from constant or computed properties)
-            else:
-                # Check for NaN or infinite values
-                if np.isnan(value):
-                    raise ValueError(f"Property '{prop}' is NaN.")
-                if np.isinf(value):
-                    raise ValueError(f"Property '{prop}' is infinite.")
-                # Type checking
-                if not isinstance(value, float):
-                    raise TypeError(f"Property '{prop}' must be a float, got {type(value).__name__}. "
-                                    f"\n -> Please use decimal notation (e.g., 1.0 instead of 1) or scientific notation.")
-                # Property-specific validations for single values
-                if prop in BASE_PROPERTIES or prop in POSITIVE_PROPERTIES:
-                    if value <= 0:
-                        raise ValueError(f"Property '{prop}' must be positive, got {value}.")
-                if prop in NON_NEGATIVE_PROPERTIES:
-                    if value < 0:
-                        raise ValueError(f"Property '{prop}' must be non-negative, got {value}.")
-                # Check range constraints if applicable
-                if prop in PROPERTY_RANGES:
-                    min_val, max_val = PROPERTY_RANGES[prop]
-                    if value < min_val or value > max_val:
-                        raise ValueError(f"Property '{prop}' value {value} is outside expected range ({min_val} to {max_val}).")
-        except Exception as e:
-            raise ValueError(f"Failed to validate property value \n -> {e}")
-
     def _validate_temperature_range(self, prop: str, temp_array: np.ndarray) -> None:
         """
         Validate that temperature arrays from properties fall within the global temperature range.
@@ -419,9 +267,9 @@ class MaterialConfigParser:
                 raise ValueError(f"Property '{prop}' contains temperature values outside global range [{min_temp}, {max_temp}] "
                                  f"\n -> Found {len(out_of_range)} out-of-range values at indices {out_of_range}: {out_values}")
 
-    ##################################################
+    ################################################## ##################################################
     # Alloy Creation
-    ##################################################
+    ################################################## ##################################################
 
     def create_alloy(self, T: Union[float, sp.Symbol]) -> Alloy:
         """
@@ -436,9 +284,10 @@ class MaterialConfigParser:
         try:
             alloy = Alloy(
                 elements=self._get_elements(),
-                composition=list(self.config['composition'].values()),
-                temperature_solidus=self.config['solidus_temperature'],
-                temperature_liquidus=self.config['liquidus_temperature']
+                # composition=list(self.config['composition'].values()),
+                composition=[sp.Float(val) for val in self.config['composition'].values()],
+                solidus_temperature=sp.Float(self.config['solidus_temperature']),
+                liquidus_temperature=sp.Float(self.config['liquidus_temperature'])
             )
             self._process_properties(alloy, T)
             return alloy
@@ -461,13 +310,13 @@ class MaterialConfigParser:
         except KeyError as e:
             raise ValueError(f"Invalid element symbol: {e}")
 
-    ##################################################
+    ################################################## ##################################################
     # Property Type Checking
-    ##################################################
+    ################################################## ##################################################
     @staticmethod
     def _is_numeric(value: Any) -> bool:
         """
-        Check if string represents a float number (including scientific notation).
+        Check if a string represents a float number (including scientific notation).
         Args:
             value (Any): The value to check.
         Returns:
@@ -486,6 +335,73 @@ class MaterialConfigParser:
         return False
 
     @staticmethod
+    def _validate_keys(value: Dict, required_keys: Set[str], optional_keys: Set[str], context: str) -> None:
+        """
+        Validate that a dictionary contains all required keys and no unexpected keys.
+        Args:
+            value (Dict): The dictionary to validate.
+            required_keys (Set[str]): Set of required keys.
+            optional_keys (Set[str]): Set of optional keys.
+            context (str): Context for error messages.
+        Raises:
+            ValueError: If required keys are missing or unexpected keys are present.
+        """
+        value_keys = set(value.keys())
+        # Check for missing required keys
+        missing_keys = required_keys - value_keys
+        if missing_keys:
+            raise ValueError(f"Missing required keys for {context}: {missing_keys}")
+        # Check for extra keys (excluding optional keys)
+        extra_keys = value_keys - required_keys - optional_keys
+        if extra_keys:
+            raise ValueError(f"Extra keys found in {context}: {extra_keys}. "
+                             f"Allowed keys are: {required_keys | optional_keys}")
+
+    @staticmethod
+    def _validate_bounds(bounds, context: str = "bound") -> None:
+        """
+        Validate bounds configuration structure.
+        Args:
+            bounds: The bounds configuration to validate.
+            context (str): Context for error messages.
+        Raises:
+            ValueError: If the bounds configuration is invalid.
+        """
+        if not isinstance(bounds, list):
+            raise ValueError(f"{context}s must be a list")
+        if len(bounds) != 2:
+            raise ValueError(f"{context} must have exactly two elements")
+        valid_bound_types = {'constant', 'extrapolate'}
+        if bounds[0] not in valid_bound_types:
+            raise ValueError(f"Lower {context} type must be one of: {valid_bound_types}, got '{bounds[0]}'")
+        if bounds[1] not in valid_bound_types:
+            raise ValueError(f"Upper {context} type must be one of: {valid_bound_types}, got '{bounds[1]}'")
+
+    @staticmethod
+    def _validate_regression(regression: Union[Dict, Any]) -> None:
+        """
+        Validate regression configuration structure.
+        Args:
+            regression (Dict): The regression configuration to validate.
+        Raises:
+            ValueError: If the regression configuration is invalid.
+        """
+        # Ensure regression is a dictionary
+        if not isinstance(regression, dict):
+            raise ValueError(f"Regression must be a dictionary, got {type(regression).__name__}")
+        # Use _validate_keys for key validation
+        required_keys = {'simplify', 'degree', 'segments'}
+        optional_keys = set()  # No optional keys for regression
+        MaterialConfigParser._validate_keys(regression, required_keys, optional_keys, "regression")
+        # Validate regression values
+        if not isinstance(regression['simplify'], str) or regression['simplify'] not in {'before', 'after', 'auto'}:
+            raise ValueError(f"Invalid regression simplify type '{regression['simplify']}'. Must be 'before', 'after', or 'auto'")
+        if not isinstance(regression['degree'], int) or regression['degree'] < 1:
+            raise ValueError("Regression degree must be a positive integer")
+        if not isinstance(regression['segments'], int) or regression['segments'] < 1:
+            raise ValueError("Regression segments must be an integer >= 1")
+
+    @staticmethod
     def _is_data_file(value: str | Dict[str, str]) -> bool:
         """
         Check if the value represents a valid data file configuration.
@@ -496,28 +412,29 @@ class MaterialConfigParser:
         Raises:
             ValueError: If the file configuration is invalid or contains extra keys.
         """
-        # Simple format: property_name: "filename.txt"
+        # Simple format: property_name: "filename.txt"  #TODO: Deprecated!
         if isinstance(value, str):
             return value.endswith(('.txt', '.csv', '.xlsx'))
         # Advanced format: property_name: { file: "filename", temp_col: "col1", prop_col: "col2" }
-        if isinstance(value, dict) and 'file' in value:  # and 'temp_col' in value and 'prop_col' in value:
-            required_keys = {'file', 'temp_col', 'prop_col'}
-            value_keys = set(value.keys())
-            # Check for missing required keys
-            missing_keys = required_keys - value_keys
-            if missing_keys:
-                raise ValueError(f"Missing required keys for file configuration: {missing_keys}")
-            # Check for extra keys
-            extra_keys = value_keys - required_keys
-            if extra_keys:
-                raise ValueError(f"Extra keys found in file configuration: {extra_keys}")
+        if isinstance(value, dict) and 'file' in value:
+            required_keys = {'file', 'temp_col', 'prop_col', 'bounds'}
+            optional_keys = {'regression'}
+            MaterialConfigParser._validate_keys(value, required_keys, optional_keys, "file configuration")
+            # Validate bounds if present
+            if 'bounds' in value:
+                MaterialConfigParser._validate_bounds(value['bounds'], "file configuration bound")
+            # Validate regression structure if present
+            if 'regression' in value:
+                if not isinstance(value['regression'], dict):
+                    raise ValueError(f"Regression must be a dictionary, got {type(value['regression']).__name__} instead")
+                MaterialConfigParser._validate_regression(value['regression'])
             return True
         return False
 
     @staticmethod
-    def _is_key_val_property(value: Any) -> bool:
+    def _is_key_val_property(value: Dict) -> bool:
         """
-        Check if property is defined with key-val pairs.
+        Check if a property is defined with key-val pairs.
         Args:
             value (Any): The value to check.
         Returns:
@@ -525,25 +442,24 @@ class MaterialConfigParser:
         Raises:
             ValueError: If the key-val property configuration is invalid.
         """
-        required_keys = {'key', 'val'}
+        required_keys = {'key', 'val', 'bounds'}
         # Check if it looks like it's trying to be a key-val property
-        if isinstance(value, dict) and any(k in value for k in required_keys):
-            value_keys = set(value.keys())
-            # Check for missing required keys
-            missing_keys = required_keys - value_keys
-            if missing_keys:
-                raise ValueError(f"Missing required keys for key-val property: {missing_keys}")
-            # Check for extra keys
-            extra_keys = value_keys - required_keys
-            if extra_keys:
-                raise ValueError(f"Extra keys found in key-val property: {extra_keys}")
+        if isinstance(value, dict) and all(k in value for k in required_keys):
+            optional_keys = {'regression'}
+            MaterialConfigParser._validate_keys(value, required_keys, optional_keys, "key-val configuration")
+            # Validate bounds if present
+            if 'bounds' in value:
+                MaterialConfigParser._validate_bounds(value['bounds'], "key-val configuration bound")
+            # Validate regression structure if present
+            if 'regression' in value:
+                MaterialConfigParser._validate_regression(value['regression'])
             return True
         return False
 
     @staticmethod
     def _is_compute_property(value: Any) -> bool:
         """
-        Check if property should be computed using any valid format.
+        Check if a property should be computed using any valid format.
         Args:
             value (Any): The value to check.
         Returns:
@@ -551,21 +467,32 @@ class MaterialConfigParser:
         Raises:
             ValueError: If the compute property configuration is invalid.
         """
-        # Simple format: property_name: compute
+        # Simple format: property_name: compute equation
         if isinstance(value, str):
-            if value == 'compute':
-                return True
-            elif value.startswith('compute'):
-                # Catch common mistakes like 'compute1'
-                raise ValueError(f"Invalid compute property value: '{value}'. Did you mean 'compute'?")
-        # Advanced format: property_name: { compute: "method_name" }
-        elif isinstance(value, dict) and 'compute' in value:
-            # Ensure no other keys are present
-            invalid_keys = [k for k in value.keys() if k != 'compute']
-            if invalid_keys:
-                raise ValueError(f"Invalid keys in compute property: {invalid_keys}. Only 'compute' is allowed.")
+            # New format: direct mathematical expression as string
+            # Check if it contains any mathematical operators or function calls
+            math_operators = ['+', '-', '*', '/', '**']  #TODO: maybe extend with '(', ')', ' '?
+            print(f"_is_compute_property: {value}")
+            return any(op in value for op in math_operators)
+        # Advanced format: property_name: { equation: compute equation }
+        elif isinstance(value, dict) and 'equation' in value:
+            # Validate the structure
+            required_keys = {'equation', 'bounds'}
+            optional_keys = {'regression'}
+            # Validate keys
+            MaterialConfigParser._validate_keys(value, required_keys, optional_keys, "compute configuration")
+            # Validate bounds if present
+            if 'bounds' in value:
+                MaterialConfigParser._validate_bounds(value['bounds'], "compute configuration bound")
+            # Validate regression structure if present
+            if 'regression' in value:
+                MaterialConfigParser._validate_regression(value['regression'])
             return True
         return False
+
+    ################################################## ##################################################
+    # Property Categorization
+    ################################################## ##################################################
 
     def _determine_property_type(self, prop_name: str, config: Any) -> PropertyType:
         """
@@ -587,8 +514,6 @@ class MaterialConfigParser:
                 return PropertyType.KEY_VAL
             elif self._is_compute_property(config):
                 return PropertyType.COMPUTE
-            # elif prop_name == 'energy_density_temperature_array' and isinstance(config, str) and config.startswith('(') and config.endswith(')'):
-                # return PropertyType.TUPLE_STRING
             else:
                 return PropertyType.INVALID
         except Exception as e:
@@ -609,7 +534,6 @@ class MaterialConfigParser:
             PropertyType.FILE: [],
             PropertyType.KEY_VAL: [],
             PropertyType.COMPUTE: [],
-            # PropertyType.TUPLE_STRING: []
         }
         for prop_name, config in properties.items():
             try:
@@ -622,9 +546,46 @@ class MaterialConfigParser:
                 raise ValueError(f"Failed to categorize properties \n -> {e}")
         return categorized_properties
 
-    ##################################################
+    ################################################## ##################################################
+    # Property Plotting
+    ################################################## ##################################################
+
+    def _initialize_plots(self):
+        """Initialize the figure and subplots for property visualization"""
+        if self.categorized_properties is None:
+            print("Warning: categorized_properties is None. Skipping plot initialization.")
+            return
+
+        # Count properties of each type to determine subplot layout
+        property_count = sum(len(props) for props in self.categorized_properties.values()) + 1
+        print(f"property_count: {property_count}")
+
+        # Create a figure with the appropriate size
+        self.fig = plt.figure(figsize=(12, 4 * property_count))
+        self.gs = GridSpec(property_count, 1, figure=self.fig)
+        self.current_subplot = 0
+        self.plot_directory = "property_plots"
+        os.makedirs(self.plot_directory, exist_ok=True)
+
+    def _save_property_plots(self):
+        """Save all property plots to a single file"""
+        if hasattr(self, 'fig'):
+            # Add overall title
+            self.fig.suptitle(f"Material Properties: {self.config['name']}", fontsize=16)
+            # Adjust layout
+            plt.tight_layout(rect=[0, 0, 1, 0.97])
+            # Save the figure
+            filepath = os.path.join(self.plot_directory, f"{self.config['name'].replace(' ', '_')}_properties.png")
+            self.fig.savefig(filepath, dpi=300, bbox_inches="tight")
+            print(f"All properties plot saved as {filepath}")
+            # Show the plot
+            # plt.show()
+            # Close the figure to free memory
+            plt.close(self.fig)
+
+    ################################################## ##################################################
     # Property Processing
-    ##################################################
+    ################################################## ##################################################
 
     def _process_properties(self, alloy: Alloy, T: Union[float, sp.Symbol]) -> None:
         """
@@ -637,56 +598,49 @@ class MaterialConfigParser:
         """
         properties = self.config['properties']
         try:
-            categorized_properties = self._categorize_properties(properties)
-            for prop_type, prop_list in categorized_properties.items():
+            self.categorized_properties = self._categorize_properties(properties)
+            print(self.categorized_properties)
+            print(type(self.categorized_properties))
+
+            # Always initialize plots, regardless of temperature type
+            self._initialize_plots()
+
+            for prop_type, prop_list in self.categorized_properties.items():
                 for prop_name, config in prop_list:
+                    print(f"SymbolRegistry.get_all(): {SymbolRegistry.get_all()}")
+                    # Create a SymPy symbol for the property
+                    prop_symbol = SymbolRegistry.get(prop_name)
+                    print(f"prop_name: {prop_name}, type: {type(prop_name)}")
+                    print(f"prop_symbol: {prop_symbol}, type: {type(prop_symbol)}")
+                    print(f"SymbolRegistry.get_all(): {SymbolRegistry.get_all()}")
+
                     if prop_type == PropertyType.CONSTANT and prop_name in ['latent_heat_of_fusion', 'latent_heat_of_vaporization']:
-                        self._process_latent_heat_constant(alloy, prop_name, config, T)
+                        self._process_latent_heat_constant(alloy, prop_name, config, T)  # Ends up in _process_key_val_property
                     elif prop_type == PropertyType.CONSTANT:
-                        self._process_constant_property(alloy, prop_name, config)
+                        self._process_constant_property(alloy, prop_name, config, T)
                     elif prop_type == PropertyType.FILE:
                         self._process_file_property(alloy, prop_name, config, T)
                     elif prop_type == PropertyType.KEY_VAL:
                         self._process_key_val_property(alloy, prop_name, config, T)
                     elif prop_type == PropertyType.COMPUTE:
+                        print(f"_process_computed_property for {prop_name}")
                         self._process_computed_property(alloy, prop_name, T)
-                    # elif prop_type == PropertyType.TUPLE_STRING:
-                        # Handle tuple string properties if needed
-                        # pass
+
+            # Perform post-processing for 'after' simplification
+            self._post_process_properties(alloy, T)
+
+            # Save all plots if they were created
+            if hasattr(self, 'fig'):
+                self._save_property_plots()
+
+            # print(f"prop_symbol: {SymbolRegistry.get('thermal_diffusivity')}, type: {type(SymbolRegistry.get('thermal_diffusivity'))}")
+            print(f"SymbolRegistry.get_all(): {SymbolRegistry.get_all()}")
+            # SymbolRegistry.clear()
+            # print(f"SymbolRegistry.clear(): {SymbolRegistry.get_all()}")
         except Exception as e:
             raise ValueError(f"Failed to process properties \n -> {e}")
 
-    #TODO: Deprecated!
-    def _process_properties1(self, alloy: Alloy, T: Union[float, sp.Symbol]) -> None:
-        """
-        Process all properties for the alloy.
-        Args:
-            alloy (Alloy): The alloy object to process properties for.
-            T (Union[float, sp.Symbol]): Temperature value or symbol.
-        Raises:
-            ValueError: If there's an error processing any property.
-        """
-        properties = self.config['properties']
-
-        try:
-            categorized_properties = self._categorize_properties(properties)
-
-            for prop_name, config in categorized_properties[PropertyType.CONSTANT]:
-                self._process_constant_property(alloy, prop_name, config)
-            for prop_name, config in categorized_properties[PropertyType.FILE]:
-                self._process_file_property(alloy, prop_name, config, T)
-            for prop_name, config in categorized_properties[PropertyType.KEY_VAL]:
-                self._process_key_val_property(alloy, prop_name, config, T)
-            for prop_name, config in categorized_properties[PropertyType.COMPUTE]:
-                self._process_computed_property(alloy, prop_name, T)
-
-            # for prop_name, config in categorized_properties['special']:
-            # self._process_special_property(alloy, prop_name, config, T)
-
-        except Exception as e:
-            raise ValueError(f"Failed to process properties: {e}")
-
-########################################################################################################################
+    ########################################################################################################################
 
     def _process_latent_heat_constant(self, alloy: Alloy, prop_name: str, prop_config: Union[float, str], T: Union[float, sp.Symbol]) -> None:
         """
@@ -701,55 +655,185 @@ class MaterialConfigParser:
         try:
             # Convert to float
             latent_heat_value = float(prop_config)
-            # Validate the value
-            self._validate_property_value(prop_name, latent_heat_value)
-            # Create expanded key-val configuration
+            print(latent_heat_value)
+            # Create an expanded key-val configuration
             if prop_name == 'latent_heat_of_fusion':
                 # For fusion, heat is absorbed between solidus and liquidus
                 expanded_config = {
                     'key': ['solidus_temperature', 'liquidus_temperature'],
-                    'val': [0, latent_heat_value]
+                    'val': [0, latent_heat_value],
+                    'bounds': ['constant', 'constant'],
                 }
             elif prop_name == 'latent_heat_of_vaporization':
                 # For vaporization, heat is absorbed at boiling point
                 # Assume boiling happens after liquidus temperature
                 expanded_config = {
-                    'key': ['liquidus_temperature', 'liquidus_temperature+300'],
-                    'val': [0, latent_heat_value]
+                    'key': ['boiling_temperature-10', 'boiling_temperature+10'],
+                    'val': [0, latent_heat_value],
+                    'bounds': ['constant', 'constant'],
                 }
             else:
-                raise ValueError(f"Unsupported latent heat property: {prop_name}")
+                raise ValueError(f"Unsupported latent heat configuration: {prop_name}")
             # Process using the standard key-val method
             self._process_key_val_property(alloy, prop_name, expanded_config, T)
         except (ValueError, TypeError) as e:
             error_msg = f"Failed to process {prop_name} constant \n -> {e}"
             raise ValueError(error_msg) from e
 
-    @staticmethod
-    def _process_constant_property(alloy: Alloy, prop_name: str, prop_config: Union[float, str]) -> None:
+    ########################################################################################################################
+
+    # @staticmethod
+    def _process_constant_property(self, alloy: Alloy, prop_name: str, prop_config: Union[float, str], T: Union[float, sp.Symbol]) -> None:
         """
         Process constant float property.
         Args:
             alloy (Alloy): The alloy object to update.
             prop_name (str): The name of the property to set.
             prop_config (Union[float, str]): The property value or string representation.
+            T (Union[float, sp.Symbol]): Temperature value or symbol.
         Raises:
             ValueError: If the property value cannot be converted to float or violates constraints.
         """
         try:
+            print(f"{prop_name}, {type(prop_name)} = {prop_config}, {type(prop_config)}")
             value = float(prop_config)
-            # Validate the value
-            MaterialConfigParser._validate_property_value(prop_name, value)
-            setattr(alloy, prop_name, value)
+            print(f"{prop_name}, {type(prop_name)} = {value}, {type(value)}")
+            setattr(alloy, prop_name, sp.Float(value))  # save as sympy Float
+
+            # Visualization for constant properties
+            self._visualize_property(
+                alloy=alloy,
+                prop_name=prop_name,
+                T=T,
+                prop_type='Constant',
+                lower_bound=min(self.temperature_array),
+                upper_bound=max(self.temperature_array)
+                # No need to pass x_data or y_data for constant properties
+                # No need to pass regression parameters for constant properties
+            )
         except (ValueError, TypeError) as e:
             error_msg = f"Failed to process constant property \n -> {e}"
             raise ValueError(error_msg) from e
 
-########################################################################################################################
+    ########################################################################################################################
+
+    def _is_dependency(self, prop_name: str, verbose: bool = False) -> bool:
+        """
+        Check if a property is used as a dependency in any computed property.
+        Args:
+            prop_name (str): The name of the property to check.
+            verbose (bool): Whether to print dependency information.
+        Returns:
+            bool: True if the property is used as a dependency, False otherwise.
+        """
+        # Get computed properties from the already categorized properties
+        computed_props = self.categorized_properties[PropertyType.COMPUTE]
+
+        for computed_prop_name, computed_config in computed_props:
+            # For dictionary-based computed properties with 'equation' key
+            if isinstance(computed_config, dict) and 'equation' in computed_config:
+                equation = computed_config['equation']
+                # Use more precise checking by looking for the property as a whole word
+                if re.search(r'\b' + re.escape(prop_name) + r'\b', equation):
+                    if verbose:
+                        print(f"Property '{prop_name}' is used in computed property '{computed_prop_name}'")
+                    return True
+            # For string-based computed properties (direct expressions)
+            elif isinstance(computed_config, str):
+                # Use more precise checking by looking for the property as a whole word
+                if re.search(r'\b' + re.escape(prop_name) + r'\b', computed_config):
+                    if verbose:
+                        print(f"Property '{prop_name}' is used in computed property '{computed_prop_name}'")
+                    return True
+        return False
+
+    @staticmethod
+    def _create_raw_piecewise(temp_array, prop_array, T, lower_bound_type, upper_bound_type):
+        """Create a piecewise function using all data points."""
+        # Create a piecewise function with one segment per data point
+        print(f"Creating raw piecewise function with {len(temp_array)} points")
+
+        '''segments = len(temp_array) - 1
+        v_pwlf = pwlf.PiecewiseLinFit(temp_array, prop_array, degree=1)
+        print(f"segments: {segments}")
+        if segments > 8:
+            segments = 8
+        v_pwlf.fit(n_segments=segments)
+        print(f"v_pwlf: {v_pwlf}")
+        return sp.Piecewise(*get_symbolic_conditions(v_pwlf, T, lower_bound_type, upper_bound_type))'''
+
+        if temp_array[0] > temp_array[-1]:
+            temp_array = np.flip(temp_array)
+            prop_array = np.flip(prop_array)
+
+        conditions = []
+
+        # Handle lower boundary
+        if lower_bound_type == 'constant':
+            conditions.append((prop_array[0], T < temp_array[0]))
+        else:  # 'extrapolate'
+            if len(temp_array) >= 2:
+                slope = (prop_array[1] - prop_array[0]) / (temp_array[1] - temp_array[0])
+                extrapolated_expr = prop_array[0] + slope * (T - temp_array[0])
+                conditions.append((extrapolated_expr, T < temp_array[0]))
+
+        # Handle upper boundary
+        if upper_bound_type == 'constant':
+            conditions.append((prop_array[-1], T >= temp_array[-1]))
+        else:  # 'extrapolate'
+            if len(temp_array) >= 2:
+                slope = (prop_array[-1] - prop_array[-2]) / (temp_array[-1] - temp_array[-2])
+                extrapolated_expr = prop_array[-1] + slope * (T - temp_array[-1])
+                conditions.append((extrapolated_expr, T >= temp_array[-1]))
+
+        # Add conditions for each segment between data points
+        for i in range(len(temp_array) - 1):
+            interp_expr = (
+                    prop_array[i] + (prop_array[i + 1] - prop_array[i]) /
+                    (temp_array[i + 1] - temp_array[i]) * (T - temp_array[i])
+            )
+            # Add condition for this segment - always use a bounded condition
+            conditions.append(
+                (interp_expr, sp.And(T >= temp_array[i], T < temp_array[i + 1])))
+
+        # Create and return the piecewise function
+        pw = sp.Piecewise(*conditions)
+        print(f"Created piecewise function with {len(conditions)} conditions")
+        print(pw)
+        return pw
+
+    @staticmethod
+    def _interpolate_value(T, x_array, y_array, lower_bound_type, upper_bound_type):
+        """
+        Interpolate a value at temperature T using the provided data arrays.
+        Args:
+            T (float): Temperature value
+            x_array (np.ndarray): Temperature array
+            y_array (np.ndarray): Property value array
+            lower_bound_type (str): Type of lower bound ('constant' or 'extrapolate')
+            upper_bound_type (str): Type of upper bound ('constant' or 'extrapolate')
+        Returns:
+            float: Interpolated value
+        """
+        # Handle interpolation/extrapolation
+        if T < x_array[0]:
+            if lower_bound_type == 'constant':
+                return y_array[0]
+            else:  # 'extrapolate'
+                slope = (y_array[1] - y_array[0]) / (x_array[1] - x_array[0])
+                return y_array[0] + slope * (T - x_array[0])
+        elif T >= x_array[-1]:
+            if upper_bound_type == 'constant':
+                return y_array[-1]
+            else:  # 'extrapolate'
+                slope = (y_array[-1] - y_array[-2]) / (x_array[-1] - x_array[-2])
+                return y_array[-1] + slope * (T - x_array[-1])
+        else:
+            return np.interp(T, x_array, y_array)
 
     def _process_file_property(self, alloy: Alloy, prop_name: str, file_config: Union[str, Dict[str, Any]], T: Union[float, sp.Symbol]) -> None:
         """
-        Process property data from file configuration.
+        Process property data from a file configuration.
         Args:
             alloy (Alloy): The alloy object to update.
             prop_name (str): The name of the property to set.
@@ -761,56 +845,107 @@ class MaterialConfigParser:
         try:
             # Get the directory containing the YAML file
             yaml_dir = self.base_dir
-            # Construct path relative to YAML file location
+
+            # Construct a path relative to the YAML file location
             if isinstance(file_config, dict) and 'file' in file_config:
-                # print("if isinstance(file_config, dict) and 'file' in file_config:")
-                # print(file_config)
-                # print(type(file_config))
                 file_config['file'] = str(yaml_dir / file_config['file'])
                 temp_array, prop_array = read_data_from_file(file_config)
             else:
-                # print("if isinstance(file_config, str):")
-                # print(file_config)
-                # print(type(file_config))
                 # For string configuration, construct the full path
                 file_path = str(yaml_dir / file_config)
                 temp_array, prop_array = read_data_from_file(file_path)
-            # Temperature conversion
-            '''temp_array = temp_array + 273.15
-    
-            # Property-specific unit conversions
-            conversion_factors = {
-                'density': 1000,        # g/cm³ to kg/m³
-                'heat_capacity': 1000,  # J/g·K to J/kg·K
-                'heat_conductivity': 1  # W/m·K (already in SI)
-            }
-    
-            if prop_name in conversion_factors:
-                prop_array = prop_array * conversion_factors[prop_name]'''
 
-            # Store temperature array if not already set
-            '''if not hasattr(alloy, 'temperature_array') or len(alloy.temperature_array) == 0:
-                alloy.temperature_array = temp_array
-    
-            material_property = interpolate_property(T, temp_array, prop_array)
-            setattr(alloy, prop_name, material_property)
-    
-            # Store additional properties if this is energy_density
-            if prop_name == 'energy_density':
-                alloy.energy_density_temperature_array = temp_array
-                alloy.energy_density_array = prop_array
-                alloy.energy_density_solidus = material_property.evalf(T, alloy.temperature_solidus)
-                alloy.energy_density_liquidus = material_property.evalf(T, alloy.temperature_liquidus)'''
             # Validate the temperature array
             self._validate_temperature_range(prop_name, temp_array)
-            # Validate the property array
-            self._validate_property_value(prop_name, prop_array)
-            self._process_property_data(alloy, prop_name, T, temp_array, prop_array)
+
+            # Ensure the temperature array is in ascending order
+            if not np.all(np.diff(temp_array) >= 0):
+                print("Flipping temperature array")
+                temp_array = np.flip(temp_array)
+                prop_array = np.flip(prop_array)
+
+            # Extract bound types (always specified for FILE properties)
+            lower_bound_type = file_config['bounds'][0]
+            upper_bound_type = file_config['bounds'][1]
+
+            # Get the bounds of the data
+            lower_bound = np.min(temp_array)
+            upper_bound = np.max(temp_array)
+
+            # Check if T is a symbolic variable or a numeric value
+            is_symbolic = isinstance(T, sp.Symbol)
+
+            # Initialize regression parameters
+            has_regression = isinstance(file_config, dict) and 'regression' in file_config
+            simplify_type = 'before'  # Default
+            degree = 1  # Default
+            segments = 3  # Default
+
+            if has_regression:
+                regression_config = file_config['regression']
+                simplify_type = regression_config.get('simplify', 'before')
+                degree = regression_config.get('degree', 1)
+                segments = regression_config.get('segments', 3)
+
+                # Validate segments
+                if segments >= len(temp_array):
+                    raise ValueError(f"Number of segments ({segments}) must be less than number of data points ({len(temp_array)}) ")
+                if segments > 8:
+                    raise ValueError(f"Number of segments ({segments}) is too high for {prop_name}. Please reduce it.")
+                elif segments > 6:
+                    print(f"Warning: Number of segments ({segments}) for {prop_name} may lead to overfitting.")
+
+                # Handle 'auto' simplify type
+                if simplify_type == 'auto':
+                    simplify_type = 'after' if self._is_dependency(prop_name, verbose=True) else 'before'
+                    print(f"Auto-determined simplify type for {prop_name}: '{simplify_type}'")
+
+            # CASE 1: Numeric Temperature (T is a float)
+            if not is_symbolic:
+                # Interpolate value
+                interpolated_value = self._interpolate_value(
+                    T, temp_array, prop_array, lower_bound_type, upper_bound_type)
+
+                # Set property value
+                setattr(alloy, prop_name, sp.Float(interpolated_value))
+
+            # CASE 2: Symbolic Temperature (T is a sp.Symbol)
+            else:
+                # Create symbolic representation based on a simplified type
+                if has_regression and simplify_type == 'before':
+                    # Simplify immediately
+                    v_pwlf = pwlf.PiecewiseLinFit(temp_array, prop_array, degree=degree, seed=13579)
+                    v_pwlf.fit(n_segments=segments)
+                    pw = sp.Piecewise(*get_symbolic_conditions(v_pwlf, T, lower_bound_type, upper_bound_type))
+                    setattr(alloy, prop_name, pw)
+                else:
+                    # Use raw data for now (for 'after' or no regression)
+                    raw_pw = self._create_raw_piecewise(temp_array, prop_array, T, lower_bound_type, upper_bound_type)
+                    setattr(alloy, prop_name, raw_pw)
+
+            # Visualization for both symbolic and numeric temperature
+            self._visualize_property(
+                alloy=alloy,
+                prop_name=prop_name,
+                T=T,
+                prop_type='File',
+                x_data=temp_array,
+                y_data=prop_array,
+                has_regression=has_regression,
+                simplify_type=simplify_type,
+                degree=degree,
+                segments=segments,
+                lower_bound=lower_bound,
+                upper_bound=upper_bound,
+                lower_bound_type=lower_bound_type,
+                upper_bound_type=upper_bound_type
+            )
+
         except Exception as e:
             error_msg = f"Failed to process file property {prop_name} \n -> {str(e)}"
             raise ValueError(error_msg) from e
 
-########################################################################################################################
+    ########################################################################################################################
 
     def _process_key_val_property(self, alloy: Alloy, prop_name: str, prop_config: Dict, T: Union[float, sp.Symbol]) -> None:
         """
@@ -826,16 +961,105 @@ class MaterialConfigParser:
         try:
             print(f"Process key val property: {prop_name}")
             key_array = self._process_key_definition(prop_config['key'], prop_config['val'], alloy)
+            print(f"key-val property: {key_array}")
             val_array = np.array(prop_config['val'], dtype=float)
+            print(f"val array: {val_array}")
+
             if len(key_array) != len(val_array):
                 raise ValueError(f"Length mismatch in {prop_name}: key and val arrays must have same length")
+
             # Validate the temperature array
-            self._validate_temperature_range(prop_name, key_array)
-            # Validate the value array
-            self._validate_property_value(prop_name, val_array)
-            self._process_property_data(alloy, prop_name, T, key_array, val_array)
+            # self._validate_temperature_range(prop_name, key_array)  #TODO: Commented out -> boiling temperature in latent_heat_of_vaporization is higher than 3000. causes error
+
+            # Ensure the temperature array is in ascending order
+            if not np.all(np.diff(key_array) >= 0):
+                print("Flipping temperature array")
+                key_array = np.flip(key_array)
+                val_array = np.flip(val_array)
+
+            # Extract bound types
+            lower_bound_type = prop_config['bounds'][0]
+            upper_bound_type = prop_config['bounds'][1]
+
+            # Get the bounds of the data
+            lower_bound = np.min(key_array)
+            upper_bound = np.max(key_array)
+
+            # Check if T is a symbolic variable or a numeric value
+            is_symbolic = isinstance(T, sp.Symbol)
+
+            # Initialize regression parameters
+            has_regression = 'regression' in prop_config
+            simplify_type = 'before'  # Default
+            degree = 1  # Default
+            segments = 3  # Default
+
+            # Special handling for latent heat properties
+            if prop_name in ['latent_heat_of_fusion', 'latent_heat_of_vaporization']:
+                segments = 1
+
+            if has_regression:
+                regression_config = prop_config['regression']
+                simplify_type = regression_config.get('simplify', 'before')
+                degree = regression_config.get('degree', 1)
+                segments = regression_config.get('segments', 3)
+
+                # Validate segments
+                if segments >= len(key_array):
+                    raise ValueError(f"Number of segments ({segments}) must be less than number of data points ({len(key_array)}) ")
+                if segments > 8:
+                    raise ValueError(f"Number of segments ({segments}) is too high for {prop_name}. Please reduce it.")
+                elif segments > 6:
+                    print(f"Warning: Number of segments ({segments}) for {prop_name} may lead to overfitting.")
+
+                # Handle 'auto' simplify type
+                if simplify_type == 'auto':
+                    simplify_type = 'after' if self._is_dependency(prop_name, verbose=True) else 'before'
+                    print(f"Auto-determined simplify type for {prop_name}: '{simplify_type}'")
+
+            # CASE 1: Numeric Temperature (T is a float)
+            if not is_symbolic:
+                # Interpolate value
+                interpolated_value = self._interpolate_value(
+                    T, key_array, val_array, lower_bound_type, upper_bound_type)
+
+                # Set property value
+                setattr(alloy, prop_name, sp.Float(interpolated_value))
+
+            # CASE 2: Symbolic Temperature (T is a sp.Symbol)
+            else:
+                # Create symbolic representation based on a simplified type
+                if has_regression and simplify_type == 'before':
+                    # Simplify immediately
+                    v_pwlf = pwlf.PiecewiseLinFit(key_array, val_array, degree=degree, seed=13579)
+                    v_pwlf.fit(n_segments=segments)
+                    pw = sp.Piecewise(*get_symbolic_conditions(v_pwlf, T, lower_bound_type, upper_bound_type))
+                    setattr(alloy, prop_name, pw)
+                else:
+                    # Use raw data for now (for 'after' or no regression)
+                    raw_pw = self._create_raw_piecewise(key_array, val_array, T, lower_bound_type, upper_bound_type)
+                    setattr(alloy, prop_name, raw_pw)
+
+            # Visualization for both symbolic and numeric temperature
+            self._visualize_property(
+                alloy=alloy,
+                prop_name=prop_name,
+                T=T,
+                prop_type='Key-Value',
+                x_data=key_array,
+                y_data=val_array,
+                has_regression=has_regression,
+                simplify_type=simplify_type,
+                degree=degree,
+                segments=segments,
+                lower_bound=lower_bound,
+                upper_bound=upper_bound,
+                lower_bound_type=lower_bound_type,
+                upper_bound_type=upper_bound_type
+            )
+
         except Exception as e:
-            error_msg = f"Failed to proces key-val property '{prop_name}' \n -> {str(e)}"
+            error_msg = f"Failed to process key-val property '{prop_name}' \n -> {str(e)}"
             raise ValueError(error_msg) from e
 
     def _process_key_definition(self, key_def, val_array, alloy: Alloy) -> np.ndarray:
@@ -896,15 +1120,19 @@ class MaterialConfigParser:
         Raises:
             ValueError: If there's an error processing the list key.
         """
+        print(f"processing list key: {key_def}")
         try:
             processed_key = []
             for k in key_def:
+                print(f"processing key: {k}")
                 if isinstance(k, str):
                     # Handle base temperature references
                     if k == 'solidus_temperature':
-                        processed_key.append(alloy.temperature_solidus)
+                        processed_key.append(alloy.solidus_temperature)
                     elif k == 'liquidus_temperature':
-                        processed_key.append(alloy.temperature_liquidus)
+                        processed_key.append(alloy.liquidus_temperature)
+                    elif k == 'boiling_temperature':
+                        processed_key.append(alloy.temperature_boiling)
                     # Handle temperature expressions like 'liquidus_temperature+300'
                     elif '+' in k:
                         # Split the string into base and offset
@@ -912,9 +1140,11 @@ class MaterialConfigParser:
                         offset_value = float(offset)
                         # Get the base temperature
                         if base == 'solidus_temperature':
-                            base_value = alloy.temperature_solidus
+                            base_value = alloy.solidus_temperature
                         elif base == 'liquidus_temperature':
-                            base_value = alloy.temperature_liquidus
+                            base_value = alloy.liquidus_temperature
+                        elif base == 'boiling_temperature':
+                            base_value = alloy.boiling_temperature
                         else:
                             base_value = float(base)
                         # Calculate the final temperature
@@ -925,9 +1155,11 @@ class MaterialConfigParser:
                         offset_value = -float(offset)
                         # Get the base temperature
                         if base == 'solidus_temperature':
-                            base_value = alloy.temperature_solidus
+                            base_value = alloy.solidus_temperature
                         elif base == 'liquidus_temperature':
-                            base_value = alloy.temperature_liquidus
+                            base_value = alloy.liquidus_temperature
+                        elif base == 'boiling_temperature':
+                            base_value = alloy.boiling_temperature
                         else:
                             base_value = float(base)
                         # Calculate the final temperature
@@ -942,87 +1174,9 @@ class MaterialConfigParser:
             error_msg = f"Error processing list key \n -> {str(e)}"
             raise ValueError(error_msg) from e
 
-    ##################################################
-    # Property Data Processing
-    ##################################################
-
-    def _process_property_data(self, alloy: Alloy, prop_name: str, T: Union[float, sp.Symbol], temp_array: np.ndarray, prop_array: np.ndarray) -> None:
-        """
-        Process property data and set it on the alloy object.
-        Args:
-            alloy (Alloy): The alloy object to update.
-            prop_name (str): The name of the property to set.
-            T (Union[float, sp.Symbol]): Temperature value or symbol.
-            temp_array (np.ndarray): Array of temperature values.
-            prop_array (np.ndarray): Array of property values.
-        Raises:
-            ValueError: If there's an error processing the property data.
-        """
-        try:
-            if isinstance(T, sp.Symbol):
-                self._process_symbolic_temperature(alloy, prop_name, T, temp_array, prop_array)
-            elif isinstance(T, float):
-                self._process_constant_temperature(alloy, prop_name, T, temp_array, prop_array)
-            else:
-                raise ValueError(f"Unexpected type for T: {type(T)}")
-        except Exception as e:
-            error_msg = f"Error processing property data for '{prop_name}' \n -> {str(e)}"
-            raise ValueError(error_msg) from e
-
-    def _process_symbolic_temperature(self, alloy: Alloy, prop_name: str, T: sp.Symbol, temp_array: np.ndarray, prop_array: np.ndarray) -> None:
-        """
-        Process property data for symbolic temperature.
-        Args:
-            alloy (Alloy): The alloy object to update.
-            prop_name (str): The name of the property to set.
-            T (sp.Symbol): Symbolic temperature.
-            temp_array (np.ndarray): Array of temperature values.
-            prop_array (np.ndarray): Array of property values.
-        """
-        # If T is symbolic, store the full temperature array if not already set then interpolate
-        # if getattr(alloy, 'temperature_array', None) is None or len(alloy.temperature_array) == 0:
-            # alloy.temperature_array = temp_array
-        material_property = interpolate_property(T, temp_array, prop_array)
-        setattr(alloy, prop_name, material_property)
-        if prop_name == 'energy_density':
-            self._process_energy_density(alloy, material_property, T)
-
-    @staticmethod
-    def _process_constant_temperature(alloy: Alloy, prop_name: str, T: Union[float, int], temp_array: np.ndarray, prop_array: np.ndarray) -> None:
-        """
-        Process property data for constant temperature.
-        Args:
-            alloy (Alloy): The alloy object to update.
-            prop_name (str): The name of the property to set.
-            T (Union[float, int]): Constant temperature value.
-            temp_array (np.ndarray): Array of temperature values.
-            prop_array (np.ndarray): Array of property values.
-        """
-        # If T is a constant, store just that value if not already set then interpolate
-        if getattr(alloy, 'temperature', None) is None:
-            alloy.temperature = float(T)
-        material_property = interpolate_property(T, temp_array, prop_array)
-        setattr(alloy, prop_name, material_property)
-
-    @staticmethod
-    def _process_energy_density(alloy: Alloy, material_property: Any, T: sp.Symbol) -> None:
-        """
-        Process additional properties for energy density.
-        Args:
-            alloy (Alloy): The alloy object to update.
-            material_property (Any): The interpolated material property.
-            T (sp.Symbol): Symbolic temperature.
-            # temp_array (np.ndarray): Array of temperature values.
-            # prop_array (np.ndarray): Array of property values.
-        """
-        # alloy.energy_density_temperature_array = temp_array
-        # alloy.energy_density_array = prop_array
-        alloy.energy_density_solidus = material_property.evalf(T, alloy.temperature_solidus)
-        alloy.energy_density_liquidus = material_property.evalf(T, alloy.temperature_liquidus)
-
-    ##################################################
+    ################################################## ##################################################
     # Computed Property Handling
-    ##################################################
+    ################################################## ##################################################
 
     def _process_computed_property(self, alloy: Alloy, prop_name: str, T: Union[float, sp.Symbol]) -> None:
         """
@@ -1034,171 +1188,460 @@ class MaterialConfigParser:
         Raises:
             ValueError: If no computation method is defined for the property or if the method is unknown.
         """
-        computation_methods = self._get_computation_methods(alloy, T)
-        print(computation_methods)
-        dependencies = self._get_dependencies()
-        # Check if property has computation methods
-        if prop_name not in computation_methods:
-            raise ValueError(f"No computation method defined for property: {prop_name}")
-        # Determine which computation method to use
-        prop_config = self.config['properties'][prop_name]
-        method = 'default'
-        if isinstance(prop_config, dict) and 'compute' in prop_config:
-            method = prop_config['compute']
-        print(method)
-        # Validate method exists
-        if method not in computation_methods[prop_name]:
-            available_methods = list(computation_methods[prop_name].keys())
-            raise ValueError(f"Unknown computation method '{method}' for {prop_name}. Available: {available_methods}")
-        # Get dependencies for selected method
-        method_dependencies = dependencies[prop_name][method]
-        print(method_dependencies)
-        # Process dependencies
-        self._process_dependencies(alloy, prop_name, method_dependencies, T)
-        # Compute property
-        material_property = computation_methods[prop_name][method]()
-        # Validate the computed property
-        '''if isinstance(material_property, (int, float)):
-            self._validate_property_value(prop_name, material_property)
-        # For MaterialProperty objects (symbolic)
-        elif hasattr(material_property, 'evalf') and isinstance(T, sp.Symbol):
-            # Sample at a few points to validate
-            if hasattr(alloy, 'temperature_array') and len(alloy.temperature_array) > 0:
-                sample_values = material_property.evalf(T, alloy.temperature_array)
-                self._validate_property_value(prop_name, sample_values)'''
-        setattr(alloy, prop_name, material_property)
-        # Handle special case for energy_density
-        if prop_name == 'energy_density' and isinstance(T, sp.Symbol):
-            self._handle_energy_density(alloy, material_property, T)
+        try:
+            prop_config = self.config['properties'][prop_name]
+            print(f"prop_config: {prop_config}")
+            # Create a symbol for the property
+            prop_symbol = SymbolRegistry.get(prop_name)
+            print(f"prop_symbol: {prop_symbol}")
+            # Handle direct expression format
+            if isinstance(prop_config, str):
+                # This is a direct mathematical expression
+                expression = prop_config
+                print(f"_process_computed_property for property: {prop_name} with expression: {expression}")
+                material_property = self._parse_and_process_expression(expression, alloy, T)
+                print(f"material_property {prop_name}: {material_property}")
+            elif isinstance(prop_config, dict) and 'equation' in prop_config:
+                expression = prop_config['equation']
+                print(f"_process_computed_property for property: {prop_name} with expression: {expression}")
+                material_property = self._parse_and_process_expression(expression, alloy, T)
+                print(f"material_property {prop_name}: {material_property}")
+            else:
+                raise ValueError(f"Unsupported property configuration format for {prop_name}: {prop_config}")
 
-    # @staticmethod
-    def _get_computation_methods(self, alloy: Alloy, T: Union[float, sp.Symbol]):
+            setattr(alloy, prop_name, material_property)
+
+            # Check if regression is specified in the configuration
+            has_regression = isinstance(prop_config, dict) and 'regression' in prop_config
+
+            # Default regression parameters
+            degree = 1
+            segments = 3
+            simplify_type = 'after'  # Default for computed properties
+
+            if has_regression:
+                regression_config = prop_config['regression']
+                simplify_type = regression_config.get('simplify', 'after')
+                degree = regression_config.get('degree', 1)
+                segments = regression_config.get('segments', 3)
+
+            # Validate segments
+            if segments > 8:
+                raise ValueError(f"Number of segments ({segments}) is too high for {prop_name}. Please reduce it.")
+
+            # Define bound types
+            lower_bound_type = 'constant'  # Default lower bound type
+            upper_bound_type = 'constant'  # Default upper-bound type
+
+            # Check if bound types are specified in the config
+            if isinstance(prop_config, dict) and 'bounds' in prop_config:
+                if isinstance(prop_config['bounds'], list) and len(prop_config['bounds']) == 2:
+                    lower_bound_type = prop_config['bounds'][0]
+                    upper_bound_type = prop_config['bounds'][1]
+
+            # Get the bounds of the data
+            lower_bound = np.min(self.temperature_array)
+            upper_bound = np.max(self.temperature_array)
+
+            self._visualize_property(
+                alloy=alloy,
+                prop_name=prop_name,
+                T=T,
+                prop_type='Computed',
+                has_regression=has_regression,
+                simplify_type=simplify_type,
+                degree=degree,
+                segments=segments,
+                lower_bound=lower_bound,
+                upper_bound=upper_bound,
+                lower_bound_type=lower_bound_type,
+                upper_bound_type=upper_bound_type
+            )
+
+        except Exception as e:
+            error_msg = f"Failed to process computed property '{prop_name}' \n -> {str(e)}"
+            raise ValueError(error_msg) from e
+
+    def _parse_and_process_expression(self, expression: str, alloy: Alloy, T: Union[float, sp.Symbol]) -> sp.Expr:
         """
-        Get the computation methods for various properties of the alloy.
+        Parse and process a mathematical expression string into a SymPy expression.
         Args:
-            alloy (Alloy): The alloy object containing property data.
+            expression (str): The mathematical expression as a string.
+            alloy (Alloy): The alloy object containing property values.
             T (Union[float, sp.Symbol]): The temperature value or symbol.
         Returns:
-            dict: A dictionary of computation methods for different properties.
-        """
-        return {
-            'density': {
-                'default': lambda: density_by_thermal_expansion(
-                    T,
-                    alloy.base_temperature,
-                    alloy.base_density,
-                    alloy.thermal_expansion_coefficient
-                )
-            },
-            'thermal_diffusivity': {
-                'default': lambda: thermal_diffusivity_by_heat_conductivity(
-                    alloy.heat_conductivity,
-                    alloy.density,
-                    alloy.heat_capacity
-                )
-            },
-            'specific_enthalpy': {
-                'default': lambda: specific_enthalpy_sensible(
-                    T,
-                    self.temperature_array,
-                    alloy.heat_capacity
-                ),
-                'latent_heat_based': lambda: specific_enthalpy_with_latent_heat(
-                    T,
-                    self.temperature_array,
-                    alloy.heat_capacity,
-                    alloy.latent_heat_of_fusion
-                )
-            },
-            'energy_density': {
-                'default': lambda: energy_density(
-                    alloy.density,
-                    alloy.specific_enthalpy,
-                ),
-            },
-        }
-
-    @staticmethod
-    def _get_dependencies():
-        """
-        Get the dependencies for each computation method.
-        Returns:
-            dict: A nested dictionary specifying the dependencies for each
-                  computation method of each property.
-        """
-        return {
-            'density': {
-                'default': ['base_temperature', 'base_density', 'thermal_expansion_coefficient'],
-            },
-            'thermal_diffusivity': {
-                'default': ['heat_conductivity', 'density', 'heat_capacity'],
-            },
-            'specific_enthalpy': {
-                'default': ['heat_capacity'],
-                'latent_heat_based': ['heat_capacity', 'latent_heat_of_fusion'],
-            },
-            'energy_density': {
-                'default': ['density', 'specific_enthalpy'],
-                # 'enthalpy_based': ['density', 'specific_enthalpy', 'latent_heat_of_fusion'],
-                # 'total_enthalpy': ['density', 'specific_enthalpy'],
-            },
-        }
-
-    def _process_dependencies(self, alloy: Alloy, prop_name: str, dependencies: List[str], T: Union[float, sp.Symbol]):
-        """
-        Process and compute the dependencies required for a given property.
-        This method checks if each dependency is already computed for the alloy.
-        If not, it attempts to compute the dependency if a computation method is defined.
-        Args:
-            alloy (Alloy): The alloy object to process.
-            prop_name (str): The name of the property being computed.
-            dependencies (List[str]): List of dependency names for the property.
-            T (Union[float, sp.Symbol]): The temperature value or symbol.
+            sp.Expr: The processed SymPy expression.
         Raises:
-            ValueError: If any required dependency cannot be computed or is missing.
+            ValueError: If the expression cannot be parsed, or if dependencies are missing.
         """
-        for dep in dependencies:
-            if getattr(alloy, dep, None) is None:
-                if dep in self.config['properties']:
-                    print(f"dep: {dep}")
-                    dep_config = self.config['properties'][dep]
-                    print(f"dep_config: {dep_config}")
-                    if dep_config == 'compute' or (isinstance(dep_config, dict) and 'compute' in dep_config):
-                        print("hihihiiiiiiii")
+        try:
+            # Convert the expression to a SymPy expression
+            sympy_expr = sp.sympify(expression)
+            print(f"sympy_expr: {sympy_expr}, type: {type(sympy_expr)}")
+
+            # Extract dependencies (free symbols)
+            dependencies = [str(symbol) for symbol in sympy_expr.free_symbols]
+            print(f"dependencies: {dependencies}")
+
+            # Special handling for temperature symbol
+            if 'T' in dependencies and isinstance(T, sp.Symbol):
+                print(f"removing T from {dependencies}")
+                dependencies.remove('T')
+                print(f"new dependencies: {dependencies}")
+
+            # Check for circular dependencies
+            self._check_circular_dependencies(prop_name=None, current_deps=dependencies, visited=set())
+
+            # Process dependencies
+            for dep in dependencies:
+                if not hasattr(alloy, dep) or getattr(alloy, dep) is None:
+                    print(f"processing dependencies for dep: {dep}")
+                    if dep in self.config['properties']:
+                        dep_config = self.config['properties'][dep]
+                        print(f"dep_config: {dep_config}, dep: {dep}")
                         self._process_computed_property(alloy, dep, T)
-        # Verify all dependencies are available
-        missing_deps = [dep for dep in dependencies if getattr(alloy, dep, None) is None]
-        if missing_deps:
-            raise ValueError(f"Cannot compute {prop_name}. Missing dependencies: {missing_deps}")
+                    else:
+                        raise ValueError(f"Dependency '{dep}' not found in properties configuration")
 
-    def _handle_energy_density(self, alloy: Alloy, material_property: MaterialProperty, T: sp.Symbol):
+            # Verify all dependencies are available
+            missing_deps = [dep for dep in dependencies if not hasattr(alloy, dep) or getattr(alloy, dep) is None]
+            if missing_deps:
+                raise ValueError(f"Cannot compute expression. Missing dependencies: {missing_deps}")
+
+            # Substitute dependencies with their values
+            substitutions = {}
+            for dep in dependencies:
+                print(f"dep: {dep}, type: {type(dep)}")
+                dep_value = getattr(alloy, dep)
+                print(f"dep_value: {dep_value}, type: {type(dep_value)}, dep: {dep}")
+                dep_symbol = SymbolRegistry.get(dep)
+                print(f"dep_symbol: {dep_symbol}, type: {type(dep_symbol)}, dep: {dep}")
+                substitutions[dep_symbol] = dep_value
+                print(f"substitutions: {substitutions}")
+
+            # If T is a symbol, keep it as a symbol in the expression
+            if isinstance(T, sp.Symbol):
+                substitutions[sp.Symbol('T')] = T
+                print(f"substitutions: {substitutions}")
+
+            # Substitute the values
+            result_expr = sympy_expr.subs(substitutions)
+            print(f"result_expr: {result_expr}")
+            return result_expr
+
+        except Exception as e:
+            raise ValueError(f"Failed to parse and process expression: {expression} \n -> {str(e)}")
+
+    def _check_circular_dependencies(self, prop_name, current_deps, visited, path=None):
         """
-        Handle the special case of energy density computation.
-        This method computes additional properties related to energy density when T is symbolic.
-        It computes the energy density array, solidus, and liquidus values.
+        Check for circular dependencies in property definitions.
         Args:
-            alloy (Alloy): The alloy object to process.
-            material_property (MaterialProperty): The computed energy density property.
-            T (sp.Symbol): The symbolic temperature variable.
-            # dependencies (List[str]): List of dependencies for energy density computation.
+            prop_name: The current property being checked
+            current_deps: List of dependencies for the current property
+            visited: Set of properties already visited in this branch
+            path: Current dependency path for error reporting
         Raises:
-            ValueError: If T is not symbolic or if energy_density_temperature_array is not defined in the config.
+            ValueError: If a circular dependency is detected
         """
-        # Ensure T is symbolic
+        if path is None:
+            path = []
+
+        if prop_name is not None:
+            if prop_name in visited:
+                cycle_path = path + [prop_name]
+                raise ValueError(f"Circular dependency detected: {' -> '.join(cycle_path)}")
+
+            visited.add(prop_name)
+            path = path + [prop_name]
+
+        for dep in current_deps:
+            if dep in self.config['properties']:
+                dep_config = self.config['properties'][dep]
+
+                # Extract dependencies for this property
+                if isinstance(dep_config, str):
+                    # Direct expression
+                    expr = sp.sympify(dep_config)
+                    dep_deps = [str(symbol) for symbol in expr.free_symbols if str(symbol) != 'T']
+                elif isinstance(dep_config, dict) and 'equation' in dep_config:
+                    # Dictionary with equation
+                    expr = sp.sympify(dep_config['equation'])
+                    dep_deps = [str(symbol) for symbol in expr.free_symbols if str(symbol) != 'T']
+                else:
+                    # Not a computed property, no dependencies
+                    dep_deps = []
+
+                # Recursively check dependencies
+                if dep_deps:
+                    self._check_circular_dependencies(dep, dep_deps, visited.copy(), path)
+
+    ################################################## ##################################################
+    # Post-Processing for 'after' Simplification
+    ################################################## ##################################################
+
+    def _post_process_properties(self, alloy: Alloy, T: Union[float, sp.Symbol]) -> None:
+        """Perform post-processing on properties after all have been initially processed."""
+        # Skip post-processing entirely if T is a float
         if not isinstance(T, sp.Symbol):
-            raise ValueError("_handle_energy_density should only be called with symbolic T")
-        # Check dependencies
-        # deps_to_check = [getattr(alloy, dep) for dep in dependencies if hasattr(alloy, dep)]
-        # if any(isinstance(dep, MaterialProperty) for dep in deps_to_check):
-            # if 'energy_density_temperature_array' not in self.config['properties']:
-              # raise ValueError(f"energy_density_temperature_array must be defined when energy_density is computed with symbolic T")
-            # Process energy_density_temperature_array
-            # ta = self.config['temperature_range']
-            # alloy.temperature_array = self._process_temperature_array(ta)
-        if len(self.temperature_array) >= 2:
-            # alloy.energy_density_array = material_property.evalf(T, self.temperature_array)
-            alloy.energy_density_solidus = material_property.evalf(T, alloy.temperature_solidus)
-            alloy.energy_density_liquidus = material_property.evalf(T, alloy.temperature_liquidus)
+            print("Skipping post-processing for numeric temperature")
+            return
+
+        properties = self.config['properties']
+
+        for prop_name, prop_config in properties.items():
+            try:
+                # Check if this property needs post-processing
+                if not isinstance(prop_config, dict) or 'regression' not in prop_config:
+                    continue
+
+                regression_config = prop_config['regression']
+                simplify_type = regression_config.get('simplify', 'before')
+
+                if simplify_type != 'after' and not (simplify_type == 'auto' and self._is_dependency(prop_name)):
+                    continue
+
+                # Get the property value
+                prop_value = getattr(alloy, prop_name)
+
+                # Skip if it's not a symbolic expression
+                if not isinstance(prop_value, sp.Expr):
+                    print(f"Skipping {prop_name} - not a symbolic expression (type: {type(prop_value)})")
+                    continue
+
+                # Get regression parameters
+                degree = regression_config.get('degree', 1)
+                segments = regression_config.get('segments', 3)
+
+                # Get bound types
+                lower_bound_type = 'constant'
+                upper_bound_type = 'constant'
+                if 'bounds' in prop_config:
+                    if isinstance(prop_config['bounds'], list) and len(prop_config['bounds']) == 2:
+                        lower_bound_type = prop_config['bounds'][0]
+                        upper_bound_type = prop_config['bounds'][1]
+
+                # Create a simplified version
+                temp_array = self.temperature_array
+                f = sp.lambdify(T, prop_value, 'numpy')
+
+                try:
+                    prop_array = f(temp_array)
+
+                    # Check for NaN or Inf values
+                    valid_indices = np.isfinite(prop_array)
+                    if not np.all(valid_indices):
+                        print(f"Warning: Found {np.sum(~valid_indices)} non-finite values in {prop_name}. Filtering them out.")
+                        temp_array = temp_array[valid_indices]
+                        prop_array = prop_array[valid_indices]
+
+                        # Skip if not enough valid points
+                        if len(temp_array) < 2:
+                            print(f"Warning: Not enough valid points to fit {prop_name}. Skipping post-processing.")
+                            continue
+
+                    # Special handling for latent heat properties
+                    if prop_name in ['latent_heat_of_fusion', 'latent_heat_of_vaporization']:
+                        # Use only 1 segment for latent heat properties
+                        segments = 1
+
+                    v_pwlf = pwlf.PiecewiseLinFit(temp_array, prop_array, degree=degree, seed=13579)
+                    v_pwlf.fit(n_segments=segments)
+                    pw = sp.Piecewise(*get_symbolic_conditions(v_pwlf, T, lower_bound_type, upper_bound_type))
+
+                    # Update the property
+                    setattr(alloy, prop_name, pw)
+                    print(f"Post-processed {prop_name} with simplify type 'after'")
+
+                except Exception as e:
+                    print(f"Warning: Failed to post-process {prop_name}: {e}")
+                    # Continue with other properties instead of failing completely
+                    continue
+
+            except Exception as e:
+                print(f"Warning: Error processing {prop_name} in post-processing: {e}")
+                # Continue with other properties
+                continue
+
+    def _visualize_property(self, alloy, prop_name, T, prop_type,
+                            x_data=None, y_data=None,
+                            has_regression=False, simplify_type=None,
+                            degree=1, segments=3,
+                            lower_bound=None, upper_bound=None,
+                            lower_bound_type='constant', upper_bound_type='constant'):
+        """
+        Unified visualization function for all property types and temperature formats.
+        """
+        # Skip if visualization is not enabled
+        if not hasattr(self, 'fig'):
+            return
+
+        # Create subplot
+        ax = self.fig.add_subplot(self.gs[self.current_subplot])
+        self.current_subplot += 1
+        print(self.current_subplot, prop_name)
+
+        # Get the current property from the alloy
+        current_prop = getattr(alloy, prop_name)
+
+        # Determine if T is symbolic or numeric
+        is_symbolic = isinstance(T, sp.Symbol)
+
+        # Set bounds if not provided
+        if lower_bound is None or upper_bound is None:
+            lower_bound = np.min(self.temperature_array)
+            upper_bound = np.max(self.temperature_array)
+
+        # Create an extended temperature range
+        padding = (upper_bound - lower_bound) * 0.2  # 20% padding
+        if x_data is not None:
+            num_points = np.size(x_data) * (100 if prop_type == 'Key-Value' or prop_type == 'Computed' else 2)
+        else:
+            num_points = np.size(self.temperature_array) * 100
+
+        extended_temp = np.linspace(lower_bound - padding, upper_bound + padding, num_points)
+
+        # Handle different property types
+        if prop_type == 'Constant':
+            # For constant properties
+            value = float(current_prop)
+            ax.axhline(y=value, color='blue', linestyle='-', linewidth=1.5, label='constant')
+
+            # If T is a numeric value, highlight that specific point
+            if not is_symbolic:
+                ax.plot(T, value, 'ro', markersize=6, label=f'T={T}K')
+
+            # Add text annotation for the constant value
+            ax.text(0.5, 0.9, f"Value: {value}", transform=ax.transAxes,
+                    horizontalalignment='center', bbox=dict(facecolor='white', alpha=0.5))
+
+            # Set y-axis limits to show the constant value clearly
+            ax.set_ylim(value * 0.9, value * 1.1)
+
+            # Set y-value for bound annotations
+            y_value = value
+
+        else:
+            # For non-constant properties
+
+            # Plot raw data points if available
+            if x_data is not None and y_data is not None:
+                marker_size = 2 if prop_type == 'Key-Value' else 1
+                ax.plot(x_data, y_data, linewidth=1, marker='o', markersize=marker_size, label='measurement')
+
+            # For numeric temperature, show the interpolated value
+            if not is_symbolic:
+                property_value = float(current_prop)
+                ax.plot(T, property_value, 'ro', markersize=8, label=f'Value at T={T}K')
+
+                # Add a text annotation with the exact value
+                ax.text(0.05, 0.95, f"{prop_name} at T={T}K: {property_value:.6g}",
+                        transform=ax.transAxes, fontsize=12,
+                        bbox=dict(facecolor='white', alpha=0.8))
+
+                # Set y-value for bound annotations
+                y_value = property_value
+
+                # For numeric temperature, still show the full curve if data is available
+                if x_data is not None and y_data is not None:
+                    # For 'before' simplification, show a simplified model
+                    if has_regression and simplify_type == 'before':
+                        # Create a model to show the context
+                        v_pwlf = pwlf.PiecewiseLinFit(x_data, y_data, degree=degree, seed=13579)
+                        v_pwlf.fit(n_segments=segments)
+                        context_pw = sp.Piecewise(*get_symbolic_conditions(v_pwlf, sp.Symbol('T_context'),
+                                                                           lower_bound_type, upper_bound_type))
+                        f_context = sp.lambdify(sp.Symbol('T_context'), context_pw, 'numpy')
+                        ax.plot(extended_temp, f_context(extended_temp), linestyle='-', linewidth=1,
+                                color='blue', alpha=0.5, label='property curve')
+                    else:
+                        # For 'after' or no regression, show raw curve
+                        # Use piecewise interpolation for context
+                        if len(x_data) > 1:
+                            context_pw = self._create_raw_piecewise(x_data, y_data, sp.Symbol('T_context'),
+                                                                    lower_bound_type, upper_bound_type)
+                            f_context = sp.lambdify(sp.Symbol('T_context'), context_pw, 'numpy')
+                            ax.plot(extended_temp, f_context(extended_temp), linestyle='-', linewidth=1,
+                                    color='blue', alpha=0.5, label='property curve')
+
+            # For symbolic temperature, show the full temperature-dependent behavior
+            else:
+                # Convert property to numerical function
+                f_current = sp.lambdify(T, current_prop, 'numpy')
+
+                if prop_type == 'Computed':
+                    # For computed properties, show the symbolic model
+                    ax.plot(extended_temp, f_current(extended_temp), linestyle='-', linewidth=1, label='symb')
+
+                    # Create and plot PWLF approximation
+                    v_pwlf = pwlf.PiecewiseLinFit(extended_temp, f_current(extended_temp), degree=degree, seed=13579)
+                    v_pwlf.fit(n_segments=segments)
+                    pw = sp.Piecewise(*get_symbolic_conditions(v_pwlf, T, lower_bound_type, upper_bound_type))
+                    g = sp.lambdify(T, pw, 'numpy')
+                    ax.plot(extended_temp, g(extended_temp), linestyle=':', linewidth=1, label='approx')
+
+                    # Plot PWLF model with boundary handling
+                    pwlf_extended = np.zeros_like(extended_temp)
+                    for i, temp in enumerate(extended_temp):
+                        if temp < lower_bound and lower_bound_type == 'constant':
+                            pwlf_extended[i] = v_pwlf.predict(np.array([lower_bound]))[0]
+                        elif temp > upper_bound and upper_bound_type == 'constant':
+                            pwlf_extended[i] = v_pwlf.predict(np.array([upper_bound]))[0]
+                        else:
+                            pwlf_extended[i] = v_pwlf.predict(np.array([temp]))[0]
+
+                    ax.plot(extended_temp, pwlf_extended, linestyle='--', linewidth=2, label='pwlf')
+
+                    # Get y-value for annotations
+                    y_value = current_prop.subs(T, 3000).evalf()
+
+                elif has_regression and simplify_type == 'before':
+                    # For 'before', we're already using the simplified model
+                    ax.plot(extended_temp, f_current(extended_temp), linestyle='-', linewidth=1, label='simplified')
+                    y_value = np.max(y_data) if y_data is not None else f_current(upper_bound)
+
+                else:
+                    # For 'after' or no regression, show the raw model
+                    ax.plot(extended_temp, f_current(extended_temp), linestyle='-', linewidth=1, label='raw')
+                    y_value = np.max(y_data) if y_data is not None else f_current(upper_bound)
+
+                    # If regression is specified with 'after', also show what the simplified model would look like
+                    if has_regression and simplify_type == 'after' and x_data is not None and y_data is not None:
+                        # Create a preview of the simplified model
+                        v_pwlf = pwlf.PiecewiseLinFit(x_data, y_data, degree=degree, seed=13579)
+                        v_pwlf.fit(n_segments=segments)
+                        preview_pw = sp.Piecewise(*get_symbolic_conditions(v_pwlf, T, lower_bound_type, upper_bound_type))
+                        f_preview = sp.lambdify(T, preview_pw, 'numpy')
+                        ax.plot(extended_temp, f_preview(extended_temp), linestyle=':', linewidth=1, label='will simplify to')
+
+        # Always add vertical lines and annotations for bounds (for all property types and temperature formats)
+        ax.axvline(x=lower_bound, color='brown', linestyle='--', alpha=0.5, label='_nolegend_')
+        ax.axvline(x=upper_bound, color='brown', linestyle='--', alpha=0.5, label='_nolegend_')
+
+        # Always add bound type annotations
+        ax.text(lower_bound, y_value, f' {lower_bound_type}',
+                verticalalignment='top', horizontalalignment='right',
+                bbox=dict(facecolor='white', alpha=0.5))
+        ax.text(upper_bound, y_value, f' {upper_bound_type}',
+                verticalalignment='top', horizontalalignment='left',
+                bbox=dict(facecolor='white', alpha=0.5))
+
+        # Add regression info if present (for both symbolic and numeric T)
+        if has_regression:
+            # Make sure simplify_type is not None for computed properties
+            if prop_type == 'Computed' and simplify_type is None:
+                simplify_type = 'after'  # Default for computed properties
+
+            ax.text(0.5, 0.95, f"Simplify: {simplify_type} | Degree: {degree} | Segments: {segments}",
+                    transform=ax.transAxes, horizontalalignment='center',
+                    bbox=dict(facecolor='white', alpha=0.5))
+
+        # Set labels and title
+        title_suffix = f" at T={T}K" if not is_symbolic else ""
+        ax.set_title(f"{prop_name} ({prop_type} Property){title_suffix}")
+        ax.set_xlabel("Temperature (K)")
+        ax.set_ylabel(f"{prop_name}")
+        ax.legend(loc='best')
+        ax.grid(True, linestyle='--', alpha=0.5)
 
 ##################################################
 # External Function

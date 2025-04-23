@@ -103,8 +103,8 @@ def create_SS304L(T: Union[float, sp.Symbol]) -> Alloy:
     SS316L.latent_heat_of_fusion = interpolate_property(T, latent_heat_of_fusion_temp_array, latent_heat_of_fusion_array)
     SS316L.specific_enthalpy = interpolate_property(T, density_temp_array, sp_enthalpy_array)
     SS316L.energy_density = energy_density_total_enthalpy(SS316L.density, SS316L.specific_enthalpy)
-    SS316L.energy_density_solidus = SS316L.energy_density.evalf(T, SS316L.temperature_solidus)
-    SS316L.energy_density_liquidus = SS316L.energy_density.evalf(T, SS316L.temperature_liquidus)
+    SS316L.energy_density_solidus = SS316L.energy_density.evalf(T, SS316L.solidus_temperature)
+    SS316L.energy_density_liquidus = SS316L.energy_density.evalf(T, SS316L.liquidus_temperature)
 
     print("SS304L.heat_conductivity:", SS316L.heat_conductivity, "type:", type(SS316L.heat_conductivity))
     print("SS304L.density:", SS316L.density, "type:", type(SS316L.density))
@@ -114,11 +114,11 @@ def create_SS304L(T: Union[float, sp.Symbol]) -> Alloy:
     print(f"SS304L.energy_density_solidus: {SS316L.energy_density_solidus}")
     print(f"SS304L.energy_density_liquidus: {SS316L.energy_density_liquidus}")
 
-    """print("SS304L.heat_conductivity@T_sol/T_liq:", SS304L.heat_conductivity.evalf(T, SS304L.temperature_solidus), SS304L.heat_conductivity.evalf(T, SS304L.temperature_liquidus))
-    print("SS304L.density@T_sol/T_liq:", SS304L.density.evalf(T, SS304L.temperature_solidus), SS304L.density.evalf(T, SS304L.temperature_liquidus))
-    print("SS304L.heat_capacity@T_sol/T_liq:", SS304L.heat_capacity.evalf(T, SS304L.temperature_solidus), SS304L.heat_capacity.evalf(T, SS304L.temperature_liquidus))
-    print("SS304L.latent_heat_of_fusion@T_sol/T_liq:", SS304L.latent_heat_of_fusion.evalf(T, SS304L.temperature_solidus), SS304L.latent_heat_of_fusion.evalf(T, SS304L.temperature_liquidus))
-    print("SS304L.energy_density@T_sol/T_liq:", SS304L.energy_density.evalf(T, SS304L.temperature_solidus), SS304L.energy_density.evalf(T, SS304L.temperature_liquidus))"""
+    """print("SS304L.heat_conductivity@T_sol/T_liq:", SS304L.heat_conductivity.evalf(T, SS304L.solidus_temperature), SS304L.heat_conductivity.evalf(T, SS304L.liquidus_temperature))
+    print("SS304L.density@T_sol/T_liq:", SS304L.density.evalf(T, SS304L.solidus_temperature), SS304L.density.evalf(T, SS304L.liquidus_temperature))
+    print("SS304L.heat_capacity@T_sol/T_liq:", SS304L.heat_capacity.evalf(T, SS304L.solidus_temperature), SS304L.heat_capacity.evalf(T, SS304L.liquidus_temperature))
+    print("SS304L.latent_heat_of_fusion@T_sol/T_liq:", SS304L.latent_heat_of_fusion.evalf(T, SS304L.solidus_temperature), SS304L.latent_heat_of_fusion.evalf(T, SS304L.liquidus_temperature))
+    print("SS304L.energy_density@T_sol/T_liq:", SS304L.energy_density.evalf(T, SS304L.solidus_temperature), SS304L.energy_density.evalf(T, SS304L.liquidus_temperature))"""
 
     """c_p = []
     density_temp_array = np.array(density_temp_array)
@@ -153,7 +153,7 @@ def create_SS304L(T: Union[float, sp.Symbol]) -> Alloy:
     args = (SS316L.temperature_array,
             # SS304L.energy_density_solidus,  # 9744933767.272629
             # SS304L.energy_density_liquidus,  # 11789781961.769783
-            # SS304L.energy_density.evalf(T, SS304L.temperature_liquidus),  # T_star: 1743.1412643772671, expected T_star: 1723.15
+            # SS304L.energy_density.evalf(T, SS304L.liquidus_temperature),  # T_star: 1743.1412643772671, expected T_star: 1723.15
             11789781961.76978,
             SS316L.energy_density_array)
     # energy density has the same value for both temperatures >> function is not monotonically increasing
@@ -162,7 +162,7 @@ def create_SS304L(T: Union[float, sp.Symbol]) -> Alloy:
 
     args1 = (T,
             SS316L.temperature_array,
-            SS316L.heat_capacity.evalf(T, SS316L.temperature_liquidus),
+            SS316L.heat_capacity.evalf(T, SS316L.liquidus_temperature),
             SS316L.heat_capacity)
 
     start_time1 = time.time()
@@ -182,7 +182,7 @@ def create_SS304L(T: Union[float, sp.Symbol]) -> Alloy:
     print(f"T_star_2: {T_star_2}")
     print(f"Execution time: {time_2:.6f} seconds\n")
 
-    E = SS316L.energy_density.evalf(T, SS316L.temperature_liquidus)
+    E = SS316L.energy_density.evalf(T, SS316L.liquidus_temperature)
     result = prepare_interpolation_arrays(
         SS316L.temperature_array,
         SS316L.energy_density_array
@@ -297,8 +297,8 @@ def create_SS304L(T: Union[float, sp.Symbol]) -> Alloy:
     a, b, c, d = sp.symbols('a b c d')
 
     # Create a system of equations based on the known values at solidus, liquidus, and boundary conditions
-    eq1 = sp.Eq(a*SS316L.temperature_solidus**3 + b*SS316L.temperature_solidus**2 + c*SS316L.temperature_solidus + d, alpha_solidus)  # At solidus
-    eq2 = sp.Eq(a*SS316L.temperature_liquidus**3 + b*SS316L.temperature_liquidus**2 + c*SS316L.temperature_liquidus + d, alpha_liquidus)  # At liquidus
+    eq1 = sp.Eq(a * SS316L.solidus_temperature ** 3 + b * SS316L.solidus_temperature ** 2 + c * SS316L.solidus_temperature + d, alpha_solidus)  # At solidus
+    eq2 = sp.Eq(a * SS316L.liquidus_temperature ** 3 + b * SS316L.liquidus_temperature ** 2 + c * SS316L.liquidus_temperature + d, alpha_liquidus)  # At liquidus
     eq3 = sp.Eq(a*973.15**3 + b*973.15**2 + c*973.15 + d, alpha_below)  # Below solidus (starting point)
     eq4 = sp.Eq(a*1550**3 + b*1550**2 + c*1550 + d, alpha_above)  # Above liquidus (ending point)
     # Solve the system for a, b, c, d

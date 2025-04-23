@@ -1,11 +1,13 @@
 import numpy as np
-from typing import List, Tuple
+import sympy as sp
+from typing import List, Tuple, Dict
 from dataclasses import dataclass, field
 from pymatlib.core.elements import (ChemicalElement,
                                     interpolate_atomic_mass,
                                     interpolate_atomic_number,
-                                    interpolate_temperature_boil)
-from pymatlib.core.typedefs import ArrayTypes, PropertyTypes
+                                    interpolate_boiling_temperature,
+                                    interpolate_melting_temperature)
+from pymatlib.core.typedefs import ArrayTypes #, PropertyTypes
 
 
 class AlloyCompositionError(ValueError):
@@ -16,39 +18,6 @@ class AlloyTemperatureError(ValueError):
     """Exception raised when alloy temperature validation fails."""
     pass
 
-'''class PropertyTypeChecker:
-    """
-    A descriptor class for handling property type checking.
-    
-    Args:
-        name (str): Name of the property to check.
-    
-    Raises:
-        TypeError: If the value being set is not None and not of type PropertyTypes.
-    """
-    def __init__(self, name: str):
-        self.private_name = f'_{name}'
-
-    def __get__(self, obj, objtype=None):
-        """Get the property value."""
-        if obj is None:
-            return self
-        return getattr(obj, self.private_name)
-
-    def __set__(self, obj, value):
-        """
-        Set the property value with type checking.
-        
-        Args:
-            obj: The object instance.
-            value: The value to set.
-            
-        Raises:
-            TypeError: If value is not None and not of type PropertyTypes.
-        """
-        if value is not None and not isinstance(value, get_args(PropertyTypes)):
-            raise TypeError(f"{self.private_name[1:]} must be of type PropertyTypes (float or MaterialProperty)")
-        setattr(obj, self.private_name, value)'''
 
 @dataclass
 class Alloy:
@@ -58,23 +27,24 @@ class Alloy:
     Attributes:
         elements (List[ChemicalElement]): List of `ChemicalElement` objects that make up the alloy.
         composition (ArrayTypes): List of fractions of each element in the alloy. Fractions should sum to 1.0.
-        temperature_solidus (float): Solidus temperature of the alloy in Kelvin.
-        temperature_liquidus (float): Liquidus temperature of the alloy in Kelvin.
+        solidus_temperature (float): Solidus temperature of the alloy in Kelvin.
+        liquidus_temperature (float): Liquidus temperature of the alloy in Kelvin.
         atomic_number (float): Average atomic number of the alloy, calculated post-init.
         atomic_mass (float): Average atomic mass of the alloy, calculated post-init.
-        temperature_boil (float): Boiling temperature of the alloy, calculated post-init.
+        boiling_temperature (float): Boiling temperature of the alloy, calculated post-init.
+        melting_temperature (float): Melting temperature of the alloy, calculated post-init.
 
         Optional properties:
-            density (PropertyTypes): Density of the alloy.
-            dynamic_viscosity (PropertyTypes): Dynamic viscosity of the alloy.
-            heat_capacity (PropertyTypes): Heat capacity of the alloy.
-            heat_conductivity (PropertyTypes): Heat conductivity of the alloy.
-            kinematic_viscosity (PropertyTypes): Kinematic viscosity of the alloy.
-            latent_heat_of_fusion (PropertyTypes): Latent heat of fusion of the alloy.
-            latent_heat_of_vaporization (PropertyTypes): Latent heat of vaporization of the alloy.
-            surface_tension (PropertyTypes): Surface tension of the alloy.
-            thermal_diffusivity (PropertyTypes): Thermal diffusivity of the alloy.
-            thermal_expansion_coefficient (PropertyTypes): Thermal expansion coefficient of the alloy.
+            density (sp.Expr): Density of the alloy.
+            dynamic_viscosity (sp.Expr): Dynamic viscosity of the alloy.
+            heat_capacity (sp.Expr): Heat capacity of the alloy.
+            heat_conductivity (sp.Expr): Heat conductivity of the alloy.
+            kinematic_viscosity (sp.Expr): Kinematic viscosity of the alloy.
+            latent_heat_of_fusion (sp.Expr): Latent heat of fusion of the alloy.
+            latent_heat_of_vaporization (sp.Expr): Latent heat of vaporization of the alloy.
+            surface_tension (sp.Expr): Surface tension of the alloy.
+            thermal_diffusivity (sp.Expr): Thermal diffusivity of the alloy.
+            thermal_expansion_coefficient (sp.Expr): Thermal expansion coefficient of the alloy.
 
     Raises:
         AlloyCompositionError: If the composition fractions don't sum to 1.0.
@@ -84,68 +54,41 @@ class Alloy:
     """
     elements: List[ChemicalElement]
     composition: ArrayTypes  # List of fractions summing to 1.0
-    temperature_solidus: float
-    temperature_liquidus: float
+    solidus_temperature: sp.Float
+    liquidus_temperature: sp.Float
 
     # Properties to be calculated post-init based on composition
     atomic_number: float = field(init=False)
     atomic_mass: float = field(init=False)
-    temperature_boil: float = field(init=False)
+    boiling_temperature: float = field(init=False)
+    melting_temperature: float = field(init=False)
 
     # Optional properties with default values
-    # base_temperature: float = None
-    # base_density: float = None
-    density: PropertyTypes = None
-    dynamic_viscosity: PropertyTypes = None
-    energy_density: PropertyTypes = None
+    density: sp.Expr = None
+    dynamic_viscosity: sp.Expr = None
+    energy_density: sp.Expr = None
     energy_density_solidus: float = None
     energy_density_liquidus: float = None
-    # energy_density_temperature_array: np.ndarray = field(default_factory=lambda: np.array([]))
-    # energy_density_array: np.ndarray = field(default_factory=lambda: np.array([]))
-    heat_capacity: PropertyTypes = None
-    heat_conductivity: PropertyTypes = None
-    kinematic_viscosity: PropertyTypes = None
-    latent_heat_of_fusion: PropertyTypes = None
-    latent_heat_of_vaporization: PropertyTypes = None
-    specific_enthalpy: PropertyTypes = None
-    surface_tension: PropertyTypes = None
-    # temperature: PropertyTypes = None
+    heat_capacity: sp.Expr = None
+    heat_conductivity: sp.Expr = None
+    kinematic_viscosity: sp.Expr = None
+    latent_heat_of_fusion: sp.Expr = None
+    latent_heat_of_vaporization: sp.Expr = None
+    specific_enthalpy: sp.Expr = None
+    surface_tension: sp.Expr = None
+    # temperature: sp.Expr = None
     # temperature_array: np.ndarray = field(default_factory=lambda: np.array([]))
-    thermal_diffusivity: PropertyTypes = None
-    thermal_expansion_coefficient: PropertyTypes = None
+    thermal_diffusivity: sp.Expr = None
+    thermal_expansion_coefficient: sp.Expr = None
 
-    '''# Private fields for properties
-    _density: PropertyTypes = field(default=None, init=False, repr=False)
-    _dynamic_viscosity: PropertyTypes = field(default=None, init=False, repr=False)
-    _heat_capacity: PropertyTypes = field(default=None, init=False, repr=False)
-    _heat_conductivity: PropertyTypes = field(default=None, init=False, repr=False)
-    _kinematic_viscosity: PropertyTypes = field(default=None, init=False, repr=False)
-    _latent_heat_of_fusion: PropertyTypes = field(default=None, init=False, repr=False)
-    _latent_heat_of_vaporization: PropertyTypes = field(default=None, init=False, repr=False)
-    _surface_tension: PropertyTypes = field(default=None, init=False, repr=False)
-    _thermal_diffusivity: PropertyTypes = field(default=None, init=False, repr=False)
-    _thermal_expansion_coefficient: PropertyTypes = field(default=None, init=False, repr=False)
-    
-    # Property descriptors
-    density = PropertyTypeChecker("density")
-    dynamic_viscosity = PropertyTypeChecker("dynamic_viscosity")
-    heat_capacity = PropertyTypeChecker("heat_capacity")
-    heat_conductivity = PropertyTypeChecker("heat_conductivity")
-    kinematic_viscosity = PropertyTypeChecker("kinematic_viscosity")
-    latent_heat_of_fusion = PropertyTypeChecker("latent_heat_of_fusion")
-    latent_heat_of_vaporization = PropertyTypeChecker("latent_heat_of_vaporization")
-    surface_tension = PropertyTypeChecker("surface_tension")
-    thermal_diffusivity = PropertyTypeChecker("thermal_diffusivity")
-    thermal_expansion_coefficient = PropertyTypeChecker("thermal_expansion_coefficient")'''
-
-    def solidification_interval(self) -> Tuple[float, float]:
+    def solidification_interval(self) -> Tuple[sp.Float, sp.Float]:
         """
         Calculate the solidification interval based on solidus and liquidus temperature of the alloy.
 
         Returns:
             Tuple[float, float]: A tuple containing the solidus and liquidus temperatures.
         """
-        return self.temperature_solidus, self.temperature_liquidus
+        return self.solidus_temperature, self.liquidus_temperature
 
     def _validate_composition(self) -> None:
         """
@@ -171,24 +114,25 @@ class Alloy:
                 - If solidus temperature is greater than liquidus temperature.
                 - If temperatures are outside the general range for alloys (450 K to 2000 K).
         """
-        if not isinstance(self.temperature_solidus, float):
-            raise AlloyTemperatureError(f"Solidus temperature must be a float, "
-                                        f"got {type(self.temperature_solidus).__name__}.")
-        if not isinstance(self.temperature_liquidus, float):
-            raise AlloyTemperatureError(f"Liquidus temperature must be a float, "
-                                        f"got {type(self.temperature_liquidus).__name__}.")
-        if self.temperature_solidus > self.temperature_liquidus:
+        if not isinstance(self.solidus_temperature, sp.Float):
+            raise AlloyTemperatureError(f"Solidus temperature must be a Float, "
+                                        f"got {type(self.solidus_temperature).__name__}.")
+        if not isinstance(self.liquidus_temperature, sp.Float):
+            raise AlloyTemperatureError(f"Liquidus temperature must be a Float, "
+                                        f"got {type(self.liquidus_temperature).__name__}.")
+        if self.solidus_temperature > self.liquidus_temperature:
             raise AlloyTemperatureError("The solidus temperature must be less than or equal to the liquidus temperature.")
-        if not (450 <= self.temperature_solidus <= 1900):
-            raise AlloyTemperatureError(f"Solidus temperature {self.temperature_solidus} K is out of range (450 K - 1900 K).")
-        if not (600 <= self.temperature_liquidus <= 2000):
-            raise AlloyTemperatureError(f"Liquidus temperature {self.temperature_liquidus} K is out of range (600 K - 2000 K).")
+        if not (450 <= self.solidus_temperature <= 1900):
+            raise AlloyTemperatureError(f"Solidus temperature {self.solidus_temperature} K is out of range (450 K - 1900 K).")
+        if not (600 <= self.liquidus_temperature <= 2000):
+            raise AlloyTemperatureError(f"Liquidus temperature {self.liquidus_temperature} K is out of range (600 K - 2000 K).")
 
     def _calculate_properties(self) -> None:
         """Calculate derived properties based on composition."""
         self.atomic_number = interpolate_atomic_number(self.elements, self.composition)
         self.atomic_mass = interpolate_atomic_mass(self.elements, self.composition)
-        self.temperature_boil = interpolate_temperature_boil(self.elements, self.composition)
+        self.boiling_temperature = interpolate_boiling_temperature(self.elements, self.composition)
+        self.melting_temperature = interpolate_melting_temperature(self.elements, self.composition)
 
     def __post_init__(self) -> None:
         """
