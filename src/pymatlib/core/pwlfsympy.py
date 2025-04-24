@@ -13,6 +13,7 @@ seed = 13579
 
 #https://github.com/cjekel/piecewise_linear_fit_py/blob/master/examples/understanding_higher_degrees/polynomials_in_pwlf.ipynb
 def get_symbolic_eqn(pwlf_: pwlf.PiecewiseLinFit, segment_number: int, x: Union[float, sp.Symbol]):
+    # print(f"get_symbolic_eqn")
     if pwlf_.degree < 1:
         raise ValueError('Degree must be at least 1')
     if segment_number < 1 or segment_number > pwlf_.n_segments:
@@ -33,7 +34,7 @@ def get_symbolic_eqn(pwlf_: pwlf.PiecewiseLinFit, segment_number: int, x: Union[
                 my_eqn += (pwlf_.beta[beta_index])*(x-pwlf_.fit_breaks[line])**k
     # Only call simplify if x is symbolic
     if is_symbolic:
-        print(f'my_eqn.simplify(): {my_eqn.simplify()}')
+        # print(f'my_eqn.simplify(): {my_eqn.simplify()}')
         return my_eqn.simplify()
     else:
         # For numeric x, just return the equation
@@ -41,11 +42,13 @@ def get_symbolic_eqn(pwlf_: pwlf.PiecewiseLinFit, segment_number: int, x: Union[
 
 # https://github.com/cjekel/piecewise_linear_fit_py/blob/master/examples/understanding_higher_degrees/polynomials_in_pwlf.ipynb
 def get_symbolic_conditions(pwlf_: pwlf.PiecewiseLinFit, x: sp.Symbol, lower_: str, upper_: str):
+    print(f"get_symbolic_conditions")
     conditions = []
 
     # Special case for 1 segment
     if pwlf_.n_segments == 1:
         eqn = get_symbolic_eqn(pwlf_, 1, x)
+        # print(f"eqn: {eqn}")
 
         # Handle lower boundary
         if lower_ == "extrapolate":
@@ -73,6 +76,7 @@ def get_symbolic_conditions(pwlf_: pwlf.PiecewiseLinFit, x: sp.Symbol, lower_: s
 
     for i in range(pwlf_.n_segments):
         eqn = get_symbolic_eqn(pwlf_, i + 1, x)
+        # print(f"eqn: {eqn}")
         # print('Equation number: ', i + 1)
         # print(eqn_list[-1])
         # f_list.append(sp.lambdify(T, eqn_list[-1]))

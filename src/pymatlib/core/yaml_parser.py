@@ -48,8 +48,6 @@ class MaterialConfigParser:
         'density',
         'dynamic_viscosity',
         'energy_density',
-        # 'energy_density_solidus',
-        # 'energy_density_liquidus',
         'heat_capacity',
         'heat_conductivity',
         'kinematic_viscosity',
@@ -75,13 +73,14 @@ class MaterialConfigParser:
             constructor.DuplicateKeyError: If duplicate keys are found
             scanner.ScannerError: If YAML syntax is invalid
         """
+        print("__init__")
         self.yaml_path = Path(yaml_path)
         self.base_dir = Path(yaml_path).parent
         self.config: Dict[str, Any] = self._load_yaml()
         self._validate_config()
         self.temperature_array = self._process_temperature_range(self.config['temperature_range'])
         # print(self.temperature_array)
-        # Initialize with empty dict for each property type
+        # Initialize with an empty dict for each property type
         self.categorized_properties = {prop_type: [] for prop_type in PropertyType}  #TODO: Do we need this?
 
     def _load_yaml(self) -> Dict[str, Any]:
@@ -93,6 +92,7 @@ class MaterialConfigParser:
             constructor.DuplicateKeyError: If duplicate keys are found
             scanner.ScannerError: If YAML syntax is invalid
         """
+        print("_load_yaml")
         yaml = YAML(typ='safe')
         yaml.allow_duplicate_keys = False
         try:
@@ -119,6 +119,7 @@ class MaterialConfigParser:
         Raises:
             ValueError: If any part of the configuration is invalid.
         """
+        print("_validate_config")
         if not isinstance(self.config, dict):
             # raise ValueError("Root YAML element must be a mapping")
             raise ValueError("The YAML file must start with a dictionary/object structure with key-value pairs, not a list or scalar value")
@@ -134,6 +135,7 @@ class MaterialConfigParser:
         Raises:
             ValueError: If any required field is missing.
         """
+        print("_validate_required_fields")
         required_fields = {'name', 'composition', 'solidus_temperature', 'liquidus_temperature', 'temperature_range', 'properties'}
         missing_fields = required_fields - set(self.config.keys())
         if missing_fields:
@@ -159,6 +161,7 @@ class MaterialConfigParser:
         Raises:
             ValueError: If any property name is not in VALID_PROPERTIES.
         """
+        print("_validate_property_names")
         invalid_props = set(properties.keys()) - self.VALID_YAML_PROPERTIES
         if invalid_props:
             suggestions = {
@@ -192,6 +195,7 @@ class MaterialConfigParser:
             >>> self._process_temperature_range([3000, 300, -1350.])
             array([3000., 1650., 300.])
         """
+        print("_process_temperature_range")
         if not (isinstance(array_def, list) and len(array_def) == 3):
             raise ValueError("Temperature array must be defined as [start, end, points/delta]")
         try:
@@ -200,15 +204,14 @@ class MaterialConfigParser:
                 raise ValueError(f"Temperature must be above absolute zero ({self.ABSOLUTE_ZERO}K)")
             if abs(float(step)) < self.EPSILON:
                 raise ValueError("Delta or number of points cannot be zero.")
-            # Check if step represents delta (float) or points (int)
+            # Check if the step represents delta (float) or points (int)
             if isinstance(step, float):
                 temperature_array = self._process_float_step(start, end, step)
             else:
                 temperature_array = self._process_int_step(start, end, int(step))
-            # print(temperature_array)
-            # Ensure temperature array is in ascending order
+            # Ensure the temperature array is in ascending order
             if not np.all(np.diff(temperature_array) >= 0):
-                print("Flipping temperature array")
+                # print("_process_temperature_range -> Flipping temperature array")
                 temperature_array = np.flip(temperature_array)
             return temperature_array
         except ValueError as e:
@@ -216,8 +219,9 @@ class MaterialConfigParser:
 
     @staticmethod
     def _process_float_step(start: float, end: float, delta: float) -> np.ndarray:
-        """Process temperature array with float step (delta)."""
-        print(f"Processing TA as float: start={start}, end={end}, delta={delta}")
+        """Process the temperature array with a float step (delta)."""
+        print("_process_float_step")
+        # print(f"Processing TA as float: start={start}, end={end}, delta={delta}")
         if start < end and delta <= 0:
             raise ValueError("Delta must be positive for increasing range")
         if start > end and delta >= 0:
@@ -228,8 +232,9 @@ class MaterialConfigParser:
         return np.arange(start, end + delta/2, delta)
 
     def _process_int_step(self, start: float, end: float, points: int) -> np.ndarray:
-        """Process temperature array with integer step (number of points)."""
-        print(f"Processing TA as int: start={start}, end={end}, points={points}")
+        """Process the temperature array with an integer step (number of points)."""
+        print("_process_int_step")
+        # print(f"Processing TA as int: start={start}, end={end}, points={points}")
         if points <= 0:
             raise ValueError(f"Number of points must be positive, got {points}!")
         if points < self.MIN_POINTS:
@@ -245,11 +250,11 @@ class MaterialConfigParser:
         Raises:
             ValueError: If temperature values fall outside the global temperature range
         """
+        print("_validate_temperature_range")
         # Extract global temperature range from config
         # temp_range = self.config.get('temperature_range', [])
         temp_range = self.temperature_array
         min_temp, max_temp = np.min(temp_range), np.max(temp_range)
-        # print(min_temp, max_temp)
         # Check for temperatures outside the global range
         if ((temp_array < min_temp) | (temp_array > max_temp)).any():
             out_of_range = np.where((temp_array < min_temp) | (temp_array > max_temp))[0]
@@ -282,10 +287,11 @@ class MaterialConfigParser:
             ValueError: If there's an error in creating the alloy.
         """
         try:
+            print("create_alloy")
             alloy = Alloy(
                 elements=self._get_elements(),
                 # composition=list(self.config['composition'].values()),
-                composition=[sp.Float(val) for val in self.config['composition'].values()],
+                composition=[val for val in self.config['composition'].values()],
                 solidus_temperature=sp.Float(self.config['solidus_temperature']),
                 liquidus_temperature=sp.Float(self.config['liquidus_temperature'])
             )
@@ -305,6 +311,7 @@ class MaterialConfigParser:
             ValueError: If an invalid element symbol is encountered.
         """
         from pymatlib.data.element_data import element_map
+        print("_get_elements")
         try:
             return [element_map[sym] for sym in self.config['composition'].keys()]
         except KeyError as e:
@@ -322,6 +329,7 @@ class MaterialConfigParser:
         Returns:
             bool: True if the value represents a float, False otherwise.
         """
+        print(f"_is_numeric: {value}")
         if isinstance(value, float):
             return True
         if isinstance(value, str):
@@ -346,6 +354,7 @@ class MaterialConfigParser:
         Raises:
             ValueError: If required keys are missing or unexpected keys are present.
         """
+        print(f"_validate_keys: {value}")
         value_keys = set(value.keys())
         # Check for missing required keys
         missing_keys = required_keys - value_keys
@@ -367,6 +376,7 @@ class MaterialConfigParser:
         Raises:
             ValueError: If the bounds configuration is invalid.
         """
+        print(f"_validate_bounds: {bounds}")
         if not isinstance(bounds, list):
             raise ValueError(f"{context}s must be a list")
         if len(bounds) != 2:
@@ -386,6 +396,7 @@ class MaterialConfigParser:
         Raises:
             ValueError: If the regression configuration is invalid.
         """
+        print(f"_validate_regression: {regression}")
         # Ensure regression is a dictionary
         if not isinstance(regression, dict):
             raise ValueError(f"Regression must be a dictionary, got {type(regression).__name__}")
@@ -394,8 +405,8 @@ class MaterialConfigParser:
         optional_keys = set()  # No optional keys for regression
         MaterialConfigParser._validate_keys(regression, required_keys, optional_keys, "regression")
         # Validate regression values
-        if not isinstance(regression['simplify'], str) or regression['simplify'] not in {'before', 'after', 'auto'}:
-            raise ValueError(f"Invalid regression simplify type '{regression['simplify']}'. Must be 'before', 'after', or 'auto'")
+        if not isinstance(regression['simplify'], str) or regression['simplify'] not in {'pre', 'post'}:
+            raise ValueError(f"Invalid regression simplify type '{regression['simplify']}'. Must be 'pre', or 'post'")
         if not isinstance(regression['degree'], int) or regression['degree'] < 1:
             raise ValueError("Regression degree must be a positive integer")
         if not isinstance(regression['segments'], int) or regression['segments'] < 1:
@@ -412,6 +423,7 @@ class MaterialConfigParser:
         Raises:
             ValueError: If the file configuration is invalid or contains extra keys.
         """
+        print(f"_is_data_file: {value}")
         # Simple format: property_name: "filename.txt"  #TODO: Deprecated!
         if isinstance(value, str):
             return value.endswith(('.txt', '.csv', '.xlsx'))
@@ -442,6 +454,7 @@ class MaterialConfigParser:
         Raises:
             ValueError: If the key-val property configuration is invalid.
         """
+        print(f"_is_key_val_property: {value}")
         required_keys = {'key', 'val', 'bounds'}
         # Check if it looks like it's trying to be a key-val property
         if isinstance(value, dict) and all(k in value for k in required_keys):
@@ -467,12 +480,12 @@ class MaterialConfigParser:
         Raises:
             ValueError: If the compute property configuration is invalid.
         """
+        print(f"_is_compute_property: {value}")
         # Simple format: property_name: compute equation
         if isinstance(value, str):
             # New format: direct mathematical expression as string
             # Check if it contains any mathematical operators or function calls
             math_operators = ['+', '-', '*', '/', '**']  #TODO: maybe extend with '(', ')', ' '?
-            print(f"_is_compute_property: {value}")
             return any(op in value for op in math_operators)
         # Advanced format: property_name: { equation: compute equation }
         elif isinstance(value, dict) and 'equation' in value:
@@ -503,6 +516,7 @@ class MaterialConfigParser:
         Returns:
             PropertyType: The determined property type.
         """
+        print(f"_determine_property_type: {prop_name}, {config}")
         try:
             if isinstance(config, int):
                 raise ValueError(f"Property '{prop_name}' must be defined as a float, got {config} of type {type(config).__name__}")
@@ -529,6 +543,7 @@ class MaterialConfigParser:
         Raises:
             ValueError: If an invalid property configuration is found.
         """
+        print(f"_categorize_properties: {properties}")
         categorized_properties: Dict[PropertyType, List[Tuple[str, Any]]] = {
             PropertyType.CONSTANT: [],
             PropertyType.FILE: [],
@@ -552,13 +567,15 @@ class MaterialConfigParser:
 
     def _initialize_plots(self):
         """Initialize the figure and subplots for property visualization"""
+        print(f"_initialize_plots: {self.config['name']}")
         if self.categorized_properties is None:
             print("Warning: categorized_properties is None. Skipping plot initialization.")
-            return
+            raise ValueError("No properties to plot.")
+            # return
 
         # Count properties of each type to determine subplot layout
-        property_count = sum(len(props) for props in self.categorized_properties.values()) + 1
-        print(f"property_count: {property_count}")
+        property_count = sum(len(props) for props in self.categorized_properties.values()) + 1  #TODO: Remove +1?
+        # print(f"property_count: {property_count}")
 
         # Create a figure with the appropriate size
         self.fig = plt.figure(figsize=(12, 4 * property_count))
@@ -596,24 +613,26 @@ class MaterialConfigParser:
         Raises:
             ValueError: If there's an error processing any property.
         """
+        print(f"_process_properties: {alloy}, {T}")
         properties = self.config['properties']
         try:
             self.categorized_properties = self._categorize_properties(properties)
-            print(self.categorized_properties)
-            print(type(self.categorized_properties))
+            # print(self.categorized_properties)
+            # print(type(self.categorized_properties))
 
             # Always initialize plots, regardless of temperature type
             self._initialize_plots()
 
             for prop_type, prop_list in self.categorized_properties.items():
                 for prop_name, config in prop_list:
-                    print(f"SymbolRegistry.get_all(): {SymbolRegistry.get_all()}")
+                    # print(f"SymbolRegistry.get_all(): {SymbolRegistry.get_all()}")
                     # Create a SymPy symbol for the property
-                    prop_symbol = SymbolRegistry.get(prop_name)
-                    print(f"prop_name: {prop_name}, type: {type(prop_name)}")
-                    print(f"prop_symbol: {prop_symbol}, type: {type(prop_symbol)}")
-                    print(f"SymbolRegistry.get_all(): {SymbolRegistry.get_all()}")
+                    # prop_symbol = SymbolRegistry.get(prop_name)
+                    # print(f"prop_name: {prop_name}, type: {type(prop_name)}")
+                    # print(f"prop_symbol: {prop_symbol}, type: {type(prop_symbol)}")
+                    # print(f"SymbolRegistry.get_all(): {SymbolRegistry.get_all()}")
 
+                    # quit()
                     if prop_type == PropertyType.CONSTANT and prop_name in ['latent_heat_of_fusion', 'latent_heat_of_vaporization']:
                         self._process_latent_heat_constant(alloy, prop_name, config, T)  # Ends up in _process_key_val_property
                     elif prop_type == PropertyType.CONSTANT:
@@ -626,7 +645,7 @@ class MaterialConfigParser:
                         print(f"_process_computed_property for {prop_name}")
                         self._process_computed_property(alloy, prop_name, T)
 
-            # Perform post-processing for 'after' simplification
+            # Perform post-processing for 'post' simplification
             self._post_process_properties(alloy, T)
 
             # Save all plots if they were created
@@ -634,7 +653,7 @@ class MaterialConfigParser:
                 self._save_property_plots()
 
             # print(f"prop_symbol: {SymbolRegistry.get('thermal_diffusivity')}, type: {type(SymbolRegistry.get('thermal_diffusivity'))}")
-            print(f"SymbolRegistry.get_all(): {SymbolRegistry.get_all()}")
+            # print(f"SymbolRegistry.get_all(): {SymbolRegistry.get_all()}")
             # SymbolRegistry.clear()
             # print(f"SymbolRegistry.clear(): {SymbolRegistry.get_all()}")
         except Exception as e:
@@ -652,10 +671,11 @@ class MaterialConfigParser:
             prop_config (Union[float, str]): The constant latent heat value.
             T (Union[float, sp.Symbol]): Temperature value or symbol.
         """
+        print(f"_process_latent_heat_constant: {prop_name}, {prop_config}")
         try:
             # Convert to float
             latent_heat_value = float(prop_config)
-            print(latent_heat_value)
+            # print(latent_heat_value)
             # Create an expanded key-val configuration
             if prop_name == 'latent_heat_of_fusion':
                 # For fusion, heat is absorbed between solidus and liquidus
@@ -663,6 +683,11 @@ class MaterialConfigParser:
                     'key': ['solidus_temperature', 'liquidus_temperature'],
                     'val': [0, latent_heat_value],
                     'bounds': ['constant', 'constant'],
+                    'regression': {
+                        'simplify': 'pre',
+                        'degree': 1,
+                        'segments': 1,
+                    },
                 }
             elif prop_name == 'latent_heat_of_vaporization':
                 # For vaporization, heat is absorbed at boiling point
@@ -671,6 +696,11 @@ class MaterialConfigParser:
                     'key': ['boiling_temperature-10', 'boiling_temperature+10'],
                     'val': [0, latent_heat_value],
                     'bounds': ['constant', 'constant'],
+                    'regression': {
+                        'simplify': 'pre',
+                        'degree': 1,
+                        'segments': 1,
+                    },
                 }
             else:
                 raise ValueError(f"Unsupported latent heat configuration: {prop_name}")
@@ -694,10 +724,11 @@ class MaterialConfigParser:
         Raises:
             ValueError: If the property value cannot be converted to float or violates constraints.
         """
+        print(f"_process_constant_property: {prop_name}, {prop_config}")
         try:
-            print(f"{prop_name}, {type(prop_name)} = {prop_config}, {type(prop_config)}")
+            # print(f"{prop_name}, {type(prop_name)} = {prop_config}, {type(prop_config)}")
             value = float(prop_config)
-            print(f"{prop_name}, {type(prop_name)} = {value}, {type(value)}")
+            # print(f"{prop_name}, {type(prop_name)} = {value}, {type(value)}")
             setattr(alloy, prop_name, sp.Float(value))  # save as sympy Float
 
             # Visualization for constant properties
@@ -717,42 +748,11 @@ class MaterialConfigParser:
 
     ########################################################################################################################
 
-    def _is_dependency(self, prop_name: str, verbose: bool = False) -> bool:
-        """
-        Check if a property is used as a dependency in any computed property.
-        Args:
-            prop_name (str): The name of the property to check.
-            verbose (bool): Whether to print dependency information.
-        Returns:
-            bool: True if the property is used as a dependency, False otherwise.
-        """
-        # Get computed properties from the already categorized properties
-        computed_props = self.categorized_properties[PropertyType.COMPUTE]
-
-        for computed_prop_name, computed_config in computed_props:
-            # For dictionary-based computed properties with 'equation' key
-            if isinstance(computed_config, dict) and 'equation' in computed_config:
-                equation = computed_config['equation']
-                # Use more precise checking by looking for the property as a whole word
-                if re.search(r'\b' + re.escape(prop_name) + r'\b', equation):
-                    if verbose:
-                        print(f"Property '{prop_name}' is used in computed property '{computed_prop_name}'")
-                    return True
-            # For string-based computed properties (direct expressions)
-            elif isinstance(computed_config, str):
-                # Use more precise checking by looking for the property as a whole word
-                if re.search(r'\b' + re.escape(prop_name) + r'\b', computed_config):
-                    if verbose:
-                        print(f"Property '{prop_name}' is used in computed property '{computed_prop_name}'")
-                    return True
-        return False
-
     @staticmethod
     def _create_raw_piecewise(temp_array, prop_array, T, lower_bound_type, upper_bound_type):
         """Create a piecewise function using all data points."""
+        print(f"_create_raw_piecewise: {temp_array}, {prop_array}, {T}, {lower_bound_type}, {upper_bound_type}")
         # Create a piecewise function with one segment per data point
-        print(f"Creating raw piecewise function with {len(temp_array)} points")
-
         '''segments = len(temp_array) - 1
         v_pwlf = pwlf.PiecewiseLinFit(temp_array, prop_array, degree=1)
         print(f"segments: {segments}")
@@ -765,6 +765,12 @@ class MaterialConfigParser:
         if temp_array[0] > temp_array[-1]:
             temp_array = np.flip(temp_array)
             prop_array = np.flip(prop_array)
+
+        # TODO: Use temp values as break points and use fit_with_breaks
+        # https://jekel.me/piecewise_linear_fit_py/examples.html
+        '''my_pwlf = pwlf.PiecewiseLinFit(temp_array, prop_array, degree=1)
+        my_pwlf.fit_with_breaks(temp_array)
+        pw = sp.Piecewise(*get_symbolic_conditions(my_pwlf, T, lower_bound_type, upper_bound_type))'''  # Works but too slow
 
         conditions = []
 
@@ -798,8 +804,8 @@ class MaterialConfigParser:
 
         # Create and return the piecewise function
         pw = sp.Piecewise(*conditions)
-        print(f"Created piecewise function with {len(conditions)} conditions")
-        print(pw)
+        # print(f"Created piecewise function with {len(conditions)} conditions")
+        print(f"pw (_create_raw_piecewise): {pw}")
         return pw
 
     @staticmethod
@@ -815,6 +821,7 @@ class MaterialConfigParser:
         Returns:
             float: Interpolated value
         """
+        print(f"_interpolate_value: {T}, {x_array}, {y_array}")
         # Handle interpolation/extrapolation
         if T < x_array[0]:
             if lower_bound_type == 'constant':
@@ -831,6 +838,40 @@ class MaterialConfigParser:
         else:
             return np.interp(T, x_array, y_array)
 
+    def _process_regression_params(self, prop_config, prop_name, data_length):
+        """
+        Process regression parameters from configuration.
+        Args:
+            prop_config (dict): Property configuration
+            prop_name (str): Property name
+            data_length (int): Length of a data array
+        Returns:
+            tuple: (has_regression, simplify_type, degree, segments)
+        """
+        print(f"_process_regression_params: {prop_name}, {prop_config}")
+        # Check if regression is specified
+        has_regression = isinstance(prop_config, dict) and 'regression' in prop_config
+
+        if not has_regression:
+            print(f"_process_regression_params: False, None, None, None")
+            return False, None, None, None
+
+        # Only process if regression is specified
+        regression_config = prop_config['regression']
+        simplify_type = regression_config.get('simplify', 'before')
+        degree = regression_config.get('degree', 1)
+        segments = regression_config.get('segments', 3)
+
+        # Validate segments
+        if segments >= data_length:
+            raise ValueError(f"Number of segments ({segments}) must be less than number of data points ({data_length}) ")
+        if segments > 8:
+            raise ValueError(f"Number of segments ({segments}) is too high for {prop_name}. Please reduce it.")
+        elif segments > 6:
+            print(f"Warning: Number of segments ({segments}) for {prop_name} may lead to overfitting.")
+
+        return has_regression, simplify_type, degree, segments
+
     def _process_file_property(self, alloy: Alloy, prop_name: str, file_config: Union[str, Dict[str, Any]], T: Union[float, sp.Symbol]) -> None:
         """
         Process property data from a file configuration.
@@ -842,6 +883,7 @@ class MaterialConfigParser:
         Raises:
             ValueError: If there's an error processing the file data.
         """
+        print(f"_process_file_property: {prop_name}, {file_config}")
         try:
             # Get the directory containing the YAML file
             yaml_dir = self.base_dir
@@ -854,13 +896,22 @@ class MaterialConfigParser:
                 # For string configuration, construct the full path
                 file_path = str(yaml_dir / file_config)
                 temp_array, prop_array = read_data_from_file(file_path)
-
+            # Check for nan or inf in temp_array or prop_array
+            if not (np.all(np.isfinite(temp_array)) and np.all(np.isfinite(prop_array))):
+                bad_temps = np.where(~np.isfinite(temp_array))[0]
+                bad_props = np.where(~np.isfinite(prop_array))[0]
+                msg = []
+                if bad_temps.size > 0:
+                    msg.append(f"temp_array contains non-finite values at indices: {bad_temps.tolist()}")
+                if bad_props.size > 0:
+                    msg.append(f"prop_array contains non-finite values at indices: {bad_props.tolist()}")
+                raise ValueError(f"Non-finite values detected in property '{prop_name}': " + "; ".join(msg))
             # Validate the temperature array
             self._validate_temperature_range(prop_name, temp_array)
 
             # Ensure the temperature array is in ascending order
             if not np.all(np.diff(temp_array) >= 0):
-                print("Flipping temperature array")
+                # print("Flipping temperature array")
                 temp_array = np.flip(temp_array)
                 prop_array = np.flip(prop_array)
 
@@ -875,31 +926,6 @@ class MaterialConfigParser:
             # Check if T is a symbolic variable or a numeric value
             is_symbolic = isinstance(T, sp.Symbol)
 
-            # Initialize regression parameters
-            has_regression = isinstance(file_config, dict) and 'regression' in file_config
-            simplify_type = 'before'  # Default
-            degree = 1  # Default
-            segments = 3  # Default
-
-            if has_regression:
-                regression_config = file_config['regression']
-                simplify_type = regression_config.get('simplify', 'before')
-                degree = regression_config.get('degree', 1)
-                segments = regression_config.get('segments', 3)
-
-                # Validate segments
-                if segments >= len(temp_array):
-                    raise ValueError(f"Number of segments ({segments}) must be less than number of data points ({len(temp_array)}) ")
-                if segments > 8:
-                    raise ValueError(f"Number of segments ({segments}) is too high for {prop_name}. Please reduce it.")
-                elif segments > 6:
-                    print(f"Warning: Number of segments ({segments}) for {prop_name} may lead to overfitting.")
-
-                # Handle 'auto' simplify type
-                if simplify_type == 'auto':
-                    simplify_type = 'after' if self._is_dependency(prop_name, verbose=True) else 'before'
-                    print(f"Auto-determined simplify type for {prop_name}: '{simplify_type}'")
-
             # CASE 1: Numeric Temperature (T is a float)
             if not is_symbolic:
                 # Interpolate value
@@ -909,21 +935,33 @@ class MaterialConfigParser:
                 # Set property value
                 setattr(alloy, prop_name, sp.Float(interpolated_value))
 
+                # No visualization for numeric temperature
+                return
+
             # CASE 2: Symbolic Temperature (T is a sp.Symbol)
-            else:
-                # Create symbolic representation based on a simplified type
-                if has_regression and simplify_type == 'before':
+            # Process regression parameters - only needed for symbolic temperature - will return None values if regression not specified
+            has_regression, simplify_type, degree, segments = self._process_regression_params(
+                file_config, prop_name, len(temp_array))
+
+            # Create symbolic representation based on regression parameters
+            if has_regression:
+                # Use regression parameters for simplification
+                if simplify_type == 'pre':
                     # Simplify immediately
                     v_pwlf = pwlf.PiecewiseLinFit(temp_array, prop_array, degree=degree, seed=13579)
                     v_pwlf.fit(n_segments=segments)
                     pw = sp.Piecewise(*get_symbolic_conditions(v_pwlf, T, lower_bound_type, upper_bound_type))
                     setattr(alloy, prop_name, pw)
-                else:
-                    # Use raw data for now (for 'after' or no regression)
+                else:  # simplify_type == 'post'
+                    # Use raw data for now, simplify later
                     raw_pw = self._create_raw_piecewise(temp_array, prop_array, T, lower_bound_type, upper_bound_type)
                     setattr(alloy, prop_name, raw_pw)
+            else:  # Regression is not specified
+                # Always use raw data when regression is not specified
+                raw_pw = self._create_raw_piecewise(temp_array, prop_array, T, lower_bound_type, upper_bound_type)
+                setattr(alloy, prop_name, raw_pw)
 
-            # Visualization for both symbolic and numeric temperature
+            # Visualization for both symbolic temperature
             self._visualize_property(
                 alloy=alloy,
                 prop_name=prop_name,
@@ -977,7 +1015,7 @@ class MaterialConfigParser:
                 key_array = np.flip(key_array)
                 val_array = np.flip(val_array)
 
-            # Extract bound types
+            # Extract bound types (always specified for KEY_VAL properties)
             lower_bound_type = prop_config['bounds'][0]
             upper_bound_type = prop_config['bounds'][1]
 
@@ -988,34 +1026,10 @@ class MaterialConfigParser:
             # Check if T is a symbolic variable or a numeric value
             is_symbolic = isinstance(T, sp.Symbol)
 
-            # Initialize regression parameters
-            has_regression = 'regression' in prop_config
-            simplify_type = 'before'  # Default
-            degree = 1  # Default
-            segments = 3  # Default
-
-            # Special handling for latent heat properties
-            if prop_name in ['latent_heat_of_fusion', 'latent_heat_of_vaporization']:
-                segments = 1
-
-            if has_regression:
-                regression_config = prop_config['regression']
-                simplify_type = regression_config.get('simplify', 'before')
-                degree = regression_config.get('degree', 1)
-                segments = regression_config.get('segments', 3)
-
-                # Validate segments
-                if segments >= len(key_array):
-                    raise ValueError(f"Number of segments ({segments}) must be less than number of data points ({len(key_array)}) ")
-                if segments > 8:
-                    raise ValueError(f"Number of segments ({segments}) is too high for {prop_name}. Please reduce it.")
-                elif segments > 6:
-                    print(f"Warning: Number of segments ({segments}) for {prop_name} may lead to overfitting.")
-
-                # Handle 'auto' simplify type
-                if simplify_type == 'auto':
-                    simplify_type = 'after' if self._is_dependency(prop_name, verbose=True) else 'before'
-                    print(f"Auto-determined simplify type for {prop_name}: '{simplify_type}'")
+            # TODO: Check if this is needed outside CASE 2 (currently used for visualization)
+            # Process regression parameters
+            has_regression, simplify_type, degree, segments = self._process_regression_params(
+                prop_config, prop_name, len(key_array))
 
             # CASE 1: Numeric Temperature (T is a float)
             if not is_symbolic:
@@ -1028,17 +1042,29 @@ class MaterialConfigParser:
 
             # CASE 2: Symbolic Temperature (T is a sp.Symbol)
             else:
-                # Create symbolic representation based on a simplified type
-                if has_regression and simplify_type == 'before':
-                    # Simplify immediately
-                    v_pwlf = pwlf.PiecewiseLinFit(key_array, val_array, degree=degree, seed=13579)
-                    v_pwlf.fit(n_segments=segments)
-                    pw = sp.Piecewise(*get_symbolic_conditions(v_pwlf, T, lower_bound_type, upper_bound_type))
-                    setattr(alloy, prop_name, pw)
+                # Create symbolic representation based on regression parameters
+                if has_regression:
+                    # Use regression parameters for simplification
+                    if simplify_type == 'pre':
+                        # Simplify immediately
+                        v_pwlf = pwlf.PiecewiseLinFit(key_array, val_array, degree=degree, seed=13579)
+                        v_pwlf.fit(n_segments=segments)
+                        pw = sp.Piecewise(*get_symbolic_conditions(v_pwlf, T, lower_bound_type, upper_bound_type))
+                        setattr(alloy, prop_name, pw)
+                    else:  # simplify_type == 'post'
+                        # Use raw data now, simplify later
+                        raw_pw = self._create_raw_piecewise(key_array, val_array, T, lower_bound_type, upper_bound_type)
+                        setattr(alloy, prop_name, raw_pw)
                 else:
-                    # Use raw data for now (for 'after' or no regression)
+                    # Always use raw data when regression is not specified
                     raw_pw = self._create_raw_piecewise(key_array, val_array, T, lower_bound_type, upper_bound_type)
                     setattr(alloy, prop_name, raw_pw)
+
+            # For visualization, set default values if regression is not specified
+            vis_has_regression = has_regression
+            vis_simplify_type = simplify_type if simplify_type is not None else 'none'
+            vis_degree = degree if degree is not None else 1
+            vis_segments = segments if segments is not None else 3
 
             # Visualization for both symbolic and numeric temperature
             self._visualize_property(
@@ -1048,10 +1074,10 @@ class MaterialConfigParser:
                 prop_type='Key-Value',
                 x_data=key_array,
                 y_data=val_array,
-                has_regression=has_regression,
-                simplify_type=simplify_type,
-                degree=degree,
-                segments=segments,
+                has_regression=vis_has_regression,  # TODO: Do we need these defults?
+                simplify_type=vis_simplify_type,  # TODO: Do we need these defults?
+                degree=vis_degree,  # TODO: Do we need these defults?
+                segments=vis_segments,  # TODO: Do we need these defults?
                 lower_bound=lower_bound,
                 upper_bound=upper_bound,
                 lower_bound_type=lower_bound_type,
@@ -1211,29 +1237,9 @@ class MaterialConfigParser:
 
             setattr(alloy, prop_name, material_property)
 
-            # Check if regression is specified in the configuration
-            has_regression = isinstance(prop_config, dict) and 'regression' in prop_config
-
-            # Default regression parameters
-            degree = 1
-            segments = 3
-            simplify_type = 'after'  # Default for computed properties
-
-            if has_regression:
-                regression_config = prop_config['regression']
-                simplify_type = regression_config.get('simplify', 'after')
-                degree = regression_config.get('degree', 1)
-                segments = regression_config.get('segments', 3)
-
-            # Validate segments
-            if segments > 8:
-                raise ValueError(f"Number of segments ({segments}) is too high for {prop_name}. Please reduce it.")
-
-            # Define bound types
-            lower_bound_type = 'constant'  # Default lower bound type
-            upper_bound_type = 'constant'  # Default upper-bound type
-
-            # Check if bound types are specified in the config
+            # Extract bound types
+            lower_bound_type = 'constant'
+            upper_bound_type = 'constant'
             if isinstance(prop_config, dict) and 'bounds' in prop_config:
                 if isinstance(prop_config['bounds'], list) and len(prop_config['bounds']) == 2:
                     lower_bound_type = prop_config['bounds'][0]
@@ -1243,21 +1249,66 @@ class MaterialConfigParser:
             lower_bound = np.min(self.temperature_array)
             upper_bound = np.max(self.temperature_array)
 
-            self._visualize_property(
-                alloy=alloy,
-                prop_name=prop_name,
-                T=T,
-                prop_type='Computed',
-                has_regression=has_regression,
-                simplify_type=simplify_type,
-                degree=degree,
-                segments=segments,
-                lower_bound=lower_bound,
-                upper_bound=upper_bound,
-                lower_bound_type=lower_bound_type,
-                upper_bound_type=upper_bound_type
-            )
+            # Process regression parameters
+            data_length = len(self.temperature_array)
+            if isinstance(T, sp.Symbol):
+                f = sp.lambdify(T, material_property, 'numpy')
+                try:
+                    prop_array = f(self.temperature_array)
+                    valid_indices = np.isfinite(prop_array)
+                    data_length = np.sum(valid_indices)
+                except Exception as e:
+                    print(f"Warning: Could not evaluate {prop_name} at all temperature points: {e}")
 
+            has_regression, simplify_type, degree, segments = self._process_regression_params(
+                prop_config, prop_name, data_length)
+
+            # For computed properties, default to 'post' if no regression
+            if not has_regression:
+                simplify_type = 'post'
+
+            # --- THIS BLOCK SHOULD NOT BE NESTED UNDER "if not has_regression" ---
+            # For 'pre' simplification, apply simplification immediately
+            if has_regression and simplify_type == 'pre' and isinstance(T, sp.Symbol):
+                temp_array = self.temperature_array
+                f = sp.lambdify(T, material_property, 'numpy')
+                try:
+                    prop_array = f(temp_array)
+                    valid_indices = np.isfinite(prop_array)
+                    if not np.all(valid_indices):
+                        print(f"Warning: Found {np.sum(~valid_indices)} non-finite values in {prop_name}. Filtering them out.")
+                        temp_array = temp_array[valid_indices]
+                        prop_array = prop_array[valid_indices]
+                    if len(temp_array) < 2:
+                        print(f"Warning: Not enough valid points to fit {prop_name}. Using original expression.")
+                    else:
+                        v_pwlf = pwlf.PiecewiseLinFit(temp_array, prop_array, degree=degree, seed=13579)
+                        v_pwlf.fit(n_segments=segments)
+                        pw = sp.Piecewise(*get_symbolic_conditions(v_pwlf, T, lower_bound_type, upper_bound_type))
+                        material_property = pw
+                        print(f"Simplified {prop_name} with 'pre' simplification")
+                except Exception as e:
+                    print(f"Warning: Failed to simplify {prop_name} with 'pre': {e}")
+
+            # Set the property on the alloy (again, in case it was simplified)
+            setattr(alloy, prop_name, material_property)
+
+            # Visualization (unchanged)
+            if isinstance(T, sp.Symbol):
+                self._visualize_property(
+                    alloy=alloy,
+                    prop_name=prop_name,
+                    T=T,
+                    prop_type='Computed',
+                    has_regression=has_regression,
+                    simplify_type=simplify_type,
+                    degree=degree,
+                    segments=segments,
+                    lower_bound=lower_bound,
+                    upper_bound=upper_bound,
+                    lower_bound_type=lower_bound_type,
+                    upper_bound_type=upper_bound_type
+                )
         except Exception as e:
             error_msg = f"Failed to process computed property '{prop_name}' \n -> {str(e)}"
             raise ValueError(error_msg) from e
@@ -1376,11 +1427,12 @@ class MaterialConfigParser:
                     self._check_circular_dependencies(dep, dep_deps, visited.copy(), path)
 
     ################################################## ##################################################
-    # Post-Processing for 'after' Simplification
+    # Post-Processing for 'post' Simplification
     ################################################## ##################################################
 
     def _post_process_properties(self, alloy: Alloy, T: Union[float, sp.Symbol]) -> None:
         """Perform post-processing on properties after all have been initially processed."""
+        print(f"_post_process_properties: {self.config['properties']}")
         # Skip post-processing entirely if T is a float
         if not isinstance(T, sp.Symbol):
             print("Skipping post-processing for numeric temperature")
@@ -1395,9 +1447,15 @@ class MaterialConfigParser:
                     continue
 
                 regression_config = prop_config['regression']
-                simplify_type = regression_config.get('simplify', 'before')
+                simplify_type = regression_config.get('simplify', 'pre')
 
-                if simplify_type != 'after' and not (simplify_type == 'auto' and self._is_dependency(prop_name)):
+                # Determine if this property should use 'post' simplification
+                is_after = False
+                if simplify_type == 'post':
+                    is_after = True
+
+                # Skip if not using 'post' simplification
+                if not is_after:
                     continue
 
                 # Get the property value
@@ -1450,7 +1508,7 @@ class MaterialConfigParser:
 
                     # Update the property
                     setattr(alloy, prop_name, pw)
-                    print(f"Post-processed {prop_name} with simplify type 'after'")
+                    print(f"Post-processed {prop_name} with simplify type 'post'")
 
                 except Exception as e:
                     print(f"Warning: Failed to post-process {prop_name}: {e}")
@@ -1471,14 +1529,16 @@ class MaterialConfigParser:
         """
         Unified visualization function for all property types and temperature formats.
         """
+        print(f"_visualize_property for property: {prop_name} with type: {prop_type}")
         # Skip if visualization is not enabled
         if not hasattr(self, 'fig'):
+            print(f"Skipping visualization for property {prop_name} - no figure available")
             return
 
         # Create subplot
         ax = self.fig.add_subplot(self.gs[self.current_subplot])
         self.current_subplot += 1
-        print(self.current_subplot, prop_name)
+        # print(self.current_subplot, prop_name)
 
         # Get the current property from the alloy
         current_prop = getattr(alloy, prop_name)
@@ -1531,10 +1591,10 @@ class MaterialConfigParser:
             # For numeric temperature, show the interpolated value
             if not is_symbolic:
                 property_value = float(current_prop)
-                ax.plot(T, property_value, 'ro', markersize=8, label=f'Value at T={T}K')
+                ax.plot(T, property_value, 'ro', markersize=6, label=f'Value at T={T}K')
 
                 # Add a text annotation with the exact value
-                ax.text(0.05, 0.95, f"{prop_name} at T={T}K: {property_value:.6g}",
+                ax.text(0.005, 0.45, f"{prop_name} at T={T}K:\n{property_value:.6g}",
                         transform=ax.transAxes, fontsize=12,
                         bbox=dict(facecolor='white', alpha=0.8))
 
@@ -1543,8 +1603,8 @@ class MaterialConfigParser:
 
                 # For numeric temperature, still show the full curve if data is available
                 if x_data is not None and y_data is not None:
-                    # For 'before' simplification, show a simplified model
-                    if has_regression and simplify_type == 'before':
+                    # For 'pre' simplification, show a simplified model
+                    if has_regression and simplify_type == 'pre':
                         # Create a model to show the context
                         v_pwlf = pwlf.PiecewiseLinFit(x_data, y_data, degree=degree, seed=13579)
                         v_pwlf.fit(n_segments=segments)
@@ -1554,7 +1614,7 @@ class MaterialConfigParser:
                         ax.plot(extended_temp, f_context(extended_temp), linestyle='-', linewidth=1,
                                 color='blue', alpha=0.5, label='property curve')
                     else:
-                        # For 'after' or no regression, show raw curve
+                        # For 'post' or no regression, show raw curve
                         # Use piecewise interpolation for context
                         if len(x_data) > 1:
                             context_pw = self._create_raw_piecewise(x_data, y_data, sp.Symbol('T_context'),
@@ -1594,18 +1654,19 @@ class MaterialConfigParser:
                     # Get y-value for annotations
                     y_value = current_prop.subs(T, 3000).evalf()
 
-                elif has_regression and simplify_type == 'before':
-                    # For 'before', we're already using the simplified model
+                elif has_regression and simplify_type == 'pre':
+                    # For 'pre', we're already using the simplified model
                     ax.plot(extended_temp, f_current(extended_temp), linestyle='-', linewidth=1, label='simplified')
                     y_value = np.max(y_data) if y_data is not None else f_current(upper_bound)
 
                 else:
-                    # For 'after' or no regression, show the raw model
+                    # For 'post' or no regression, show the raw model
                     ax.plot(extended_temp, f_current(extended_temp), linestyle='-', linewidth=1, label='raw')
                     y_value = np.max(y_data) if y_data is not None else f_current(upper_bound)
+                    print('For post or no regression, show the raw model')
 
-                    # If regression is specified with 'after', also show what the simplified model would look like
-                    if has_regression and simplify_type == 'after' and x_data is not None and y_data is not None:
+                    # If regression is specified with 'post', also show what the simplified model would look like
+                    if has_regression and simplify_type == 'post' and x_data is not None and y_data is not None:
                         # Create a preview of the simplified model
                         v_pwlf = pwlf.PiecewiseLinFit(x_data, y_data, degree=degree, seed=13579)
                         v_pwlf.fit(n_segments=segments)
@@ -1629,7 +1690,7 @@ class MaterialConfigParser:
         if has_regression:
             # Make sure simplify_type is not None for computed properties
             if prop_type == 'Computed' and simplify_type is None:
-                simplify_type = 'after'  # Default for computed properties
+                simplify_type = 'post'  # Default for computed properties
 
             ax.text(0.5, 0.95, f"Simplify: {simplify_type} | Degree: {degree} | Segments: {segments}",
                     transform=ax.transAxes, horizontalalignment='center',

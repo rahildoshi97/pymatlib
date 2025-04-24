@@ -17,50 +17,43 @@ temperature_range: [300, 3000, 5.0]  # 5.0 (float) -> increment
 properties:
   boiling_temperature: 2000.  # overwrites the internally computed boiling temperature
 
-  latent_heat_of_vaporization: 171401.
-
-  latent_heat_of_fusion:
-    key: [ solidus_temperature-5, liquidus_temperature+5 ]
-    val: [ 0, 171401 ]
-    bounds: [ constant, constant ]
-    regression: # regression is optional
-      simplify: auto
-      degree: 1   # polynomial degree of the regression
-      segments: 1  # number of piecewise segments
 
   heat_conductivity:
-    equation: 1.0 * heat_capacity
-    bounds: [constant, constant]
-
-  # density: 7950.  # kg/m³
+    file: ./304L_Erstarrungsdaten_edited.xlsx
+    temp_col: T (K)
+    prop_col: Thermal conductivity (W/(m*K))-TOTAL-10000.0(K/s)
+    bounds: [extrapolate, extrapolate]
+    regression:
+      simplify: pre
+      degree: 1
+      segments: 4
 
   heat_capacity:
     file: ./304L_Erstarrungsdaten_edited.xlsx
     temp_col: T (K)
     prop_col: Specific heat (J/(Kg K))
-    bounds: [extrapolate, constant]
-    regression: # regression is optional
-      simplify: auto
-      degree: 1   # polynomial degree of the regression
-      segments: 4  # number of piecewise segments
-
-  density:
-    file: ./304L_Erstarrungsdaten_edited.xlsx
-    temp_col:  T (K)
-    prop_col: Density (kg/(m)^3)
-    bounds: [constant, extrapolate]
+    bounds: [extrapolate, extrapolate]
     regression:
-      simplify: after
-      # simplify: after
-      # simplify: auto
-      degree: 2
+      # remove auto. not required...... key rename to preprocess/ post-process (regression at end). plot raw data, pre/post data.
+      simplify: post
+      degree: 1
       segments: 4
+
+  # thermal_diffusivity:
+    # equation: heat_conductivity /(density * heat_capacity)
+    # bounds: [ constant, constant ]
+    # regression:
+      # simplify: after
+      # degree: 1
+      # segments: 3
+
+  # density: 6591.878918 * (1 + thermal_expansion_coefficient * (T - 2273)) ** (-3)
 
   thermal_expansion_coefficient:
     key: (600, 100)  # Start at 300 K and increment by 100 K
-    val: [ 16.0e-6, 16.3e-6, 16.5e-6, 18.4e-6, 17.0e-6, 17.2e-6 ]
+    val:  [16.3e-6, 16.5e-6, 16.8e-6, 17.0e-6, 17.2e-6]
     bounds: [constant, extrapolate]
     regression: # regression is optional
-      simplify: auto
+      simplify: pre
       degree: 1   # polynomial degree of the regression
       segments: 1  # number of piecewise segments
