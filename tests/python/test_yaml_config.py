@@ -1,12 +1,18 @@
 import sympy as sp
 from pathlib import Path
-from pymatlib.core.yaml_parser import create_alloy_from_yaml
-from pymatlib.core.typedefs import MaterialProperty
 
-def print_property_value(prop, T, temp):
-    if isinstance(prop, MaterialProperty):
-        return prop.evalf(T, temp)
-    return prop  # Return directly if it's a constant value
+from pymatlib.core.yaml_parser.api import create_alloy_from_yaml
+
+import logging
+# Set package/module logger to DEBUG
+logging.basicConfig(
+    level=logging.DEBUG,  # Or INFO for less verbosity
+    format="%(asctime)s %(levelname)s %(name)s -> %(message)s"
+)
+# Silence matplotlib and other noisy libraries
+logging.getLogger('matplotlib').setLevel(logging.WARNING)
+logging.getLogger('PIL').setLevel(logging.WARNING)
+logging.getLogger('fontTools').setLevel(logging.WARNING)
 
 
 # Create symbolic temperature variable
@@ -14,10 +20,10 @@ T = sp.Symbol('T')
 
 # Get the path to the YAML file
 current_file = Path(__file__)
-# yaml_path = current_file.parent.parent.parent / "src" / "pymatlib" / "data" / "alloys" / "SS304L" / "SS304L.yaml"
-yaml_path = current_file.parent.parent.parent / "src" / "pymatlib" / "data" / "alloys" / "SS304L" / "SS304L_comprehensive_2.yaml"
+# yaml_path = current_file.parent.parent.parent / "src" / "pymatlib" / "data" / "alloys" / "SS304L" / "SS304L.yaml"  # SS304L_pwlf_1
+yaml_path = current_file.parent.parent.parent / "src" / "pymatlib" / "data" / "alloys" / "SS304L" / "SS304L_comprehensive_2_copy.yaml"
 # Create alloy from YAML
-ss316l, temp = create_alloy_from_yaml(yaml_path, T=T)
+ss316l = create_alloy_from_yaml(yaml_path, T=T)
 #ss316l_1 = create_alloy_from_yaml("SS304L_1.yaml", T)
 
 # Test various properties
@@ -37,9 +43,9 @@ for field in vars(ss316l):
 # Test computed properties at specific temperature
 test_temp = 1670
 print(f"\nProperties at {test_temp}K:")
-print(f"Density: {print_property_value(ss316l.density, T, test_temp)}")
-print(f"Specific enthalpy: {print_property_value(ss316l.specific_enthalpy, T, test_temp)}")
-print(f"Heat Capacity: {print_property_value(ss316l.heat_capacity, T, test_temp)}")
+print(f"Density: {(ss316l.density, T, test_temp)}")
+print(f"Specific enthalpy: {(ss316l.specific_enthalpy, T, test_temp)}")
+print(f"Heat Capacity: {(ss316l.heat_capacity, T, test_temp)}")
 """print(f"Heat Conductivity: {ss316l.heat_conductivity.evalf(T, test_temp)}")
 print(f"Thermal Diffusivity: {ss316l.thermal_diffusivity.evalf(T, test_temp)}")
 print(f"Energy Density: {ss316l.energy_density.evalf(T, test_temp)}")

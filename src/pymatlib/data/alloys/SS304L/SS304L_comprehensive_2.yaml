@@ -15,18 +15,41 @@ liquidus_temperature: 1735.
 temperature_range: [300, 3000, 5.0]  # 5.0 (float) -> increment
 
 properties:
+
+  latent_heat_of_fusion: 171401.
+
+  ##################################################
+
+  latent_heat_of_vaporization: 171401.
+
+  ##################################################
+
   boiling_temperature: 2000.  # overwrites the internally computed boiling temperature
 
+  ##################################################
 
   heat_conductivity:
-    file: ./304L_Erstarrungsdaten_edited.xlsx
-    temp_col: T (K)
-    prop_col: Thermal conductivity (W/(m*K))-TOTAL-10000.0(K/s)
-    bounds: [extrapolate, extrapolate]
+    temperature:    [500, 1700, 3000]
+    equation:       [0.0124137215440647*T + 13.0532171803243, 0.0152266213998596*T + 4.88433067059347]  # for partially defined equations
+    bounds:         [constant, extrapolate]
+    regression:
+      simplify: post
+      degree: 1
+      segments: 2
+
+  ##################################################
+
+  specific_enthalpy: Integral(heat_capacity, T)
+  # OR
+  melting_temperature:  # TODO: specific_enthalpy renamed to melting_temperature for testing
+    equation: Integral(heat_capacity, T)
+    bounds: [ constant, extrapolate ]
     regression:
       simplify: pre
       degree: 1
-      segments: 4
+      segments: 3
+
+  ##################################################
 
   heat_capacity:
     file: ./304L_Erstarrungsdaten_edited.xlsx
@@ -34,26 +57,49 @@ properties:
     prop_col: Specific heat (J/(Kg K))
     bounds: [extrapolate, extrapolate]
     regression:
-      # remove auto. not required...... key rename to preprocess/ post-process (regression at end). plot raw data, pre/post data.
-      simplify: post
+      simplify: post  # TODO: 'post' causes errors: <lambdifygenerated-8>:2: RuntimeWarning: divide by zero encountered in reciprocal
       degree: 1
       segments: 4
 
-  # thermal_diffusivity:
-    # equation: heat_conductivity /(density * heat_capacity)
-    # bounds: [ constant, constant ]
-    # regression:
-      # simplify: after
-      # degree: 1
-      # segments: 3
+  ##################################################
 
-  # density: 6591.878918 * (1 + thermal_expansion_coefficient * (T - 2273)) ** (-3)
+  thermal_diffusivity:
+    equation: heat_conductivity /(density * heat_capacity)
+    bounds: [ constant, extrapolate ]
+    regression:
+      simplify: post
+      degree: 1
+      segments: 3
+
+  ##################################################
+
+  density: 6594.65 * ((1 + thermal_expansion_coefficient * (T - 2270)) ** (-3))
+  # OR
+  dynamic_viscosity:  # TODO: density renamed to dynamic_viscosity for testing
+    equation: 6594.65 * (1 + thermal_expansion_coefficient * (T - 2270)) ** (-3)
+    bounds: [ constant, extrapolate ]
+    regression:
+      simplify: pre
+      degree: 1
+      segments: 3
+  # OR
+  surface_tension:  # TODO: density renamed to surface_tension for testing
+    file: ./304L_Erstarrungsdaten_edited.xlsx
+    temp_col:  T (K)
+    prop_col: Density (kg/(m)^3)
+    bounds: [constant, extrapolate]
+    regression:
+      simplify: post
+      degree: 2
+      segments: 4
+
+  ##################################################
 
   thermal_expansion_coefficient:
-    key: (600, 100)  # Start at 300 K and increment by 100 K
-    val:  [16.3e-6, 16.5e-6, 16.8e-6, 17.0e-6, 17.2e-6]
+    key: [300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1500, 2000, 2500, 3000]
+    val: [1.2632e-5, 1.468e-5, 1.524e-5, 1.581e-5, 1.639e-5, 1.699e-5, 1.759e-5, 1.821e-5, 1.885e-5, 2.1e-5, 2.3e-5, 2.5e-5, 2.7e-5]
     bounds: [constant, extrapolate]
-    regression: # regression is optional
+    regression:
       simplify: pre
-      degree: 1   # polynomial degree of the regression
-      segments: 1  # number of piecewise segments
+      degree: 1
+      segments: 3

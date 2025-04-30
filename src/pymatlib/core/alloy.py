@@ -76,8 +76,6 @@ class Alloy:
     latent_heat_of_vaporization: sp.Expr = None
     specific_enthalpy: sp.Expr = None
     surface_tension: sp.Expr = None
-    # temperature: sp.Expr = None
-    # temperature_array: np.ndarray = field(default_factory=lambda: np.array([]))
     thermal_diffusivity: sp.Expr = None
     thermal_expansion_coefficient: sp.Expr = None
 

@@ -42,7 +42,7 @@ def get_symbolic_eqn(pwlf_: pwlf.PiecewiseLinFit, segment_number: int, x: Union[
 
 # https://github.com/cjekel/piecewise_linear_fit_py/blob/master/examples/understanding_higher_degrees/polynomials_in_pwlf.ipynb
 def get_symbolic_conditions(pwlf_: pwlf.PiecewiseLinFit, x: sp.Symbol, lower_: str, upper_: str):
-    print(f"get_symbolic_conditions")
+    # print(f"get_symbolic_conditions")
     conditions = []
 
     # Special case for 1 segment
@@ -94,7 +94,7 @@ def get_symbolic_conditions(pwlf_: pwlf.PiecewiseLinFit, x: sp.Symbol, lower_: s
                 conditions.append((eqn.evalf(subs={x: pwlf_.fit_breaks[i + 1]}), True))
         else:
             conditions.append((eqn, sp.And(x >= pwlf_.fit_breaks[i], x < pwlf_.fit_breaks[i + 1])))
-    print(f'conditions: {conditions}')
+    # print(f'conditions: {conditions}')
     return conditions
 
 

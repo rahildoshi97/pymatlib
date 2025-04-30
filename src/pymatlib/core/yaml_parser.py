@@ -12,14 +12,7 @@ from typing import Dict, Any, Union, List, Tuple, Set
 from ruamel.yaml import YAML, constructor, scanner
 from pymatlib.core.alloy import Alloy
 from pymatlib.core.elements import ChemicalElement
-from pymatlib.core.interpolators import interpolate_property
 from pymatlib.core.data_handler import read_data_from_file
-from pymatlib.core.models import (density_by_thermal_expansion,
-                                  thermal_diffusivity_by_heat_conductivity,
-                                  specific_enthalpy_sensible,
-                                  specific_enthalpy_with_latent_heat,
-                                  energy_density)
-from pymatlib.core.typedefs import MaterialProperty
 from pymatlib.core.pwlfsympy import get_symbolic_conditions
 from pymatlib.core.symbol_registry import SymbolRegistry
 
@@ -53,6 +46,7 @@ class MaterialConfigParser:
         'kinematic_viscosity',
         'latent_heat_of_fusion',
         'latent_heat_of_vaporization',
+        'melting_temperature',
         'specific_enthalpy',
         'surface_tension',
         'thermal_diffusivity',
@@ -586,6 +580,7 @@ class MaterialConfigParser:
 
     def _save_property_plots(self):
         """Save all property plots to a single file"""
+        print(f"_save_property_plots: {self.config['name']}")
         if hasattr(self, 'fig'):
             # Add overall title
             self.fig.suptitle(f"Material Properties: {self.config['name']}", fontsize=16)
@@ -838,7 +833,8 @@ class MaterialConfigParser:
         else:
             return np.interp(T, x_array, y_array)
 
-    def _process_regression_params(self, prop_config, prop_name, data_length):
+    @staticmethod
+    def _process_regression_params(prop_config, prop_name, data_length):
         """
         Process regression parameters from configuration.
         Args:
@@ -961,7 +957,7 @@ class MaterialConfigParser:
                 raw_pw = self._create_raw_piecewise(temp_array, prop_array, T, lower_bound_type, upper_bound_type)
                 setattr(alloy, prop_name, raw_pw)
 
-            # Visualization for both symbolic temperature
+            # Visualization for symbolic temperature only
             self._visualize_property(
                 alloy=alloy,
                 prop_name=prop_name,
@@ -1026,11 +1022,6 @@ class MaterialConfigParser:
             # Check if T is a symbolic variable or a numeric value
             is_symbolic = isinstance(T, sp.Symbol)
 
-            # TODO: Check if this is needed outside CASE 2 (currently used for visualization)
-            # Process regression parameters
-            has_regression, simplify_type, degree, segments = self._process_regression_params(
-                prop_config, prop_name, len(key_array))
-
             # CASE 1: Numeric Temperature (T is a float)
             if not is_symbolic:
                 # Interpolate value
@@ -1040,31 +1031,31 @@ class MaterialConfigParser:
                 # Set property value
                 setattr(alloy, prop_name, sp.Float(interpolated_value))
 
+                # No visualization for numeric temperature
+                return
+
             # CASE 2: Symbolic Temperature (T is a sp.Symbol)
-            else:
-                # Create symbolic representation based on regression parameters
-                if has_regression:
-                    # Use regression parameters for simplification
-                    if simplify_type == 'pre':
-                        # Simplify immediately
-                        v_pwlf = pwlf.PiecewiseLinFit(key_array, val_array, degree=degree, seed=13579)
-                        v_pwlf.fit(n_segments=segments)
-                        pw = sp.Piecewise(*get_symbolic_conditions(v_pwlf, T, lower_bound_type, upper_bound_type))
-                        setattr(alloy, prop_name, pw)
-                    else:  # simplify_type == 'post'
-                        # Use raw data now, simplify later
-                        raw_pw = self._create_raw_piecewise(key_array, val_array, T, lower_bound_type, upper_bound_type)
-                        setattr(alloy, prop_name, raw_pw)
-                else:
-                    # Always use raw data when regression is not specified
+            # Process regression parameters - only needed for symbolic temperature - will return None values if regression not specified
+            has_regression, simplify_type, degree, segments = self._process_regression_params(
+                prop_config, prop_name, len(key_array))
+
+            # Create symbolic representation based on regression parameters
+            if has_regression:
+                # Use regression parameters for simplification
+                if simplify_type == 'pre':
+                    # Simplify immediately
+                    v_pwlf = pwlf.PiecewiseLinFit(key_array, val_array, degree=degree, seed=13579)
+                    v_pwlf.fit(n_segments=segments)
+                    pw = sp.Piecewise(*get_symbolic_conditions(v_pwlf, T, lower_bound_type, upper_bound_type))
+                    setattr(alloy, prop_name, pw)
+                else:  # simplify_type == 'post'
+                    # Use raw data now, simplify later
                     raw_pw = self._create_raw_piecewise(key_array, val_array, T, lower_bound_type, upper_bound_type)
                     setattr(alloy, prop_name, raw_pw)
-
-            # For visualization, set default values if regression is not specified
-            vis_has_regression = has_regression
-            vis_simplify_type = simplify_type if simplify_type is not None else 'none'
-            vis_degree = degree if degree is not None else 1
-            vis_segments = segments if segments is not None else 3
+            else:  # Regression is not specified
+                # Always use raw data when regression is not specified
+                raw_pw = self._create_raw_piecewise(key_array, val_array, T, lower_bound_type, upper_bound_type)
+                setattr(alloy, prop_name, raw_pw)
 
             # Visualization for both symbolic and numeric temperature
             self._visualize_property(
@@ -1074,10 +1065,10 @@ class MaterialConfigParser:
                 prop_type='Key-Value',
                 x_data=key_array,
                 y_data=val_array,
-                has_regression=vis_has_regression,  # TODO: Do we need these defults?
-                simplify_type=vis_simplify_type,  # TODO: Do we need these defults?
-                degree=vis_degree,  # TODO: Do we need these defults?
-                segments=vis_segments,  # TODO: Do we need these defults?
+                has_regression=has_regression,
+                simplify_type=simplify_type,
+                degree=degree,
+                segments=segments,
                 lower_bound=lower_bound,
                 upper_bound=upper_bound,
                 lower_bound_type=lower_bound_type,
@@ -1158,7 +1149,7 @@ class MaterialConfigParser:
                     elif k == 'liquidus_temperature':
                         processed_key.append(alloy.liquidus_temperature)
                     elif k == 'boiling_temperature':
-                        processed_key.append(alloy.temperature_boiling)
+                        processed_key.append(alloy.boiling_temperature)
                     # Handle temperature expressions like 'liquidus_temperature+300'
                     elif '+' in k:
                         # Split the string into base and offset
@@ -1218,8 +1209,8 @@ class MaterialConfigParser:
             prop_config = self.config['properties'][prop_name]
             print(f"prop_config: {prop_config}")
             # Create a symbol for the property
-            prop_symbol = SymbolRegistry.get(prop_name)
-            print(f"prop_symbol: {prop_symbol}")
+            # prop_symbol = SymbolRegistry.get(prop_name)
+            # print(f"prop_symbol: {prop_symbol}")
             # Handle direct expression format
             if isinstance(prop_config, str):
                 # This is a direct mathematical expression

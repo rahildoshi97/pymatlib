@@ -1,0 +1,26 @@
+name: SS304L_Comprehensive
+
+composition:
+  Fe: 0.675
+  Cr: 0.170
+  Ni: 0.120
+  Mo: 0.025
+  Mn: 0.010
+
+solidus_temperature: 1605.
+liquidus_temperature: 1735.
+
+# temperature_range: [300, 3000, 541]  # 541 (int) -> points
+#OR
+temperature_range: [3000, 300, -5.0]  # 5.0 (float) -> decrement
+
+properties:
+
+  boiling_temperature: 2000.
+
+  density: 6600.
+
+  heat_conductivity:
+    temperature:    [500, 1700, 3000]
+    equation:       [0.0124137215440647*T + 13.0532171803243, 0.0152266213998596*T + 4.88433067059347]  # for partially defined equations
+    bounds:         [constant, constant]
