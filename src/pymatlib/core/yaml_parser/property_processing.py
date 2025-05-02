@@ -177,17 +177,13 @@ class PropertyProcessor:
                 setattr(alloy, prop_name, sp.Float(interpolated_value))
                 return
             has_regression, simplify_type, degree, segments = self._process_regression_params(file_config, prop_name, len(temp_array))
-            if has_regression:
-                if simplify_type == 'pre':
-                    v_pwlf = pwlf.PiecewiseLinFit(temp_array, prop_array, degree=degree, seed=seed)
-                    v_pwlf.fit(n_segments=segments)
-                    print(f"_process_file_property: prop_name={prop_name}, T={T}, lower_bound_type={lower_bound_type}, upper_bound_type={upper_bound_type}")
-                    pw = sp.Piecewise(*get_symbolic_conditions(v_pwlf, T, lower_bound_type, upper_bound_type))
-                    setattr(alloy, prop_name, pw)
-                else:
-                    raw_pw = self._create_raw_piecewise(temp_array, prop_array, T, lower_bound_type, upper_bound_type)
-                    setattr(alloy, prop_name, raw_pw)
-            else:
+            if has_regression and simplify_type == 'pre':
+                v_pwlf = pwlf.PiecewiseLinFit(temp_array, prop_array, degree=degree, seed=seed)
+                v_pwlf.fit(n_segments=segments)
+                print(f"_process_file_property: prop_name={prop_name}, T={T}, lower_bound_type={lower_bound_type}, upper_bound_type={upper_bound_type}")
+                pw = sp.Piecewise(*get_symbolic_conditions(v_pwlf, T, lower_bound_type, upper_bound_type))
+                setattr(alloy, prop_name, pw)
+            else:  # No regression OR not pre
                 raw_pw = self._create_raw_piecewise(temp_array, prop_array, T, lower_bound_type, upper_bound_type)
                 setattr(alloy, prop_name, raw_pw)
             if self.visualizer is not None:
@@ -236,17 +232,13 @@ class PropertyProcessor:
                 setattr(alloy, prop_name, sp.Float(interpolated_value))
                 return
             has_regression, simplify_type, degree, segments = self._process_regression_params(prop_config, prop_name, len(key_array))
-            if has_regression:
-                if simplify_type == 'pre':
-                    v_pwlf = pwlf.PiecewiseLinFit(key_array, val_array, degree=degree, seed=seed)
-                    v_pwlf.fit(n_segments=segments)
-                    print(f"_process_key_val_property: prop_name={prop_name}, T={T}, lower_bound_type={lower_bound_type}, upper_bound_type={upper_bound_type}")
-                    pw = sp.Piecewise(*get_symbolic_conditions(v_pwlf, T, lower_bound_type, upper_bound_type))
-                    setattr(alloy, prop_name, pw)
-                else:
-                    raw_pw = self._create_raw_piecewise(key_array, val_array, T, lower_bound_type, upper_bound_type)
-                    setattr(alloy, prop_name, raw_pw)
-            else:
+            if has_regression and simplify_type == 'pre':
+                v_pwlf = pwlf.PiecewiseLinFit(key_array, val_array, degree=degree, seed=seed)
+                v_pwlf.fit(n_segments=segments)
+                print(f"_process_key_val_property: prop_name={prop_name}, T={T}, lower_bound_type={lower_bound_type}, upper_bound_type={upper_bound_type}")
+                pw = sp.Piecewise(*get_symbolic_conditions(v_pwlf, T, lower_bound_type, upper_bound_type))
+                setattr(alloy, prop_name, pw)
+            else:  # No regression OR not pre
                 raw_pw = self._create_raw_piecewise(key_array, val_array, T, lower_bound_type, upper_bound_type)
                 setattr(alloy, prop_name, raw_pw)
             if self.visualizer is not None:
@@ -615,24 +607,26 @@ class PropertyProcessor:
         for prop_name, prop_config in properties.items():
             try:
                 if not isinstance(prop_config, dict) or 'regression' not in prop_config:
+                    print("QUIT")
                     continue
                 regression_config = prop_config['regression']
-                simplify_type = regression_config.get('simplify', 'pre')
+                simplify_type = regression_config['simplify']
                 if simplify_type != 'post':
                     continue
                 prop_value = getattr(alloy, prop_name)
+                print(prop_value)
                 if isinstance(prop_value, sp.Integral):
-                    result = prop_value.doit()
+                    raise ValueError(f"Property '{prop_name}' is an integral and cannot be post-processed.")
+                    result = prop_value.doit()  #
                     if isinstance(result, sp.Integral):
                         temp_array = self.temperature_array
                         values = np.array([float(prop_value.evalf(subs={T: t})) for t in temp_array], dtype=float)
-                        degree = regression_config.get('degree', 2)
-                        segments = regression_config.get('segments', 3)
-                        lower_bound_type = prop_config.get('bounds', ['constant', 'constant'])[0]
-                        upper_bound_type = prop_config.get('bounds', ['constant', 'constant'])[1]
+                        degree = regression_config['degree']
+                        segments = regression_config['segments']
+                        lower_bound_type = prop_config['bounds'][0]
+                        upper_bound_type = prop_config['bounds'][1]
                         v_pwlf = pwlf.PiecewiseLinFit(temp_array, values, degree=degree, seed=seed)
                         v_pwlf.fit(n_segments=segments)
-                        print(f"_post_process_properties: prop_name={prop_name}, T={T}, lower_bound_type={lower_bound_type}, upper_bound_type={upper_bound_type}")
                         pw = sp.Piecewise(*get_symbolic_conditions(v_pwlf, T, lower_bound_type, upper_bound_type))
                         prop_value = pw
                     else:
@@ -643,8 +637,8 @@ class PropertyProcessor:
                     Skipping - not symbolic for property: %r
                     type: %r""", prop_name, type(prop_value))
                     continue
-                degree = regression_config.get('degree', 1)
-                segments = regression_config.get('segments', 3)
+                degree = regression_config['degree']
+                segments = regression_config['segments']
                 lower_bound_type = prop_config['bounds'][0]
                 upper_bound_type = prop_config['bounds'][1]
                 temp_array = self.temperature_array

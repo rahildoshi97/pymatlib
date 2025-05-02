@@ -90,6 +90,7 @@ class MaterialConfigParser(YAMLConfigParser):
         """
         Create an Alloy instance from the parsed configuration and temperature.
         """
+        print("\n")
         logger.debug("""MaterialConfigParser: create_alloy:
             T: %r""", T)
         try:
@@ -99,7 +100,6 @@ class MaterialConfigParser(YAMLConfigParser):
                 solidus_temperature=sp.Float(self.config['solidus_temperature']),
                 liquidus_temperature=sp.Float(self.config['liquidus_temperature'])
             )
-            self.categorized_properties = self._categorize_properties(self.config['properties'])
             self.visualizer.initialize_plots()
             self.visualizer.reset_visualization_tracking()
             self.property_processor.process_properties(

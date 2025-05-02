@@ -100,21 +100,25 @@ class PropertyVisualizer:
             ax = self.fig.add_subplot(self.gs[self.current_subplot])
             self.current_subplot += 1
             current_prop = getattr(alloy, prop_name)
+            print(current_prop)
+            print(type(current_prop))
+            temp_array = self.parser.temperature_array
+            step = temp_array[1] - temp_array[0]
             if lower_bound is None or upper_bound is None:
-                lower_bound = np.min(self.parser.temperature_array)
-                upper_bound = np.max(self.parser.temperature_array)
-            padding = (upper_bound - lower_bound) * 0.2
-            num_points = (
-                np.size(x_data) * (100 if prop_type in ['Key-Value', 'Piecewise-Equation', 'Computed'] else 2) if x_data is not None
-                else np.size(self.parser.temperature_array) * 1
-            )
-            extended_temp = np.linspace(lower_bound - padding, upper_bound + padding, int(num_points))
+                lower_bound = np.min(temp_array)
+                upper_bound = np.max(temp_array)
+            padding = (upper_bound - lower_bound) * 0.1
+            ABSOLUTE_ZERO = 0.0
+            padded_lower = max(lower_bound - padding, ABSOLUTE_ZERO)
+            padded_upper = upper_bound + padding
+            num_points = int(np.ceil((padded_upper - padded_lower) / step)) + 1
+            extended_temp = np.linspace(padded_lower, padded_upper, num_points)
             ax.grid(True, linestyle='--', alpha=0.5)
             ax.set_title(f"{prop_name} ({prop_type} Property)")
             ax.set_xlabel("Temperature (K)")
             ax.set_ylabel(f"{prop_name}")
 
-            if prop_type == 'CONSTANT':
+            if prop_type == 'CONSTANT':  # isinstance(current_prop, float):
                 value = float(current_prop)
                 ax.axhline(y=value, color='blue', linestyle='-', linewidth=1.5, label='constant')
                 ax.text(0.5, 0.9, f"Value: {value}", transform=ax.transAxes,
@@ -125,40 +129,24 @@ class PropertyVisualizer:
             else:
                 f_current = sp.lambdify(T, current_prop, 'numpy')
                 y_value = None
+                # Plot raw data if available (for data-driven property types)
                 if x_data is not None and y_data is not None and prop_type in ['FILE', 'KEY_VAL', 'PIECEWISE_EQUATION', 'COMPUTE']:
                     marker_size = 2.5 if prop_type == 'Key-Value' else 2.
-                    ax.plot(x_data, y_data, linewidth=1., marker='o', markersize=marker_size, label='raw')
+                    ax.plot(x_data, y_data, linewidth=1.0, marker='o', markersize=marker_size, label='raw')
+                    # Main line: either pre-regression or raw (extended)
                     if has_regression and simplify_type == 'pre':
                         ax.plot(extended_temp, f_current(extended_temp), linestyle='-', linewidth=1, label='regression (pre)')
-                    else:
+                    else:  # No regression OR not pre: plot the raw extended function
                         ax.plot(extended_temp, f_current(extended_temp), linestyle='-', linewidth=1, label='raw (extended)')
+                    # For legend/annotation purposes
                     y_value = np.max(y_data) if y_data is not None else f_current(upper_bound)
+                    # Overlay post-regression fit if requested
                     if has_regression and simplify_type == 'post' and degree is not None and segments is not None:
                         v_pwlf = pwlf.PiecewiseLinFit(x_data, y_data, degree=degree, seed=13579)
                         v_pwlf.fit(n_segments=segments)
                         preview_pw = sp.Piecewise(*get_symbolic_conditions(v_pwlf, T, lower_bound_type, upper_bound_type))
                         f_preview = sp.lambdify(T, preview_pw, 'numpy')
                         ax.plot(extended_temp, f_preview(extended_temp), linestyle=':', linewidth=1, label='regression (post)')
-                elif prop_type == 'Computed1':  # TODO: Deprecate this
-                    ax.plot(extended_temp, f_current(extended_temp), linestyle='-', linewidth=1, label='raw (extended)')
-                    if has_regression and degree is not None and segments is not None:
-                        v_pwlf = pwlf.PiecewiseLinFit(extended_temp, f_current(extended_temp), degree=degree, seed=13579)
-                        v_pwlf.fit(n_segments=segments)
-                        pw = sp.Piecewise(*get_symbolic_conditions(v_pwlf, T, lower_bound_type, upper_bound_type))
-                        g = sp.lambdify(T, pw, 'numpy')
-                        pwlf_extended = np.zeros_like(extended_temp)
-                        for i, temp in enumerate(extended_temp):
-                            if temp < lower_bound and lower_bound_type == 'constant':
-                                pwlf_extended[i] = v_pwlf.predict(np.array([lower_bound]))[0]
-                            elif temp > upper_bound and upper_bound_type == 'constant':
-                                pwlf_extended[i] = v_pwlf.predict(np.array([upper_bound]))[0]
-                            else:
-                                pwlf_extended[i] = v_pwlf.predict(np.array([temp]))[0]
-                        ax.plot(extended_temp, pwlf_extended, linestyle='--', linewidth=2, label='regression')
-                    try:
-                        y_value = float(current_prop.subs(T, upper_bound).evalf())
-                    except Exception:
-                        y_value = float(np.nanmax(f_current(extended_temp)))
                 else:  # INVALID property type
                     ax.plot(extended_temp, f_current(extended_temp), linestyle='-', linewidth=1, label='property')
                     try:
@@ -179,8 +167,8 @@ class PropertyVisualizer:
                     verticalalignment='top', horizontalalignment='left',
                     bbox=dict(facecolor='white', alpha=0.5))
             if has_regression and degree is not None:
-                if prop_type == 'Computed' and simplify_type is None:
-                    simplify_type = 'post'
+                # if prop_type == 'Computed' and simplify_type is None:
+                    # simplify_type = 'post'
                 ax.text(0.5, 0.95, f"Simplify: {simplify_type} | Degree: {degree} | Segments: {segments}",
                         transform=ax.transAxes, horizontalalignment='center',
                         bbox=dict(facecolor='white', alpha=0.5))

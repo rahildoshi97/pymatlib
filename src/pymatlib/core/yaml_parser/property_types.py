@@ -35,7 +35,6 @@ class PropertyTypeDetector:
             elif PropertyTypeDetector.is_key_val_property(config):
                 return PropertyType.KEY_VAL
             elif PropertyTypeDetector.is_piecewise_equation(config):
-                logger.debug(f"is_piecewise_equation: {config}")
                 return PropertyType.PIECEWISE_EQUATION
             elif PropertyTypeDetector.is_compute_property(config):
                 return PropertyType.COMPUTE
@@ -71,8 +70,8 @@ class PropertyTypeDetector:
         if isinstance(value, dict) and 'file' in value:
             required_keys = {'file', 'temp_col', 'prop_col', 'bounds'}
             optional_keys = {'regression'}
-            PropertyTypeDetector.validate_keys(value, required_keys, optional_keys, "file configuration")
-            PropertyTypeDetector.validate_bounds(value['bounds'], "file configuration bound")
+            PropertyTypeDetector.validate_keys(value, required_keys, optional_keys, "'FILE' config")
+            PropertyTypeDetector.validate_bounds(value['bounds'], "'FILE' config bound")
             if 'regression' in value:
                 PropertyTypeDetector.validate_regression(value['regression'])
             return True
@@ -86,8 +85,8 @@ class PropertyTypeDetector:
         required_keys = {'key', 'val', 'bounds'}
         optional_keys = {'regression'}
         try:
-            PropertyTypeDetector.validate_keys(value, required_keys, optional_keys, "key-val configuration")
-            PropertyTypeDetector.validate_bounds(value['bounds'], "key-val configuration bound")
+            PropertyTypeDetector.validate_keys(value, required_keys, optional_keys, "'KEY_VAL' config")
+            PropertyTypeDetector.validate_bounds(value['bounds'], "'KEY_VAL' config bound")
             if 'regression' in value:
                 PropertyTypeDetector.validate_regression(value['regression'])
             return True
@@ -102,8 +101,8 @@ class PropertyTypeDetector:
         required_keys = {'temperature', 'equation', 'bounds'}
         optional_keys = {'regression'}
         try:
-            PropertyTypeDetector.validate_keys(value, required_keys, optional_keys, "piecewise-equation configuration")
-            PropertyTypeDetector.validate_bounds(value['bounds'], "piecewise configuration bound")
+            PropertyTypeDetector.validate_keys(value, required_keys, optional_keys, "'PIECEWISE_EQUATION' config bound")
+            PropertyTypeDetector.validate_bounds(value['bounds'], "'PIECEWISE_EQUATION' config bound")
             if 'regression' in value:
                 PropertyTypeDetector.validate_regression(value['regression'])
             return True
@@ -125,8 +124,8 @@ class PropertyTypeDetector:
         elif isinstance(value, dict) and 'equation' in value:
             required_keys = {'equation', 'bounds'}
             optional_keys = {'regression'}
-            PropertyTypeDetector.validate_keys(value, required_keys, optional_keys, "compute configuration")
-            PropertyTypeDetector.validate_bounds(value['bounds'], "compute configuration bound")
+            PropertyTypeDetector.validate_keys(value, required_keys, optional_keys, "'COMPUTE' Config")
+            PropertyTypeDetector.validate_bounds(value['bounds'], "'COMPUTE' config bound")
             if 'regression' in value:
                 PropertyTypeDetector.validate_regression(value['regression'])
             return True

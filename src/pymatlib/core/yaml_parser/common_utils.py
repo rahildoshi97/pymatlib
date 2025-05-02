@@ -34,7 +34,10 @@ def validate_temperature_range(
     logger.debug("""validate_temperature_range:
             prop: %r
             temp_array: %r
-            global_temp_array: %r""", prop, temp_array, global_temp_array)
+            global_temp_array: %r""",
+                 prop,
+                 temp_array.shape if temp_array is not None else None,
+                 global_temp_array.shape if global_temp_array is not None else None)
     logger.debug(f"validate_temperature_range: Validating property '{prop}' with temperature array of shape {temp_array.shape} against global temperature array of shape {global_temp_array.shape}")
     min_temp, max_temp = np.min(global_temp_array), np.max(global_temp_array)
     if ((temp_array < min_temp) | (temp_array > max_temp)).any():
@@ -105,9 +108,9 @@ def process_regression_params(
     if not has_regression:
         return False, None, None, None
     regression_config = prop_config['regression']
-    simplify_type = regression_config.get('simplify', 'pre')
-    degree = regression_config.get('degree', 1)
-    segments = regression_config.get('segments', 3)
+    simplify_type = regression_config['simplify']
+    degree = regression_config['degree']
+    segments = regression_config['segments']
     if segments >= data_length:
         raise ValueError(f"Number of segments ({segments}) must be less than number of data points ({data_length})")
     if segments > 8:
@@ -124,8 +127,12 @@ def create_raw_piecewise(temp_array: np.ndarray, prop_array: np.ndarray, T: sp.S
             prop_array: %r
             T: %r
             lower: %r
-            upper: %r""", temp_array, prop_array, T, lower, upper)
-    if temp_array[0] > temp_array[-1]: temp_array, prop_array = np.flip(temp_array), np.flip(prop_array)
+            upper: %r""",
+                 temp_array.shape if temp_array is not None else None,
+                 prop_array.shape if prop_array is not None else None,
+                 T, lower, upper)
+    # if temp_array[0] > temp_array[-1]: temp_array, prop_array = np.flip(temp_array), np.flip(prop_array)
+    if temp_array[0] > temp_array[-1]: raise ValueError("Temperature array is not in ascending order.")
     conditions = [((prop_array[0] if lower=='constant' else prop_array[0]+(prop_array[1]-prop_array[0])/(temp_array[1]-temp_array[0])*(T-temp_array[0])), T<temp_array[0])] + \
                  [(prop_array[i]+(prop_array[i+1]-prop_array[i])/(temp_array[i+1]-temp_array[i])*(T-temp_array[i]), sp.And(T>=temp_array[i], T<temp_array[i+1])) for i in range(len(temp_array)-1)] + \
                  [((prop_array[-1] if upper=='constant' else prop_array[-1]+(prop_array[-1]-prop_array[-2])/(temp_array[-1]-temp_array[-2])*(T-temp_array[-1])), T>=temp_array[-1])]
@@ -145,7 +152,10 @@ def create_raw_piecewise1(
             prop_array: %r
             T: %r
             lower_bound_type: %r
-            upper_bound_type: %r""", temp_array, prop_array, T, lower_bound_type, upper_bound_type)
+            upper_bound_type: %r""",
+                 temp_array.shape if temp_array is not None else None,
+                 prop_array.shape if prop_array is not None else None,
+                 T, lower_bound_type, upper_bound_type)
     temp_array = np.asarray(temp_array)
     prop_array = np.asarray(prop_array)
     logger.debug(f"create_raw_piecewise: Creating piecewise function with temperature array of shape {temp_array.shape} and property array of shape {prop_array.shape}")
