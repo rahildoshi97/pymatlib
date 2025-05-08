@@ -94,12 +94,28 @@ class MaterialConfigParser(YAMLConfigParser):
         logger.debug("""MaterialConfigParser: create_alloy:
             T: %r""", T)
         try:
-            alloy = Alloy(
-                elements=self._get_elements(),
-                composition=[val for val in self.config['composition'].values()],
-                solidus_temperature=sp.Float(self.config['solidus_temperature']),
-                liquidus_temperature=sp.Float(self.config['liquidus_temperature'])
-            )
+            material_type = self.config['material_type']
+            elements = self._get_elements()
+            composition = [val for val in self.config['composition'].values()]
+            # Create alloy with different parameters based on material_type
+            if material_type == 'pure_metal':
+                alloy = Alloy(
+                    elements=elements,
+                    composition=composition,
+                    material_type=material_type,
+                    melting_temperature=sp.Float(self.config['melting_temperature']),
+                    boiling_temperature=sp.Float(self.config['boiling_temperature']),
+                )
+            else:  # alloy
+                alloy = Alloy(
+                    elements=elements,
+                    composition=composition,
+                    material_type=material_type,
+                    solidus_temperature=sp.Float(self.config['solidus_temperature']),
+                    liquidus_temperature=sp.Float(self.config['liquidus_temperature']),
+                    initial_boiling_temperature=sp.Float(self.config['initial_boiling_temperature']),
+                    final_boiling_temperature=sp.Float(self.config['final_boiling_temperature']),
+                )
             self.visualizer.initialize_plots()
             self.visualizer.reset_visualization_tracking()
             self.property_processor.process_properties(
@@ -131,10 +147,23 @@ class MaterialConfigParser(YAMLConfigParser):
 
     def _validate_required_fields(self) -> None:
         logger.debug(f"MaterialConfigParser: _validate_required_fields")
-        required_fields = {'name', 'composition', 'solidus_temperature', 'liquidus_temperature', 'temperature_range', 'properties'}
+        # Check for material_type first
+        if 'material_type' not in self.config:
+            raise ValueError("Missing required field: material_type")
+        material_type = self.config['material_type']
+        if material_type not in ['alloy', 'pure_metal']:
+            raise ValueError(f"Invalid material_type: {material_type}. Must be 'alloy' or 'pure_metal'")
+        # Common required fields
+        common_fields = {'name', 'material_type', 'composition', 'temperature_range', 'properties'}
+        # Material-type specific fields
+        if material_type == 'pure_metal':
+            required_fields = common_fields | {'melting_temperature', 'boiling_temperature'}
+        else:  # alloy
+            required_fields = common_fields | {'solidus_temperature', 'liquidus_temperature',
+                                               'initial_boiling_temperature', 'final_boiling_temperature'}
         missing_fields = required_fields - set(self.config.keys())
         if missing_fields:
-            raise ValueError(f"Missing required fields: {', '.join(missing_fields)}")
+            raise ValueError(f"Missing required fields for {material_type}: {', '.join(missing_fields)}")
         extra_fields = set(self.config.keys()) - required_fields
         if extra_fields:
             suggestions = {

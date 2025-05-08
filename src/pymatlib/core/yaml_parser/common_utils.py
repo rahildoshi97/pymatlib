@@ -137,7 +137,7 @@ def create_raw_piecewise(temp_array: np.ndarray, prop_array: np.ndarray, T: sp.S
                  [((prop_array[-1] if upper=='constant' else prop_array[-1]+(prop_array[-1]-prop_array[-2])/(temp_array[-1]-temp_array[-2])*(T-temp_array[-1])), T>=temp_array[-1])]
     return sp.Piecewise(*conditions)
 
-def create_piecewise_from_formulas(
+def create_piecewise_from_formulas_legacy(
         temp_points: np.ndarray,
         eqn_exprs: List[Union[str, sp.Expr]],
         T: sp.Symbol,
@@ -180,4 +180,67 @@ def create_piecewise_from_formulas(
         slope = sp.diff(eqn_exprs[-1], T)
         extrap_expr = eqn_exprs[-1] + slope * (T - temp_points[-1])
         conditions.append((extrap_expr, T >= temp_points[-1]))
+    return sp.Piecewise(*conditions)
+
+
+def create_piecewise_from_formulas(
+        temp_points: np.ndarray,
+        eqn_exprs: List[Union[str, sp.Expr]],
+        T: sp.Symbol,
+        lower_bound_type: str = 'constant',
+        upper_bound_type: str = 'constant') -> sp.Piecewise:
+    """Create a SymPy Piecewise function from breakpoints and symbolic expressions."""
+    logger.debug("""create_piecewise_from_formulas:
+            temp_points: %r
+            eqn_exprs: %r
+            T: %r
+            lower_bound_type: %r
+            upper_bound_type: %r""", temp_points, eqn_exprs, T, lower_bound_type, upper_bound_type)
+    temp_points = np.asarray(temp_points, dtype=float)
+    eqn_exprs = [
+        sp.sympify(expr, locals={'T': T}) if isinstance(expr, str) else expr
+        for expr in eqn_exprs
+    ]
+    if len(eqn_exprs) != len(temp_points) - 1:
+        raise ValueError(
+            f"Number of formulas ({len(eqn_exprs)}) must be one less than number of breakpoints ({len(temp_points)})"
+        )
+    conditions = []
+
+    if len(eqn_exprs) == 1 and lower_bound_type == 'extrapolate' and upper_bound_type == 'extrapolate':
+        # throw warniung here with the hint to simplify input yaml file
+        #
+        #   bad definition
+        #   specific_heat_capacity:
+        #     temperature: [solidus_temperature, liquidus_temperature]
+        #     values: 500 + 0.0001 * T
+        #     bounds: [extrapolate, extrapolate]
+        #
+        #   easy definition
+        #   specific_heat_capacity: 500 + 0.0001 * T
+        #
+        return eqn_exprs[0]
+
+    # Intervals
+    for i, expr in enumerate(eqn_exprs):
+        finished = False
+        if i == 0:
+            # Lower bound
+            if lower_bound_type == 'constant':
+                conditions.append((eqn_exprs[0].subs(T, temp_points[0]), T < temp_points[0]))
+                conditions.append((expr, sp.And(T >= temp_points[i], T < temp_points[i + 1])))
+            else:  # 'extrapolate'
+                conditions.append((expr, T < temp_points[i+1]))
+            finished = True
+        if i == len(eqn_exprs) - 1:
+            # Upper bound
+            if upper_bound_type == 'constant':
+                conditions.append((expr, sp.And(T >= temp_points[i], T < temp_points[i + 1])))
+                conditions.append((eqn_exprs[-1].subs(T, temp_points[-1]), True))
+            else:  # 'extrapolate'
+                conditions.append((expr, True))
+            finished = True
+        if not finished:
+            conditions.append((expr, sp.And(T >= temp_points[i], T < temp_points[i + 1])))
+
     return sp.Piecewise(*conditions)

@@ -1,12 +1,40 @@
 name: SS304L_Comprehensive
 
+
+material_type: alloy  # or pure_metal
+
 composition:
   Fe: 0.675
   Cr: 0.170
   Ni: 0.120
   Mo: 0.025
   Mn: 0.010
+  # pure metal
+  heat_capacity: 520 if T < melting_temperature else 650
+    temperature: melting_temperature
+    values: [520, 650]
 
+  latent_heat_of_fusion:
+    temperature: melting_temperature
+    values: [0, 171401.]
+#--> alloys
+# composition at least two elements!
+# interval for melting
+solidus_temperature: 1605.
+liquidus_temperature: 1735.
+# interval for evaporation
+liquidus_boiling_temperature: 6520.
+vapor_boiling_temperature: 6850.
+
+
+#--> pure metals
+composition:
+  Cu  0.9992
+  O   0.0005
+  P   0.0001
+  Fe  0.0002
+melting_temperature: 1655
+boiling_temperature: 6000
 solidus_temperature: 1605.
 liquidus_temperature: 1735.
 
@@ -27,7 +55,7 @@ properties:
 
   ##################################################
 
-  latent_heat_of_vaporization: 171401.  # CONSTANT -> KEY_VAL
+  latent_heat_of_vaporization: 171401.  # CONSTANT -> KEY_VAL  # TODO:
 
   ##################################################
 
@@ -37,8 +65,8 @@ properties:
 
   heat_conductivity:  # PIECEWISE_EQUATION
     temperature:    [500, 1700, 3000]
-    equation:       [0.0124137215440647*T + 13.0532171803243, 0.0152266213998596*T + 4.88433067059347]  # for partially defined equations
-    bounds:         [constant, extrapolate]
+    equation:       [0.0124137215440647*T + 13.0532171803243, 0.0124137215440647*T + 13.0532171803243]  # for partially defined equations
+    bounds:         [extrapolate, extrapolate]
     regression:
       simplify: post
       degree: 1
@@ -66,7 +94,7 @@ properties:
 
   heat_capacity:  # FILE
     file: ./304L_Erstarrungsdaten_edited.xlsx
-    temp_col: T (K)
+    temp_col: T (K)  # TODO: change to temp_header
     prop_col: Specific heat (J/(Kg K))
     bounds: [extrapolate, extrapolate]
     regression:
@@ -109,7 +137,7 @@ properties:
   ##################################################
 
   thermal_expansion_coefficient:  # KEY_VAL
-    key: [300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1500, 2000, 2500, 3000]
+    key: [300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1500, 2000, 2500, 3000]  # TODO; temperature
     val: [1.2632e-5, 1.468e-5, 1.524e-5, 1.581e-5, 1.639e-5, 1.699e-5, 1.759e-5, 1.821e-5, 1.885e-5, 2.1e-5, 2.3e-5, 2.5e-5, 2.7e-5]
     bounds: [constant, extrapolate]
     regression:

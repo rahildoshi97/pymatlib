@@ -60,6 +60,13 @@ def interpolate_atomic_mass(elements: List[ChemicalElement], composition: List[f
     values = [element.atomic_mass for element in elements]
     return interpolate(values, composition)
 
+def interpolate_melting_temperature(elements: List[ChemicalElement], composition: List[float]) -> float:
+    """
+    Interpolates the melting temperature based on the elements and their composition.
+    """
+    values = [element.melting_temperature for element in elements]
+    return interpolate(values, composition)
+
 def interpolate_boiling_temperature(elements: List[ChemicalElement], composition: List[float]) -> float:
     """
     Interpolates the boiling temperature based on the elements and their composition.
@@ -72,11 +79,4 @@ def interpolate_boiling_temperature(elements: List[ChemicalElement], composition
         float: Interpolated boiling temperature.
     """
     values = [element.boiling_temperature for element in elements]
-    return interpolate(values, composition)
-
-def interpolate_melting_temperature(elements: List[ChemicalElement], composition: List[float]) -> float:
-    """
-    Interpolates the melting temperature based on the elements and their composition.
-    """
-    values = [element.melting_temperature for element in elements]
     return interpolate(values, composition)

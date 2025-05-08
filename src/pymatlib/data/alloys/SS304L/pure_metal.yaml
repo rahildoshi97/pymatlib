@@ -1,0 +1,23 @@
+name: Pure_Aluminum
+material_type: pure_metal
+composition:
+  Al: 1.0
+melting_temperature: 933.47
+boiling_temperature: 2743.0
+temperature_range: [3000, 300, 541]
+
+properties:
+  latent_heat_of_fusion: # 10700.0  # Will be processed as a step function
+    key: melting_temperature
+    val: [0, 10700.0]
+    bounds: [constant, constant]
+
+  density:
+    temperature: [500, 933.47, 2500]
+    equation: [0., 10700.0]  # for partially defined equations
+    bounds: [constant, extrapolate]
+
+  latent_heat_of_vaporization: 294000.0  # Will be processed as a step function
+    # key: boiling_temperature
+    # value: [0, 294000.0]
+    # bounds: [constant, constant]

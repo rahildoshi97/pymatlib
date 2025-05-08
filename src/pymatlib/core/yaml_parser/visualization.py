@@ -137,7 +137,7 @@ class PropertyVisualizer:
                     # print(f"x_data: {x_data}")
                     # print(f"y_data: {y_data}")
                     marker_size = 2.5 if prop_type == 'Key-Value' else 2.
-                    ax.plot(x_data, y_data, linewidth=1.0, marker='o', markersize=marker_size, label='raw')
+                    # ax.plot(x_data, y_data, linewidth=1.0, marker='o', markersize=marker_size, label='raw')  # don't plot raw data
                     # Main line: either pre-regression or raw (extended)
                     if has_regression and simplify_type == 'pre':
                         # print(f"extended_temp: {extended_temp}")
@@ -172,7 +172,7 @@ class PropertyVisualizer:
                         f_preview = sp.lambdify(T, preview_pw, 'numpy')
                         ax.plot(extended_temp, f_preview(extended_temp), linestyle=':', linewidth=1, label='regression (post)')
                 else:  # INVALID property type
-                    ax.plot(extended_temp, f_current(extended_temp), linestyle='-', linewidth=1, label='property')
+                    ax.plot(extended_temp, f_current(extended_temp), linestyle='-', linewidth=1, label='INVALID property')
                     try:
                         y_value = float(f_current(upper_bound))
                     except Exception:

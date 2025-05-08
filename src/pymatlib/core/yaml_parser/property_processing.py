@@ -72,11 +72,14 @@ class PropertyProcessor:
         try:
             for prop_type, prop_list in self.categorized_properties.items():
                 # Sort properties to ensure boiling_temperature is processed first
-                sorted_props = sorted(prop_list, key=lambda x: 0 if x[0] in ['boiling_temperature', 'melting_temperature'] else 1)
+                sorted_props = sorted(prop_list, key=lambda x: 0 if x[0] in ['melting_temperature', 'boiling_temperature'] else 1)
+                print(f"sorted_props={sorted_props}")
                 for prop_name, config in sorted_props:
                     if prop_type == PropertyType.CONSTANT and prop_name not in ['latent_heat_of_fusion', 'latent_heat_of_vaporization']:
+                        print(f"PropertyType.CONSTANT not in latent_heat: prop_name={prop_name}, config={config}")
                         self._process_constant_property(alloy, prop_name, config, T)
                     elif prop_type == PropertyType.CONSTANT and prop_name in ['latent_heat_of_fusion', 'latent_heat_of_vaporization']:
+                        print(f"PropertyType.CONSTANT in latent_heat: prop_name={prop_name}, config={config}")
                         self._process_latent_heat_constant(alloy, prop_name, config, T)
                     elif prop_type == PropertyType.FILE:
                         self._process_file_property(alloy, prop_name, config, T)
@@ -123,20 +126,41 @@ class PropertyProcessor:
             T: %r""", alloy, prop_name, prop_config, T)
         try:
             latent_heat_value = float(prop_config)
-            if prop_name == 'latent_heat_of_fusion':
-                expanded_config = {
-                    'key': ['solidus_temperature', 'liquidus_temperature'],
-                    'val': [0, latent_heat_value],
-                    'bounds': ['constant', 'constant'],
-                    'regression': {'simplify': 'pre', 'degree': 1, 'segments': 1},
-                }
-            elif prop_name == 'latent_heat_of_vaporization':  # TODO
-                expanded_config = {
-                    'key': ['boiling_temperature-10', 'boiling_temperature+10'],
-                    'val': [0, latent_heat_value],
-                    'bounds': ['constant', 'constant'],
-                    'regression': {'simplify': 'pre', 'degree': 1, 'segments': 1},
-                }
+            # Different configuration based on material type
+            if alloy.material_type == 'pure_metal':
+                # For pure metals: step function at the transition temperature
+                if prop_name == 'latent_heat_of_fusion':
+                    expanded_config = {
+                        'key': 'melting_temperature',
+                        'val': [0, latent_heat_value],
+                        'bounds': ['constant', 'constant'],
+                    }
+                elif prop_name == 'latent_heat_of_vaporization':
+                    expanded_config = {
+                        'key': 'boiling_temperature',
+                        'val': [0, latent_heat_value],
+                        'bounds': ['constant', 'constant'],
+                    }
+                else:
+                    raise ValueError(f"Unsupported latent heat property: {prop_name}")
+            elif alloy.material_type == 'alloy':
+                # For alloys: linear curve between temperature points
+                if prop_name == 'latent_heat_of_fusion':
+                    expanded_config = {
+                        'key': ['solidus_temperature', 'liquidus_temperature'],
+                        'val': [0, latent_heat_value],
+                        'bounds': ['constant', 'constant'],
+                        'regression': {'simplify': 'pre', 'degree': 1, 'segments': 1},
+                    }
+                elif prop_name == 'latent_heat_of_vaporization':
+                    expanded_config = {
+                        'key': ['initial_boiling_temperature', 'final_boiling_temperature'],
+                        'val': [0, latent_heat_value],
+                        'bounds': ['constant', 'constant'],
+                        'regression': {'simplify': 'pre', 'degree': 1, 'segments': 1},
+                    }
+                else:
+                    raise ValueError(f"Unsupported latent heat property: {prop_name}")
             else:
                 raise ValueError(f"Unsupported latent heat configuration: {prop_name}")
             self._process_key_val_property(alloy, prop_name, expanded_config, T)
@@ -212,13 +236,54 @@ class PropertyProcessor:
             prop_config: %r
             T: %r""", alloy, prop_name, prop_config, T)
         try:
+            # Handle step function case for pure metals
+            if alloy.material_type == 'pure_metal' and isinstance(prop_config['key'], str) and prop_config['key'] in ['melting_temperature', 'boiling_temperature'] and len(prop_config['val']) == 2:
+                # Get the transition temperature
+                if prop_config['key'] == 'melting_temperature':
+                    transition_temp = float(alloy.melting_temperature)
+                elif prop_config['key'] == 'boiling_temperature':
+                    transition_temp = float(alloy.boiling_temperature)
+                else:
+                    raise ValueError(f"Invalid key '{prop_config['key']}' for pure metal")
+                # Create step function
+                T_sym = T if isinstance(T, sp.Symbol) else sp.Symbol('T')
+                val_array = np.array(prop_config['val'], dtype=float)
+                # Create step function: val[0] if T < transition_temp else val[1]
+                step_function = sp.Piecewise((val_array[0], T_sym < transition_temp), (val_array[1], True))
+                setattr(alloy, prop_name, step_function)
+                if not isinstance(T, sp.Symbol):
+                    value = float(step_function.subs(T_sym, T).evalf())
+                    setattr(alloy, prop_name, sp.Float(value))
+                    return
+                f_pw = sp.lambdify(T_sym, step_function, 'numpy')
+                diff = abs(self.temperature_array[1] - self.temperature_array[0])
+                temp_dense = np.arange(np.min(self.temperature_array), np.max(self.temperature_array)+diff/2, diff)
+                y_dense = f_pw(temp_dense)
+                # Visualize if needed
+                if self.visualizer is not None:
+                    self.visualizer.visualize_property(
+                        alloy=alloy,
+                        prop_name=prop_name,
+                        T=T,
+                        prop_type='KEY_VAL',
+                        x_data=temp_dense,
+                        y_data=y_dense,
+                        has_regression=False,
+                        lower_bound=np.min(self.temperature_array),
+                        upper_bound=np.max(self.temperature_array),
+                        lower_bound_type=prop_config['bounds'][0],
+                        upper_bound_type=prop_config['bounds'][1]
+                    )
+                self.processed_properties.add(prop_name)
+                return
+            # Alloy case
             key_array = self._process_key_definition(prop_config['key'], prop_config['val'], alloy)
             val_array = np.array(prop_config['val'], dtype=float)
             if len(key_array) != len(val_array):
                 raise ValueError(f"Length mismatch in {prop_name}: key and val arrays must have same length")
-            # if prop_name not in ['latent_heat_of_fusion', 'latent_heat_of_vaporization']:
-                # self._validate_temperature_range(prop_name, key_array)
-            self._validate_temperature_range(prop_name, key_array)
+            # Skip temperature validation for latent heat properties
+            if prop_name not in ['latent_heat_of_fusion', 'latent_heat_of_vaporization']:
+                self._validate_temperature_range(prop_name, key_array)
             key_array, val_array = ensure_ascending_order(key_array, val_array)
             lower_bound_type, upper_bound_type = prop_config['bounds']
             lower_bound = np.min(key_array)
@@ -298,42 +363,61 @@ class PropertyProcessor:
             processed_key = []
             for k in key_def:
                 if isinstance(k, str):
-                    if k == 'solidus_temperature':
-                        processed_key.append(alloy.solidus_temperature)
-                    elif k == 'liquidus_temperature':
-                        processed_key.append(alloy.liquidus_temperature)
-                    elif k == 'boiling_temperature':
-                        processed_key.append(alloy.boiling_temperature)
-                    elif k == 'melting_temperature':
+                    # Handle pure metal properties
+                    if k == 'melting_temperature' and hasattr(alloy, 'melting_temperature'):
                         processed_key.append(alloy.melting_temperature)
+                    elif k == 'boiling_temperature' and hasattr(alloy, 'boiling_temperature'):
+                        processed_key.append(alloy.boiling_temperature)
+                    # Handle alloy properties
+                    elif k == 'solidus_temperature' and hasattr(alloy, 'solidus_temperature'):
+                        processed_key.append(alloy.solidus_temperature)
+                    elif k == 'liquidus_temperature' and hasattr(alloy, 'liquidus_temperature'):
+                        processed_key.append(alloy.liquidus_temperature)
+                    elif k == 'initial_boiling_temperature' and hasattr(alloy, 'initial_boiling_temperature'):
+                        processed_key.append(alloy.initial_boiling_temperature)
+                    elif k == 'final_boiling_temperature' and hasattr(alloy, 'final_boiling_temperature'):
+                        processed_key.append(alloy.final_boiling_temperature)
+                    # Handle offset notation (e.g., "melting_temperature+10")
                     elif '+' in k:
                         base, offset = k.split('+')
                         offset_value = float(offset)
-                        if base == 'solidus_temperature':
-                            base_value = alloy.solidus_temperature
-                        elif base == 'liquidus_temperature':
-                            base_value = alloy.liquidus_temperature
-                        elif base == 'boiling_temperature':
-                            base_value = alloy.boiling_temperature
-                        elif base == 'melting_temperature':
+                        # Get base value based on material type
+                        if base == 'melting_temperature' and hasattr(alloy, 'melting_temperature'):
                             base_value = alloy.melting_temperature
+                        elif base == 'boiling_temperature' and hasattr(alloy, 'boiling_temperature'):
+                            base_value = alloy.boiling_temperature
+                        elif base == 'solidus_temperature' and hasattr(alloy, 'solidus_temperature'):
+                            base_value = alloy.solidus_temperature
+                        elif base == 'liquidus_temperature' and hasattr(alloy, 'liquidus_temperature'):
+                            base_value = alloy.liquidus_temperature
+                        elif base == 'initial_boiling_temperature' and hasattr(alloy, 'initial_boiling_temperature'):
+                            base_value = alloy.initial_boiling_temperature
+                        elif base == 'final_boiling_temperature' and hasattr(alloy, 'final_boiling_temperature'):
+                            base_value = alloy.final_boiling_temperature
                         else:
                             base_value = float(base)
                         processed_key.append(base_value + offset_value)
+                    # Similar handling for subtraction
                     elif '-' in k:
+                        # Similar implementation as above for subtraction
                         base, offset = k.split('-')
-                        offset_value = -float(offset)
-                        if base == 'solidus_temperature':
-                            base_value = alloy.solidus_temperature
-                        elif base == 'liquidus_temperature':
-                            base_value = alloy.liquidus_temperature
-                        elif base == 'boiling_temperature':
-                            base_value = alloy.boiling_temperature
-                        elif base == 'melting_temperature':
+                        offset_value = float(offset)
+                        # Get base value based on material type
+                        if base == 'melting_temperature' and hasattr(alloy, 'melting_temperature'):
                             base_value = alloy.melting_temperature
+                        elif base == 'boiling_temperature' and hasattr(alloy, 'boiling_temperature'):
+                            base_value = alloy.boiling_temperature
+                        elif base == 'solidus_temperature' and hasattr(alloy, 'solidus_temperature'):
+                            base_value = alloy.solidus_temperature
+                        elif base == 'liquidus_temperature' and hasattr(alloy, 'liquidus_temperature'):
+                            base_value = alloy.liquidus_temperature
+                        elif base == 'initial_boiling_temperature' and hasattr(alloy, 'initial_boiling_temperature'):
+                            base_value = alloy.initial_boiling_temperature
+                        elif base == 'final_boiling_temperature' and hasattr(alloy, 'final_boiling_temperature'):
+                            base_value = alloy.final_boiling_temperature
                         else:
                             base_value = float(base)
-                        processed_key.append(base_value + offset_value)
+                        processed_key.append(base_value - offset_value)
                     else:
                         processed_key.append(float(k))
                 else:
@@ -365,8 +449,7 @@ class PropertyProcessor:
         eqn_exprs = [sp.sympify(eq, locals={'T': T_sym}) for eq in eqn_strings]
         pw = self._create_piecewise_from_formulas(temp_points, eqn_exprs, T_sym, lower_bound_type, upper_bound_type)
         print(f"pw={pw},\neqn_strings={eqn_strings},\ntemp_points={temp_points}")
-        is_symbolic = isinstance(T, sp.Symbol)
-        if not is_symbolic:
+        if not isinstance(T, sp.Symbol):
             value = float(pw.subs(T_sym, T).evalf())
             setattr(alloy, prop_name, sp.Float(value))
             self.processed_properties.add(prop_name)

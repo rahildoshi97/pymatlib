@@ -1,5 +1,7 @@
 name: SS304L_Comprehensive
 
+material_type: alloy  # or pure_metal
+
 composition:
   Fe: 0.675
   Cr: 0.170
@@ -7,8 +9,12 @@ composition:
   Mo: 0.025
   Mn: 0.010
 
+# interval for melting
 solidus_temperature: 1605.
 liquidus_temperature: 1735.
+# interval for evaporation
+initial_boiling_temperature: 6520.
+final_boiling_temperature: 6850.
 
 # temperature_range: [300, 3000, 541]  # 541 (int) -> points
 #OR
@@ -16,14 +22,33 @@ temperature_range: [3000, 300, -5.0]  # 5.0 (float) -> decrement
 
 properties:
 
-  specific_enthalpy: Integral(heat_capacity, T)  # COMPUTE
-
-  heat_capacity:  # FILE
-    file: ./304L_Erstarrungsdaten_edited.xlsx
-    temp_col: T (K)
-    prop_col: Specific heat (J/(Kg K))
-    bounds: [extrapolate, extrapolate]
+  latent_heat_of_fusion:  # KEY_VAL
+    key: [solidus_temperature, liquidus_temperature]  # expanded config if material_type is alloy
+    val: [0, 171401.]
+    bounds: [constant, extrapolate]
     regression:
-      simplify: post  # TODO: 'post' causes errors: <lambdifygenerated-8>:2: RuntimeWarning: divide by zero encountered in reciprocal
+      simplify: pre
       degree: 1
-      segments: 4
+      segments: 1
+
+  latent_heat_of_vaporization:
+    key: [initial_boiling_temperature, final_boiling_temperature]  # expanded config if material_type is alloy
+    val: [0, 171401.]
+    bounds: [constant, extrapolate]
+    regression:
+      simplify: pre
+      degree: 1
+      segments: 1
+
+  ##################################################
+
+  latent_heat_of_fusion:
+    key: melting_temperature  # expanded config -> step function -> 520 if T < melting_temperature else 650
+    val: [520., 650.]
+    bounds: [constant, constant]
+
+  latent_heat_of_vaporization:
+    key: boiling_temperature  # expanded config -> step function -> 520 if T < boiling_temperature else 650
+    val: [520., 650.]
+    bounds: [constant, constant]
+
