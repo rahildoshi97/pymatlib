@@ -16,19 +16,26 @@ temperature_range: [300, 3000, 5.0]  # 5.0 (float) -> increment
 
 properties:
 
-  latent_heat_of_fusion: 171401.
+  latent_heat_of_fusion:  # KEY_VAL
+    key: [solidus_temperature, liquidus_temperature]
+    val: [0, 171401.]
+    bounds: [constant, extrapolate]
+    regression:
+      simplify: pre
+      degree: 1
+      segments: 1
 
   ##################################################
 
-  latent_heat_of_vaporization: 171401.
+  latent_heat_of_vaporization: 171401.  # CONSTANT -> KEY_VAL
 
   ##################################################
 
-  boiling_temperature: 2000.  # overwrites the internally computed boiling temperature
+  boiling_temperature: 2000.  # overwrites the internally computed boiling temperature  # CONSTANT
 
   ##################################################
 
-  heat_conductivity:
+  heat_conductivity:  # PIECEWISE_EQUATION
     temperature:    [500, 1700, 3000]
     equation:       [0.0124137215440647*T + 13.0532171803243, 0.0152266213998596*T + 4.88433067059347]  # for partially defined equations
     bounds:         [constant, extrapolate]
@@ -39,19 +46,25 @@ properties:
 
   ##################################################
 
-  specific_enthalpy: Integral(heat_capacity, T)
+  specific_enthalpy: Integral(heat_capacity, T)  # COMPUTE
   # OR
-  melting_temperature:  # TODO: specific_enthalpy renamed to melting_temperature for testing
+  kinematic_viscosity:  # COMPUTE TODO: specific_enthalpy renamed to kinematic_viscosity for testing
     equation: Integral(heat_capacity, T)
     bounds: [ constant, extrapolate ]
     regression:
-      simplify: pre
+      simplify: post
       degree: 1
-      segments: 3
+      segments: 2
 
   ##################################################
 
-  heat_capacity:
+  energy_density:  # COMPUTE
+    equation: density * specific_enthalpy
+    bounds: [ constant, constant ]
+
+  ##################################################
+
+  heat_capacity:  # FILE
     file: ./304L_Erstarrungsdaten_edited.xlsx
     temp_col: T (K)
     prop_col: Specific heat (J/(Kg K))
@@ -63,7 +76,7 @@ properties:
 
   ##################################################
 
-  thermal_diffusivity:
+  thermal_diffusivity:  # COMPUTE
     equation: heat_conductivity /(density * heat_capacity)
     bounds: [ constant, extrapolate ]
     regression:
@@ -73,9 +86,9 @@ properties:
 
   ##################################################
 
-  density: 6594.65 * ((1 + thermal_expansion_coefficient * (T - 2270)) ** (-3))
+  density: 6594.65 * ((1 + thermal_expansion_coefficient * (T - 2270)) ** (-3))  # COMPUTE
   # OR
-  dynamic_viscosity:  # TODO: density renamed to dynamic_viscosity for testing
+  dynamic_viscosity:  # COMPUTE TODO: density renamed to dynamic_viscosity for testing
     equation: 6594.65 * (1 + thermal_expansion_coefficient * (T - 2270)) ** (-3)
     bounds: [ constant, extrapolate ]
     regression:
@@ -83,7 +96,7 @@ properties:
       degree: 1
       segments: 3
   # OR
-  surface_tension:  # TODO: density renamed to surface_tension for testing
+  surface_tension:  # TODO: density renamed to surface_tension for testing  # FILE
     file: ./304L_Erstarrungsdaten_edited.xlsx
     temp_col:  T (K)
     prop_col: Density (kg/(m)^3)
@@ -95,7 +108,7 @@ properties:
 
   ##################################################
 
-  thermal_expansion_coefficient:
+  thermal_expansion_coefficient:  # KEY_VAL
     key: [300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1500, 2000, 2500, 3000]
     val: [1.2632e-5, 1.468e-5, 1.524e-5, 1.581e-5, 1.639e-5, 1.699e-5, 1.759e-5, 1.821e-5, 1.885e-5, 2.1e-5, 2.3e-5, 2.5e-5, 2.7e-5]
     bounds: [constant, extrapolate]

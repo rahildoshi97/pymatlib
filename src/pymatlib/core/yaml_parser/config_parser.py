@@ -164,50 +164,46 @@ class MaterialConfigParser(YAMLConfigParser):
 
     # --- Processing Methods ---
     def _process_temperature_range(self, array_def: List[Union[int, float]]) -> np.ndarray:
-        logger.debug("""MaterialConfigParser: _process_temperature_range:
-            array_def: %r""", array_def)
+        logger.debug("MaterialConfigParser: _process_temperature_range: array_def: %r", array_def)
+
+        # Validate input format
         if not (isinstance(array_def, list) and len(array_def) == 3):
             raise ValueError("Temperature array must be defined as [start, end, points/delta]")
-        try:
-            start, end, step = float(array_def[0]), float(array_def[1]), array_def[2]
-            if start <= self.ABSOLUTE_ZERO or end <= self.ABSOLUTE_ZERO:
-                raise ValueError(f"Temperature must be above absolute zero ({self.ABSOLUTE_ZERO}K)")
-            if abs(float(step)) < self.EPSILON:
-                raise ValueError("Delta or number of points cannot be zero.")
-            if isinstance(step, int):
-                temperature_array = self._process_int_step(start, end, int(step))
-            else:  # Assume step is a float
-                temperature_array = self._process_float_step(start, end, step)
-            temperature_array, = ensure_ascending_order(temperature_array)
-            return temperature_array
-        except ValueError as e:
-            raise ValueError(f"Invalid temperature array definition \n -> {e}")
 
-    def _process_int_step(self, start: float, end: float, points: int) -> np.ndarray:
-        logger.debug("""MaterialConfigParser: _process_int_step:
-            start: %r
-            end: %r
-            points: %r""", start, end, points)
-        if points <= 0:
-            raise ValueError(f"Number of points must be positive, got {points}!")
-        if points < self.MIN_POINTS:
-            raise ValueError(f"Number of points must be at least {self.MIN_POINTS}, got {points}!")
-        return np.linspace(start, end, points)
+        # Extract and validate values
+        start, end, step = float(array_def[0]), float(array_def[1]), array_def[2]
 
-    @staticmethod
-    def _process_float_step(start: float, end: float, delta: float) -> np.ndarray:
-        logger.debug("""MaterialConfigParser: _process_float_step:
-            start: %r
-            end: %r
-            delta: %r""", start, end, delta)
-        if start < end and delta <= 0:
-            raise ValueError("Delta must be positive for increasing range")
-        if start > end and delta >= 0:
-            raise ValueError("Delta must be negative for decreasing range")
-        max_delta = abs(end - start)
-        if abs(delta) > max_delta:
-            raise ValueError(f"Absolute value of delta ({abs(delta)}) is too large for the range. It should be <= {max_delta}")
-        return np.arange(start, end + delta/2, delta)
+        # Check for temperatures below absolute zero
+        if start <= self.ABSOLUTE_ZERO or end <= self.ABSOLUTE_ZERO:
+            raise ValueError(f"Temperature must be above absolute zero ({self.ABSOLUTE_ZERO}K), got {start}K and {end}K")
+
+        # Check for zero step
+        if isinstance(step, (int, float)) and abs(float(step)) <= self.EPSILON:
+            raise ValueError("Delta or number of points cannot be zero")
+
+        # Create array based on step type
+        if isinstance(step, int):
+            # Handle number of points
+            if step <= 0:
+                raise ValueError(f"Number of points must be positive, got {step}")
+            if step < self.MIN_POINTS:
+                raise ValueError(f"Number of points must be at least {self.MIN_POINTS}, got {step}")
+
+            temperature_array = np.linspace(start, end, step)
+        else:
+            # Handle step size
+            if (start < end and step <= 0) or (start > end and step >= 0):
+                raise ValueError("Delta sign must match range direction (positive for increasing, negative for decreasing)")
+
+            if abs(step) > abs(end - start):
+                raise ValueError(f"Absolute value of delta ({abs(step)}) is too large for the range. It should be <= {abs(end - start)}")
+
+            temperature_array = np.arange(start, end + step/2, step)
+
+        # Ensure array is in ascending order
+        temperature_array, = ensure_ascending_order(temperature_array)
+
+        return temperature_array
 
     def _get_elements(self) -> List:
         from pymatlib.data.element_data import element_map

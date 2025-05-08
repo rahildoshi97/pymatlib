@@ -100,8 +100,6 @@ class PropertyVisualizer:
             ax = self.fig.add_subplot(self.gs[self.current_subplot])
             self.current_subplot += 1
             current_prop = getattr(alloy, prop_name)
-            print(current_prop)
-            print(type(current_prop))
             temp_array = self.parser.temperature_array
             step = temp_array[1] - temp_array[0]
             if lower_bound is None or upper_bound is None:
@@ -119,6 +117,7 @@ class PropertyVisualizer:
             ax.set_ylabel(f"{prop_name}")
 
             if prop_type == 'CONSTANT':  # isinstance(current_prop, float):
+                print(f"property {prop_name} is constant")
                 value = float(current_prop)
                 ax.axhline(y=value, color='blue', linestyle='-', linewidth=1.5, label='constant')
                 ax.text(0.5, 0.9, f"Value: {value}", transform=ax.transAxes,
@@ -127,18 +126,43 @@ class PropertyVisualizer:
                 ax.legend(loc='best')
                 y_value = value
             else:
+                print(f"property {prop_name} is not constant")
+                # print(f"current_prop: {current_prop}")
                 f_current = sp.lambdify(T, current_prop, 'numpy')
                 y_value = None
                 # Plot raw data if available (for data-driven property types)
                 if x_data is not None and y_data is not None and prop_type in ['FILE', 'KEY_VAL', 'PIECEWISE_EQUATION', 'COMPUTE']:
+                    print(f"property {prop_name} has raw data")
+                    print(f"prop_type: {prop_type}")
+                    # print(f"x_data: {x_data}")
+                    # print(f"y_data: {y_data}")
                     marker_size = 2.5 if prop_type == 'Key-Value' else 2.
                     ax.plot(x_data, y_data, linewidth=1.0, marker='o', markersize=marker_size, label='raw')
                     # Main line: either pre-regression or raw (extended)
                     if has_regression and simplify_type == 'pre':
+                        # print(f"extended_temp: {extended_temp}")
+                        # print(f"f_current(extended_temp): {f_current(extended_temp)}")
+                        if prop_name in ['latent_heat_of_fusion', 'latent_heat_of_vaporization']:
+                            # Calculate padding based on x_data range (20% on each side)
+                            x_min, x_max = np.min(x_data), np.max(x_data)
+                            x_range = x_max - x_min
+                            padding = x_range * 0.15  # 15% padding
+
+                            # Create extended array with original points plus padded points
+                            extended_temp = np.array([
+                                x_data[0] - padding,
+                                x_data[0],
+                                x_data[-1],
+                                x_data[-1] + padding
+                            ])
+                            # print(f"extended_temp: {extended_temp}")
+                            # print(f"f_current(extended_temp): {f_current(extended_temp)}")
                         ax.plot(extended_temp, f_current(extended_temp), linestyle='-', linewidth=1, label='regression (pre)')
                     else:  # No regression OR not pre: plot the raw extended function
+                        # print(f"extended_temp: {extended_temp}")
+                        # print(f"f_current(extended_temp): {f_current(extended_temp)}")
                         ax.plot(extended_temp, f_current(extended_temp), linestyle='-', linewidth=1, label='raw (extended)')
-                    # For legend/annotation purposes
+                    # For legend/annotation
                     y_value = np.max(y_data) if y_data is not None else f_current(upper_bound)
                     # Overlay post-regression fit if requested
                     if has_regression and simplify_type == 'post' and degree is not None and segments is not None:

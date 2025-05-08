@@ -16,11 +16,14 @@ temperature_range: [3000, 300, -5.0]  # 5.0 (float) -> decrement
 
 properties:
 
-  boiling_temperature: 2000.
+  specific_enthalpy: Integral(heat_capacity, T)  # COMPUTE
 
-  density: 6600.
-
-  heat_conductivity:
-    temperature:    [500, 1700, 3000]
-    equation:       [0.0124137215440647*T + 13.0532171803243, 0.0152266213998596*T + 4.88433067059347]  # for partially defined equations
-    bounds:         [constant, constant]
+  heat_capacity:  # FILE
+    file: ./304L_Erstarrungsdaten_edited.xlsx
+    temp_col: T (K)
+    prop_col: Specific heat (J/(Kg K))
+    bounds: [extrapolate, extrapolate]
+    regression:
+      simplify: post  # TODO: 'post' causes errors: <lambdifygenerated-8>:2: RuntimeWarning: divide by zero encountered in reciprocal
+      degree: 1
+      segments: 4

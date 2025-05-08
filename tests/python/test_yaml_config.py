@@ -6,7 +6,7 @@ from pymatlib.core.yaml_parser.api import create_alloy_from_yaml
 import logging
 # Set package/module logger to DEBUG
 logging.basicConfig(
-    level=logging.DEBUG,  # Or INFO for less verbosity
+    level=logging.INFO,  # Or INFO for less verbosity
     format="%(asctime)s %(levelname)s %(name)s -> %(message)s"
 )
 # Silence matplotlib and other noisy libraries
@@ -21,7 +21,7 @@ T = sp.Symbol('T')
 # Get the path to the YAML file
 current_file = Path(__file__)
 # yaml_path = current_file.parent.parent.parent / "src" / "pymatlib" / "data" / "alloys" / "SS304L" / "SS304L.yaml"  # SS304L_pwlf_1
-yaml_path = current_file.parent.parent.parent / "src" / "pymatlib" / "data" / "alloys" / "SS304L" / "SS304L_comprehensive_2_copy.yaml"
+yaml_path = current_file.parent.parent.parent / "src" / "pymatlib" / "data" / "alloys" / "SS304L" / "SS304L_comprehensive_2.yaml"
 # Create alloy from YAML
 ss316l = create_alloy_from_yaml(yaml_path, T=T)
 #ss316l_1 = create_alloy_from_yaml("SS304L_1.yaml", T)

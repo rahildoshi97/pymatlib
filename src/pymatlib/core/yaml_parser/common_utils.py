@@ -1,15 +1,16 @@
+import pwlf
 import numpy as np
 import sympy as sp
 from typing import Any, Tuple, List, Dict, Union
+
+from pymatlib.core.pwlfsympy import get_symbolic_conditions
 
 import logging
 logger = logging.getLogger(__name__)
 
 # --- Shared/Utility Methods ---
 def ensure_ascending_order(temp_array: np.ndarray, *value_arrays: np.ndarray) -> Tuple[np.ndarray, ...]:
-    """
-    Ensure temperature array is in ascending order, flipping all provided arrays if needed.
-    """
+    """Ensure temperature array is in ascending order, flipping all provided arrays if needed."""
     logger.debug("""ensure_ascending_order:
             temp_array: %r""",
                  temp_array.shape if temp_array is not None else None)
@@ -28,9 +29,7 @@ def validate_temperature_range(
         prop: str,
         temp_array: np.ndarray,
         global_temp_array: np.ndarray) -> None:
-    """
-    Validate that temperature arrays from properties fall within the global temperature range.
-    """
+    """Validate that temperature arrays from properties fall within the global temperature range."""
     logger.debug("""validate_temperature_range:
             prop: %r
             temp_array: %r
@@ -63,9 +62,7 @@ def interpolate_value(
         y_array: np.ndarray,
         lower_bound_type: str,
         upper_bound_type: str) -> float:
-    """
-    Interpolate a value at temperature T using the provided data arrays.
-    """
+    """Interpolate a value at temperature T using the provided data arrays."""
     logger.debug("""interpolate_value:
             T: %r
             x_array: %r
@@ -97,9 +94,7 @@ def process_regression_params(
         prop_config: dict,
         prop_name: str,
         data_length: int) -> Tuple[bool, Union[str, None], Union[int, None], Union[int, None]]:
-    """
-    Process regression parameters from configuration.
-    """
+    """Process regression parameters from configuration."""
     logger.debug("""process_regression_params:
             prop_config: %r
             prop_name: %r
@@ -119,7 +114,11 @@ def process_regression_params(
         logger.warning(f"Number of segments ({segments}) for {prop_name} may lead to overfitting.")
     return has_regression, simplify_type, degree, segments
 
-
+def _process_regression(temp_array, prop_array, T, lower_bound_type, upper_bound_type, degree, segments, seed=13579):
+    """Centralized regression processing logic."""
+    v_pwlf = pwlf.PiecewiseLinFit(temp_array, prop_array, degree=degree, seed=seed)
+    v_pwlf.fit(n_segments=segments)
+    return sp.Piecewise(*get_symbolic_conditions(v_pwlf, T, lower_bound_type, upper_bound_type))
 
 def create_raw_piecewise(temp_array: np.ndarray, prop_array: np.ndarray, T: sp.Symbol, lower: str = Union['constant', 'extrapolate'], upper: str = Union['constant', 'extrapolate'],):
     logger.debug("""create_raw_piecewise:
@@ -138,79 +137,13 @@ def create_raw_piecewise(temp_array: np.ndarray, prop_array: np.ndarray, T: sp.S
                  [((prop_array[-1] if upper=='constant' else prop_array[-1]+(prop_array[-1]-prop_array[-2])/(temp_array[-1]-temp_array[-2])*(T-temp_array[-1])), T>=temp_array[-1])]
     return sp.Piecewise(*conditions)
 
-def create_raw_piecewise1(
-        temp_array: np.ndarray,
-        prop_array: np.ndarray,
-        T: sp.Symbol,
-        lower_bound_type: str,
-        upper_bound_type: str) -> sp.Piecewise:
-    """
-    Create a piecewise function using all data points.
-    """
-    logger.debug("""create_raw_piecewise1:
-            temp_array: %r
-            prop_array: %r
-            T: %r
-            lower_bound_type: %r
-            upper_bound_type: %r""",
-                 temp_array.shape if temp_array is not None else None,
-                 prop_array.shape if prop_array is not None else None,
-                 T, lower_bound_type, upper_bound_type)
-    temp_array = np.asarray(temp_array)
-    prop_array = np.asarray(prop_array)
-    logger.debug(f"create_raw_piecewise: Creating piecewise function with temperature array of shape {temp_array.shape} and property array of shape {prop_array.shape}")
-    if len(temp_array) != len(prop_array):
-        raise ValueError("Temperature and property arrays must have the same length.")
-    temp_array, prop_array = ensure_ascending_order(temp_array, prop_array)
-    conditions = []
-    # Lower boundary
-    if lower_bound_type == 'constant':
-        conditions.append((prop_array[0], T < temp_array[0]))
-    else:  # 'extrapolate'
-        if len(temp_array) >= 2:
-            denominator = temp_array[1] - temp_array[0]
-            if denominator == 0:
-                raise ValueError("Cannot extrapolate: first two temperature values are equal.")
-            slope = (prop_array[1] - prop_array[0]) / denominator
-            extrapolated_expr = prop_array[0] + slope * (T - temp_array[0])
-            conditions.append((extrapolated_expr, T < temp_array[0]))
-        else:
-            raise ValueError("Not enough points for extrapolation at lower bound.")
-    # Segments
-    for i in range(len(temp_array) - 1):
-        denominator = temp_array[i + 1] - temp_array[i]
-        if denominator == 0:
-            raise ValueError(f"Temperature values at indices {i} and {i+1} are equal; cannot interpolate.")
-        interp_expr = (
-                prop_array[i] + (prop_array[i + 1] - prop_array[i]) /
-                denominator * (T - temp_array[i])
-        )
-        conditions.append((interp_expr, sp.And(T >= temp_array[i], T < temp_array[i + 1])))
-    # Upper boundary
-    if upper_bound_type == 'constant':
-        conditions.append((prop_array[-1], T >= temp_array[-1]))
-    else:  # 'extrapolate'
-        if len(temp_array) >= 2:
-            denominator = temp_array[-1] - temp_array[-2]
-            if denominator == 0:
-                raise ValueError("Cannot extrapolate: last two temperature values are equal.")
-            slope = (prop_array[-1] - prop_array[-2]) / denominator
-            extrapolated_expr = prop_array[-1] + slope * (T - temp_array[-1])
-            conditions.append((extrapolated_expr, T >= temp_array[-1]))
-        else:
-            raise ValueError("Not enough points for extrapolation at upper bound.")
-    pw = sp.Piecewise(*conditions)
-    return pw
-
 def create_piecewise_from_formulas(
         temp_points: np.ndarray,
         eqn_exprs: List[Union[str, sp.Expr]],
         T: sp.Symbol,
         lower_bound_type: str = 'constant',
         upper_bound_type: str = 'constant') -> sp.Piecewise:
-    """
-    Create a SymPy Piecewise function from breakpoints and symbolic expressions.
-    """
+    """Create a SymPy Piecewise function from breakpoints and symbolic expressions."""
     logger.debug("""create_piecewise_from_formulas:
             temp_points: %r
             eqn_exprs: %r

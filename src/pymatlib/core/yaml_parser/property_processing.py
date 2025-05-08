@@ -14,6 +14,7 @@ from pymatlib.core.yaml_parser.common_utils import (
     validate_temperature_range,
     interpolate_value,
     process_regression_params,
+    _process_regression,
     create_raw_piecewise,
     create_piecewise_from_formulas,)
 
@@ -70,11 +71,13 @@ class PropertyProcessor:
         self.processed_properties = set()
         try:
             for prop_type, prop_list in self.categorized_properties.items():
-                for prop_name, config in prop_list:
-                    if prop_type == PropertyType.CONSTANT and prop_name in ['latent_heat_of_fusion', 'latent_heat_of_vaporization']:
-                        self._process_latent_heat_constant(alloy, prop_name, config, T)
-                    elif prop_type == PropertyType.CONSTANT:
+                # Sort properties to ensure boiling_temperature is processed first
+                sorted_props = sorted(prop_list, key=lambda x: 0 if x[0] in ['boiling_temperature', 'melting_temperature'] else 1)
+                for prop_name, config in sorted_props:
+                    if prop_type == PropertyType.CONSTANT and prop_name not in ['latent_heat_of_fusion', 'latent_heat_of_vaporization']:
                         self._process_constant_property(alloy, prop_name, config, T)
+                    elif prop_type == PropertyType.CONSTANT and prop_name in ['latent_heat_of_fusion', 'latent_heat_of_vaporization']:
+                        self._process_latent_heat_constant(alloy, prop_name, config, T)
                     elif prop_type == PropertyType.FILE:
                         self._process_file_property(alloy, prop_name, config, T)
                     elif prop_type == PropertyType.KEY_VAL:
@@ -83,41 +86,11 @@ class PropertyProcessor:
                         self._process_piecewise_equation_property(alloy, prop_name, config, T)
                     elif prop_type == PropertyType.COMPUTE:
                         self._process_computed_property(alloy, prop_name, T)
-                        print(f"_process_computed_property: prop_name={prop_name}, T={T}")
             self._post_process_properties(alloy, T)
         except Exception as e:
             raise ValueError(f"Failed to process properties \n -> {e}")
 
     # --- Property-Type Processing Methods ---
-    def _process_latent_heat_constant(self, alloy: Alloy, prop_name: str, prop_config: Union[float, str], T: Union[float, sp.Symbol]) -> None:
-        """Process latent heat properties when provided as constants."""
-        logger.debug("""PropertyProcessor: _process_latent_heat_constant:
-            alloy: %r
-            prop_name: %r
-            prop_config: %r
-            T: %r""", alloy, prop_name, prop_config, T)
-        try:
-            latent_heat_value = float(prop_config)
-            if prop_name == 'latent_heat_of_fusion':
-                expanded_config = {
-                    'key': ['solidus_temperature', 'liquidus_temperature'],
-                    'val': [0, latent_heat_value],
-                    'bounds': ['constant', 'constant'],
-                    'regression': {'simplify': 'pre', 'degree': 1, 'segments': 1},
-                }
-            elif prop_name == 'latent_heat_of_vaporization':
-                expanded_config = {
-                    'key': ['boiling_temperature-10', 'boiling_temperature+10'],
-                    'val': [0, latent_heat_value],
-                    'bounds': ['constant', 'constant'],
-                    'regression': {'simplify': 'pre', 'degree': 1, 'segments': 1},
-                }
-            else:
-                raise ValueError(f"Unsupported latent heat configuration: {prop_name}")
-            self._process_key_val_property(alloy, prop_name, expanded_config, T)
-        except (ValueError, TypeError) as e:
-            raise ValueError(f"Failed to process {prop_name} constant \n -> {e}") from e
-
     def _process_constant_property(self, alloy: Alloy, prop_name: str, prop_config: Union[float, str], T: Union[float, sp.Symbol]) -> None:
         """Process constant float property."""
         logger.debug("""PropertyProcessor: _process_constant_property:
@@ -140,6 +113,35 @@ class PropertyProcessor:
             self.processed_properties.add(prop_name)
         except (ValueError, TypeError) as e:
             raise ValueError(f"Failed to process constant property \n -> {e}") from e
+
+    def _process_latent_heat_constant(self, alloy: Alloy, prop_name: str, prop_config: Union[float, str], T: Union[float, sp.Symbol]) -> None:
+        """Process latent heat properties when provided as constants."""
+        logger.debug("""PropertyProcessor: _process_latent_heat_constant:
+            alloy: %r
+            prop_name: %r
+            prop_config: %r
+            T: %r""", alloy, prop_name, prop_config, T)
+        try:
+            latent_heat_value = float(prop_config)
+            if prop_name == 'latent_heat_of_fusion':
+                expanded_config = {
+                    'key': ['solidus_temperature', 'liquidus_temperature'],
+                    'val': [0, latent_heat_value],
+                    'bounds': ['constant', 'constant'],
+                    'regression': {'simplify': 'pre', 'degree': 1, 'segments': 1},
+                }
+            elif prop_name == 'latent_heat_of_vaporization':  # TODO
+                expanded_config = {
+                    'key': ['boiling_temperature-10', 'boiling_temperature+10'],
+                    'val': [0, latent_heat_value],
+                    'bounds': ['constant', 'constant'],
+                    'regression': {'simplify': 'pre', 'degree': 1, 'segments': 1},
+                }
+            else:
+                raise ValueError(f"Unsupported latent heat configuration: {prop_name}")
+            self._process_key_val_property(alloy, prop_name, expanded_config, T)
+        except (ValueError, TypeError) as e:
+            raise ValueError(f"Failed to process {prop_name} constant \n -> {e}") from e
 
     def _process_file_property(self, alloy: Alloy, prop_name: str, file_config: Union[str, Dict[str, Any]], T: Union[float, sp.Symbol]) -> None:
         """Process property data from a file configuration."""
@@ -167,21 +169,16 @@ class PropertyProcessor:
                 raise ValueError(f"Non-finite values detected in property '{prop_name}': " + "; ".join(msg))
             self._validate_temperature_range(prop_name, temp_array)
             temp_array, prop_array = ensure_ascending_order(temp_array, prop_array)
-            lower_bound_type = file_config['bounds'][0]
-            upper_bound_type = file_config['bounds'][1]
+            lower_bound_type, upper_bound_type = file_config['bounds']
             lower_bound = np.min(temp_array)
             upper_bound = np.max(temp_array)
-            is_symbolic = isinstance(T, sp.Symbol)
-            if not is_symbolic:
+            if not isinstance(T, sp.Symbol):
                 interpolated_value = self._interpolate_value(T, temp_array, prop_array, lower_bound_type, upper_bound_type)
                 setattr(alloy, prop_name, sp.Float(interpolated_value))
                 return
             has_regression, simplify_type, degree, segments = self._process_regression_params(file_config, prop_name, len(temp_array))
             if has_regression and simplify_type == 'pre':
-                v_pwlf = pwlf.PiecewiseLinFit(temp_array, prop_array, degree=degree, seed=seed)
-                v_pwlf.fit(n_segments=segments)
-                print(f"_process_file_property: prop_name={prop_name}, T={T}, lower_bound_type={lower_bound_type}, upper_bound_type={upper_bound_type}")
-                pw = sp.Piecewise(*get_symbolic_conditions(v_pwlf, T, lower_bound_type, upper_bound_type))
+                pw = _process_regression(temp_array, prop_array, T, lower_bound_type, upper_bound_type, degree, segments, seed)
                 setattr(alloy, prop_name, pw)
             else:  # No regression OR not pre
                 raw_pw = self._create_raw_piecewise(temp_array, prop_array, T, lower_bound_type, upper_bound_type)
@@ -219,24 +216,20 @@ class PropertyProcessor:
             val_array = np.array(prop_config['val'], dtype=float)
             if len(key_array) != len(val_array):
                 raise ValueError(f"Length mismatch in {prop_name}: key and val arrays must have same length")
-            if prop_name not in ['latent_heat_of_fusion', 'latent_heat_of_vaporization']:
-                self._validate_temperature_range(prop_name, key_array)
+            # if prop_name not in ['latent_heat_of_fusion', 'latent_heat_of_vaporization']:
+                # self._validate_temperature_range(prop_name, key_array)
+            self._validate_temperature_range(prop_name, key_array)
             key_array, val_array = ensure_ascending_order(key_array, val_array)
-            lower_bound_type = prop_config['bounds'][0]
-            upper_bound_type = prop_config['bounds'][1]
+            lower_bound_type, upper_bound_type = prop_config['bounds']
             lower_bound = np.min(key_array)
             upper_bound = np.max(key_array)
-            is_symbolic = isinstance(T, sp.Symbol)
-            if not is_symbolic:
+            if not isinstance(T, sp.Symbol):
                 interpolated_value = self._interpolate_value(T, key_array, val_array, lower_bound_type, upper_bound_type)
                 setattr(alloy, prop_name, sp.Float(interpolated_value))
                 return
             has_regression, simplify_type, degree, segments = self._process_regression_params(prop_config, prop_name, len(key_array))
             if has_regression and simplify_type == 'pre':
-                v_pwlf = pwlf.PiecewiseLinFit(key_array, val_array, degree=degree, seed=seed)
-                v_pwlf.fit(n_segments=segments)
-                print(f"_process_key_val_property: prop_name={prop_name}, T={T}, lower_bound_type={lower_bound_type}, upper_bound_type={upper_bound_type}")
-                pw = sp.Piecewise(*get_symbolic_conditions(v_pwlf, T, lower_bound_type, upper_bound_type))
+                pw = _process_regression(key_array, val_array, T, lower_bound_type, upper_bound_type, degree, segments, seed)
                 setattr(alloy, prop_name, pw)
             else:  # No regression OR not pre
                 raw_pw = self._create_raw_piecewise(key_array, val_array, T, lower_bound_type, upper_bound_type)
@@ -311,6 +304,8 @@ class PropertyProcessor:
                         processed_key.append(alloy.liquidus_temperature)
                     elif k == 'boiling_temperature':
                         processed_key.append(alloy.boiling_temperature)
+                    elif k == 'melting_temperature':
+                        processed_key.append(alloy.melting_temperature)
                     elif '+' in k:
                         base, offset = k.split('+')
                         offset_value = float(offset)
@@ -320,6 +315,8 @@ class PropertyProcessor:
                             base_value = alloy.liquidus_temperature
                         elif base == 'boiling_temperature':
                             base_value = alloy.boiling_temperature
+                        elif base == 'melting_temperature':
+                            base_value = alloy.melting_temperature
                         else:
                             base_value = float(base)
                         processed_key.append(base_value + offset_value)
@@ -332,6 +329,8 @@ class PropertyProcessor:
                             base_value = alloy.liquidus_temperature
                         elif base == 'boiling_temperature':
                             base_value = alloy.boiling_temperature
+                        elif base == 'melting_temperature':
+                            base_value = alloy.melting_temperature
                         else:
                             base_value = float(base)
                         processed_key.append(base_value + offset_value)
@@ -353,7 +352,14 @@ class PropertyProcessor:
             T: %r""", alloy, prop_name, prop_config, T)
         temp_points = np.array(prop_config['temperature'], dtype=float)
         eqn_strings = prop_config['equation']
-        lower_bound_type, upper_bound_type = prop_config.get('bounds', ['constant', 'constant'])
+        # Validate that only 'T' is used in equations
+        for eq in eqn_strings:
+            expr = sp.sympify(eq)
+            symbols = expr.free_symbols
+            for sym in symbols:
+                if str(sym) != 'T':
+                    raise ValueError(f"Unsupported symbol '{sym}' found in equation '{eq}' for property '{prop_name}'. Only 'T' is allowed.")
+        lower_bound_type, upper_bound_type = prop_config['bounds']
         T_sym = T if isinstance(T, sp.Symbol) else sp.Symbol('T')
         temp_points, eqn_strings = ensure_ascending_order(temp_points, eqn_strings)
         eqn_exprs = [sp.sympify(eq, locals={'T': T_sym}) for eq in eqn_strings]
@@ -371,30 +377,18 @@ class PropertyProcessor:
         f_pw = sp.lambdify(T_sym, pw, 'numpy')
         diff = abs(self.temperature_array[1] - self.temperature_array[0])
         print(f"diff={diff}")
-        # temp_dense = np.linspace(temp_points[0], temp_points[-1], max(200, len(temp_points) * 100))  # TODO: Replace with self.temperature_array?
         temp_dense = np.arange(temp_points[0], temp_points[-1]+diff/2, diff)
         print(f"temp_dense.shape={temp_dense.shape}")
         y_dense = f_pw(temp_dense)
-        if has_regression:
-            if simplify_type == 'pre':
-                v_pwlf = pwlf.PiecewiseLinFit(temp_dense, y_dense, degree=degree, seed=seed)
-                v_pwlf.fit(n_segments=segments)
-                print(f"_process_piecewise_equation_property: prop_name={prop_name}, T={T}, lower_bound_type={lower_bound_type}, upper_bound_type={upper_bound_type}")
-                pw_reg = sp.Piecewise(*get_symbolic_conditions(v_pwlf, T_sym, lower_bound_type, upper_bound_type))
-                print(f"pw_reg={pw_reg}")
-                setattr(alloy, prop_name, pw_reg)
-            else:
-                # raw_pw = self._create_piecewise_from_formulas(temp_points, eqn_exprs, T, lower_bound_type, upper_bound_type)
-                raw_pw = pw
-                print(f"raw_pw={raw_pw}")
-                setattr(alloy, prop_name, raw_pw)
-        else:
-            # raw_pw = self._create_piecewise_from_formulas(temp_points, eqn_exprs, T, lower_bound_type, upper_bound_type)
+        if has_regression and simplify_type == 'pre':
+            pw_reg = _process_regression(temp_dense, y_dense, T_sym, lower_bound_type, upper_bound_type, degree, segments, seed)
+            setattr(alloy, prop_name, pw_reg)
+        else:  # No regression OR not pre
             raw_pw = pw
             print(f"raw_pw={raw_pw}")
             setattr(alloy, prop_name, raw_pw)
         self.processed_properties.add(prop_name)
-        if self.visualizer is not None and isinstance(T, sp.Symbol):
+        if self.visualizer is not None:
             self.visualizer.visualize_property(
                 alloy=alloy,
                 prop_name=prop_name,
@@ -414,95 +408,76 @@ class PropertyProcessor:
 
     def _process_computed_property(self, alloy: Alloy, prop_name: str, T: Union[float, sp.Symbol]) -> None:
         """Process computed properties using predefined models with dependency checking."""
-        logger.debug("""PropertyProcessor: _process_computed_property:
-            alloy: %r
-            prop_name: %r
-            T: %r""", alloy, prop_name, T)
+        logger.debug("PropertyProcessor: _process_computed_property - prop_name: %r, T: %r", prop_name, T)
+
+        # Skip if already processed
         if prop_name in self.processed_properties:
             return
+
         try:
+            # Get property configuration
             prop_config = self.properties.get(prop_name)
             if prop_config is None:
                 raise ValueError(f"Property '{prop_name}' not found in configuration")
+
+            # Extract expression from config
             if isinstance(prop_config, str):
                 expression = prop_config
-                material_property = self._parse_and_process_expression(expression, alloy, T)
-                print(f"prop_name 1={prop_name},\nT={T},\nmaterial_property={material_property}\n")
             elif isinstance(prop_config, dict) and 'equation' in prop_config:
                 expression = prop_config['equation']
-                material_property = self._parse_and_process_expression(expression, alloy, T)
-                print(f"prop_name 2={prop_name},\nT={T},\nmaterial_property={material_property}\n")
             else:
                 raise ValueError(f"Unsupported property configuration format for {prop_name}: {prop_config}")
 
-            if isinstance(material_property, sp.Integral):
-                result = material_property.doit()
-                if isinstance(result, sp.Integral):
-                    temp_array = self.temperature_array
-                    values = np.array([float(material_property.evalf(subs={T: t})) for t in temp_array], dtype=float)
-                    degree, segments = 2, 3
-                    if isinstance(prop_config, dict) and 'regression' in prop_config:
-                        degree = prop_config['regression'].get('degree', 2)
-                        segments = prop_config['regression'].get('segments', 3)
-                    lower_bound_type = prop_config.get('bounds', ['constant', 'constant'])[0] if isinstance(prop_config, dict) else 'constant'
-                    upper_bound_type = prop_config.get('bounds', ['constant', 'constant'])[1] if isinstance(prop_config, dict) else 'constant'
-                    v_pwlf = pwlf.PiecewiseLinFit(temp_array, values, degree=degree, seed=seed)
-                    v_pwlf.fit(n_segments=segments)
-                    print(f"_process_computed_property 1: prop_name={prop_name}, T={T}, lower_bound_type={lower_bound_type}, upper_bound_type={upper_bound_type}")
-                    pw = sp.Piecewise(*get_symbolic_conditions(v_pwlf, T, lower_bound_type, upper_bound_type))
-                    material_property = pw
-                else:
-                    material_property = result
+            # Process the expression
+            material_property = self._parse_and_process_expression(expression, alloy, T)
+
+            # Set property on alloy
             setattr(alloy, prop_name, material_property)
+
+            # Handle non-symbolic temperature case
             T_sym = T if isinstance(T, sp.Symbol) else sp.Symbol('T')
-            lower_bound_type = 'constant'
-            upper_bound_type = 'constant'
-            if isinstance(prop_config, dict) and 'bounds' in prop_config:
-                if isinstance(prop_config['bounds'], list) and len(prop_config['bounds']) == 2:
-                    lower_bound_type = prop_config['bounds'][0]
-                    upper_bound_type = prop_config['bounds'][1]
-            lower_bound = np.min(self.temperature_array)
-            upper_bound = np.max(self.temperature_array)
-            is_symbolic = isinstance(T, sp.Symbol)
-            if not is_symbolic:
+            if not isinstance(T, sp.Symbol):
                 value = float(material_property.subs(T_sym, T).evalf())
                 setattr(alloy, prop_name, sp.Float(value))
                 self.processed_properties.add(prop_name)
                 return
+
+            # Extract bounds and regression parameters
+            lower_bound_type, upper_bound_type = 'constant', 'constant'
+            if isinstance(prop_config, dict) and 'bounds' in prop_config:
+                if isinstance(prop_config['bounds'], list) and len(prop_config['bounds']) == 2:
+                    lower_bound_type, upper_bound_type = prop_config['bounds']
+
             temp_array = self.temperature_array
+            lower_bound = np.min(temp_array)
+            upper_bound = np.max(temp_array)
+
+            # Get regression parameters
             has_regression, simplify_type, degree, segments = self._process_regression_params(prop_config, prop_name, len(temp_array))
             if not has_regression:
                 simplify_type = 'post'
-            print("11")
-            print(f"material_property={prop_name},\nexpr={material_property},\nT_sym={T_sym}")
+
+            # Create function from symbolic expression
             f_pw = sp.lambdify(T_sym, material_property, 'numpy')
-            print("12")
-            temp_dense = temp_array
-            print("13")
-            print(f"temp_dense.shape={temp_dense.shape}")
-            y_dense = f_pw(temp_dense)  # TODO: <lambdifygenerated-16>:2: RuntimeWarning: divide by zero encountered in reciprocal
-            print("14")
-            print(f"y_dense={y_dense},\ny_dense.shape={y_dense.shape}")
-            if has_regression:
-                if simplify_type == 'pre':
-                    v_pwlf = pwlf.PiecewiseLinFit(temp_dense, y_dense, degree=degree, seed=seed)
-                    v_pwlf.fit(n_segments=segments)
-                    pw_reg = sp.Piecewise(*get_symbolic_conditions(v_pwlf, T_sym, lower_bound_type, upper_bound_type))
-                    setattr(alloy, prop_name, pw_reg)
-                else:
-                    raw_pw = self._create_raw_piecewise(temp_dense, y_dense, T, lower_bound_type, upper_bound_type)
-                    setattr(alloy, prop_name, raw_pw)
-            else:
-                raw_pw = self._create_raw_piecewise(temp_dense, y_dense, T, lower_bound_type, upper_bound_type)
+            y_dense = f_pw(temp_array)  # TODO: <lambdifygenerated-16>:2: RuntimeWarning: divide by zero encountered in reciprocal
+
+            # Apply regression if needed
+            if has_regression and simplify_type == 'pre':
+                pw_reg = _process_regression(temp_array, y_dense, T_sym, lower_bound_type, upper_bound_type, degree, segments, seed)
+                setattr(alloy, prop_name, pw_reg)
+            else:  # No regression OR not pre
+                raw_pw = self._create_raw_piecewise(temp_array, y_dense, T, lower_bound_type, upper_bound_type)
                 setattr(alloy, prop_name, raw_pw)
+
             self.processed_properties.add(prop_name)
-            if isinstance(T, sp.Symbol) and self.visualizer is not None:
+
+            if self.visualizer is not None:
                 self.visualizer.visualize_property(
                     alloy=alloy,
                     prop_name=prop_name,
                     T=T,
                     prop_type='COMPUTE',
-                    x_data=temp_dense,
+                    x_data=temp_array,
                     y_data=y_dense,
                     has_regression=has_regression,
                     simplify_type=simplify_type,
@@ -513,49 +488,59 @@ class PropertyProcessor:
                     lower_bound_type=lower_bound_type,
                     upper_bound_type=upper_bound_type
                 )
-                print(f"_process_computed_property 7: prop_name={prop_name}")
         except Exception as e:
             raise ValueError(f"Failed to process computed property '{prop_name}' \n -> {str(e)}") from e
 
     # --- Expression/Dependency Helpers ---
     def _parse_and_process_expression(self, expression: str, alloy: Alloy, T: Union[float, sp.Symbol]) -> sp.Expr:
         """Parse and process a mathematical expression string into a SymPy expression."""
-        logger.debug("""PropertyProcessor: _parse_and_process_expression:
-            expression: %r
-            alloy: %r
-            T: %r""", expression, alloy, T)
+        logger.debug("PropertyProcessor: _parse_and_process_expression - expression: %r, T: %r", expression, T)
+
         try:
             sympy_expr = sp.sympify(expression, evaluate=False)
-            dependencies = []
-            for symbol in sympy_expr.free_symbols:
-                symbol_str = str(symbol)
-                if symbol_str == 'T' and isinstance(T, sp.Symbol):
-                    continue
-                dependencies.append(symbol_str)
+
+            # Extract dependencies (excluding temperature symbol if symbolic)
+            dependencies = [str(symbol) for symbol in sympy_expr.free_symbols
+                            if not (str(symbol) == 'T' and isinstance(T, sp.Symbol))]
+
+            # Check for circular dependencies
             self._check_circular_dependencies(prop_name=None, current_deps=dependencies, visited=set())
+
+            # Process dependencies first
             for dep in dependencies:
                 if not hasattr(alloy, dep) or getattr(alloy, dep) is None:
                     if dep in self.properties:
-                        # dep_config = self.properties[dep]
                         self._process_computed_property(alloy, dep, T)
                     else:
                         raise ValueError(f"Dependency '{dep}' not found in properties configuration")
+
+            # Verify all dependencies are now available
             missing_deps = [dep for dep in dependencies if not hasattr(alloy, dep) or getattr(alloy, dep) is None]
             if missing_deps:
                 raise ValueError(f"Cannot compute expression. Missing dependencies: {missing_deps}")
+
+            # Create substitution dictionary
             substitutions = {}
             for dep in dependencies:
                 dep_value = getattr(alloy, dep)
                 dep_symbol = SymbolRegistry.get(dep)
+                if dep_symbol is None:
+                    raise ValueError(f"Symbol '{dep}' not found in symbol registry")
                 substitutions[dep_symbol] = dep_value
+
+            # Add temperature symbol if needed
             if isinstance(T, sp.Symbol):
                 substitutions[sp.Symbol('T')] = T
+
+            # Perform substitution and evaluate integrals if present
             result_expr = sympy_expr.subs(substitutions)
             if isinstance(result_expr, sp.Integral):
                 result_expr = result_expr.doit()
+
             return result_expr
+
         except Exception as e:
-            raise ValueError(f"Failed to parse and process expression: {expression} \n -> {str(e)}")
+            raise ValueError(f"Failed to parse and process expression: {expression}") from e
 
     def _check_circular_dependencies(self, prop_name, current_deps, visited, path=None):
         """Check for circular dependencies in property definitions."""
@@ -607,7 +592,7 @@ class PropertyProcessor:
         for prop_name, prop_config in properties.items():
             try:
                 if not isinstance(prop_config, dict) or 'regression' not in prop_config:
-                    print("QUIT")
+                    # print("QUIT")
                     continue
                 regression_config = prop_config['regression']
                 simplify_type = regression_config['simplify']
@@ -617,17 +602,14 @@ class PropertyProcessor:
                 print(prop_value)
                 if isinstance(prop_value, sp.Integral):
                     raise ValueError(f"Property '{prop_name}' is an integral and cannot be post-processed.")
-                    result = prop_value.doit()  #
+                    result = prop_value.doit()
                     if isinstance(result, sp.Integral):
                         temp_array = self.temperature_array
                         values = np.array([float(prop_value.evalf(subs={T: t})) for t in temp_array], dtype=float)
                         degree = regression_config['degree']
                         segments = regression_config['segments']
-                        lower_bound_type = prop_config['bounds'][0]
-                        upper_bound_type = prop_config['bounds'][1]
-                        v_pwlf = pwlf.PiecewiseLinFit(temp_array, values, degree=degree, seed=seed)
-                        v_pwlf.fit(n_segments=segments)
-                        pw = sp.Piecewise(*get_symbolic_conditions(v_pwlf, T, lower_bound_type, upper_bound_type))
+                        lower_bound_type, upper_bound_type = prop_config['bounds']
+                        pw = _process_regression(temp_array, values, T, lower_bound_type, upper_bound_type, degree, segments, seed)
                         prop_value = pw
                     else:
                         prop_value = result
@@ -639,8 +621,7 @@ class PropertyProcessor:
                     continue
                 degree = regression_config['degree']
                 segments = regression_config['segments']
-                lower_bound_type = prop_config['bounds'][0]
-                upper_bound_type = prop_config['bounds'][1]
+                lower_bound_type, upper_bound_type = prop_config['bounds']
                 temp_array = self.temperature_array
                 f = sp.lambdify(T, prop_value, 'numpy')
                 prop_array = f(temp_array)
@@ -652,10 +633,7 @@ class PropertyProcessor:
                 if len(temp_array) < 2:
                     logger.warning(f"Not enough valid points to fit {prop_name}. Skipping post-processing.")
                     continue
-                v_pwlf = pwlf.PiecewiseLinFit(temp_array, prop_array, degree=degree, seed=seed)
-                v_pwlf.fit(n_segments=segments)
-                print(f"_post_process_properties: prop_name={prop_name}, T={T}, lower_bound_type={lower_bound_type}, upper_bound_type={upper_bound_type}")
-                pw = sp.Piecewise(*get_symbolic_conditions(v_pwlf, T, lower_bound_type, upper_bound_type))
+                pw = _process_regression(temp_array, prop_array, T, lower_bound_type, upper_bound_type, degree, segments, seed)
                 setattr(alloy, prop_name, pw)
                 logger.debug("""PropertyVisualizer: _post_process_properties:
                     Post-processed property with simplify type 'post': %r""", prop_name)
