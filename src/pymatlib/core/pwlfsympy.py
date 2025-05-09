@@ -12,7 +12,7 @@ seed = 13579
 
 
 #https://github.com/cjekel/piecewise_linear_fit_py/blob/master/examples/understanding_higher_degrees/polynomials_in_pwlf.ipynb
-def get_symbolic_eqn(pwlf_: pwlf.PiecewiseLinFit, segment_number: int, x: Union[float, sp.Symbol]):
+def get_symbolic_eqn1(pwlf_: pwlf.PiecewiseLinFit, segment_number: int, x: Union[float, sp.Symbol]):
     # print(f"get_symbolic_eqn")
     if pwlf_.degree < 1:
         raise ValueError('Degree must be at least 1')
@@ -41,13 +41,13 @@ def get_symbolic_eqn(pwlf_: pwlf.PiecewiseLinFit, segment_number: int, x: Union[
         return my_eqn
 
 # https://github.com/cjekel/piecewise_linear_fit_py/blob/master/examples/understanding_higher_degrees/polynomials_in_pwlf.ipynb
-def get_symbolic_conditions(pwlf_: pwlf.PiecewiseLinFit, x: sp.Symbol, lower_: str, upper_: str):
+def get_symbolic_conditions1(pwlf_: pwlf.PiecewiseLinFit, x: sp.Symbol, lower_: str, upper_: str):
     # print(f"get_symbolic_conditions")
     conditions = []
 
     # Special case for 1 segment
     if pwlf_.n_segments == 1:
-        eqn = get_symbolic_eqn(pwlf_, 1, x)
+        eqn = get_symbolic_eqn1(pwlf_, 1, x)
         # print(f"eqn: {eqn}")
 
         # Handle lower boundary
@@ -75,7 +75,7 @@ def get_symbolic_conditions(pwlf_: pwlf.PiecewiseLinFit, x: sp.Symbol, lower_: s
         return conditions
 
     for i in range(pwlf_.n_segments):
-        eqn = get_symbolic_eqn(pwlf_, i + 1, x)
+        eqn = get_symbolic_eqn1(pwlf_, i + 1, x)
         # print(f"eqn: {eqn}")
         # print('Equation number: ', i + 1)
         # print(eqn_list[-1])
@@ -104,7 +104,7 @@ def create_pwlf(name: str, x: np.ndarray, y: np.ndarray, v_deg=1, v_seg=3, lower
     # other fit functions are possible e.g. with fixed break points
     v_pwlf.fit(v_seg)
     print(f'v_pwlf.fit(v_seg): {v_pwlf.fit(v_seg)}')
-    pw = sp.Piecewise(*get_symbolic_conditions(v_pwlf, T, lower, upper))
+    pw = sp.Piecewise(*get_symbolic_conditions1(v_pwlf, T, lower, upper))
     print(f'pw: {pw}')
     if show:
         plt.figure()
@@ -220,7 +220,7 @@ def approximate(symbol: sp.Symbol, x: np.ndarray, expr: sp.Expr, v_deg=1, v_seg=
     f = sp.lambdify(symbol, expr, 'numpy')  # returns a numpy-ready function
     v_pwlf = pwlf.PiecewiseLinFit(x, f(x), degree=v_deg, seed=seed)
     v_pwlf.fit(v_seg)
-    pw = sp.Piecewise(*get_symbolic_conditions(v_pwlf, T, lower, upper))
+    pw = sp.Piecewise(*get_symbolic_conditions1(v_pwlf, T, lower, upper))
     print(f'approx pw for {title}: ', pw)
 
     if show:

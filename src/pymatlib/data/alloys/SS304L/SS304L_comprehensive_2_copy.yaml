@@ -40,15 +40,4 @@ properties:
       degree: 1
       segments: 1
 
-  ##################################################
-
-  latent_heat_of_fusion:
-    key: melting_temperature  # expanded config -> step function -> 520 if T < melting_temperature else 650
-    val: [520., 650.]
-    bounds: [constant, constant]
-
-  latent_heat_of_vaporization:
-    key: boiling_temperature  # expanded config -> step function -> 520 if T < boiling_temperature else 650
-    val: [520., 650.]
-    bounds: [constant, constant]
 

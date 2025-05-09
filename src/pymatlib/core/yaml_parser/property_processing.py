@@ -1,24 +1,25 @@
-import pwlf
+import logging
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple, Union
+
 import numpy as np
 import sympy as sp
-from pathlib import Path
-from typing import Dict, Any, Union, List, Tuple, Optional
 
 from pymatlib.core.alloy import Alloy
-from pymatlib.core.yaml_parser.property_types import PropertyType
 from pymatlib.core.data_handler import read_data_from_file
-from pymatlib.core.pwlfsympy import get_symbolic_conditions
 from pymatlib.core.symbol_registry import SymbolRegistry
 from pymatlib.core.yaml_parser.common_utils import (
+    _process_regression,
+    create_piecewise_from_formulas,
+    create_raw_piecewise,
     ensure_ascending_order,
-    validate_temperature_range,
+    get_symbolic_conditions,
     interpolate_value,
     process_regression_params,
-    _process_regression,
-    create_raw_piecewise,
-    create_piecewise_from_formulas,)
+    validate_temperature_range
+)
+from pymatlib.core.yaml_parser.property_types import PropertyType
 
-import logging
 logger = logging.getLogger(__name__)
 
 seed = 13579
@@ -295,6 +296,7 @@ class PropertyProcessor:
             has_regression, simplify_type, degree, segments = self._process_regression_params(prop_config, prop_name, len(key_array))
             if has_regression and simplify_type == 'pre':
                 pw = _process_regression(key_array, val_array, T, lower_bound_type, upper_bound_type, degree, segments, seed)
+                print(f"pw={pw}\ntype(pw)={type(pw)}")
                 setattr(alloy, prop_name, pw)
             else:  # No regression OR not pre
                 raw_pw = self._create_raw_piecewise(key_array, val_array, T, lower_bound_type, upper_bound_type)
@@ -448,7 +450,7 @@ class PropertyProcessor:
         temp_points, eqn_strings = ensure_ascending_order(temp_points, eqn_strings)
         eqn_exprs = [sp.sympify(eq, locals={'T': T_sym}) for eq in eqn_strings]
         pw = self._create_piecewise_from_formulas(temp_points, eqn_exprs, T_sym, lower_bound_type, upper_bound_type)
-        print(f"pw={pw},\neqn_strings={eqn_strings},\ntemp_points={temp_points}")
+        # print(f"pw={pw}, type(pw)={type(pw)}\neqn_strings={eqn_strings},\ntemp_points={temp_points}")
         if not isinstance(T, sp.Symbol):
             value = float(pw.subs(T_sym, T).evalf())
             setattr(alloy, prop_name, sp.Float(value))

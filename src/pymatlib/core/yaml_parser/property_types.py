@@ -1,8 +1,9 @@
-import sympy as sp
-from enum import Enum, auto
-from typing import Dict, Any, Set, Union
-
 import logging
+from enum import auto, Enum
+from typing import Any, Dict, Set, Union
+
+import sympy as sp
+
 logger = logging.getLogger(__name__)
 
 # --- Enum ---

@@ -1,6 +1,7 @@
-import sympy as sp
 from pathlib import Path
 from typing import Union
+
+import sympy as sp
 
 from pymatlib.core.alloy import Alloy
 from pymatlib.core.yaml_parser.config_parser import MaterialConfigParser

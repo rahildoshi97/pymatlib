@@ -1,17 +1,18 @@
+import logging
+from difflib import get_close_matches
+from pathlib import Path
+from typing import Any, Dict, List, Tuple, Union
+
 import numpy as np
 import sympy as sp
-from pathlib import Path
-from difflib import get_close_matches
 from ruamel.yaml import YAML, constructor, scanner
-from typing import Dict, Any, Union, List, Tuple
 
 from pymatlib.core.alloy import Alloy
-from pymatlib.core.yaml_parser.property_types import PropertyType, PropertyTypeDetector
-from pymatlib.core.yaml_parser.property_processing import PropertyProcessor
-from pymatlib.core.yaml_parser.visualization import PropertyVisualizer
 from pymatlib.core.yaml_parser.common_utils import ensure_ascending_order
+from pymatlib.core.yaml_parser.property_processing import PropertyProcessor
+from pymatlib.core.yaml_parser.property_types import PropertyType, PropertyTypeDetector
+from pymatlib.core.yaml_parser.visualization import PropertyVisualizer
 
-import logging
 logger = logging.getLogger(__name__)
 
 class ConfigParser:

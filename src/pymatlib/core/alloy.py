@@ -1,15 +1,17 @@
+import logging
+from dataclasses import dataclass, field
+from typing import List, Tuple
+
 import numpy as np
 import sympy as sp
-from typing import List, Tuple, Dict
-from dataclasses import dataclass, field
+
 from pymatlib.core.elements import (ChemicalElement,
                                     interpolate_atomic_mass,
                                     interpolate_atomic_number,
                                     interpolate_boiling_temperature,
                                     interpolate_melting_temperature)
-from pymatlib.core.typedefs import ArrayTypes #, PropertyTypes
+from pymatlib.core.typedefs import ArrayTypes
 
-import logging
 logger = logging.getLogger(__name__)
 
 class AlloyCompositionError(ValueError):

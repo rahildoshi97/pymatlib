@@ -1,6 +1,5 @@
 name: SS304L_Comprehensive
 
-
 material_type: alloy  # or pure_metal
 
 composition:
@@ -9,34 +8,13 @@ composition:
   Ni: 0.120
   Mo: 0.025
   Mn: 0.010
-  # pure metal
-  heat_capacity: 520 if T < melting_temperature else 650
-    temperature: melting_temperature
-    values: [520, 650]
 
-  latent_heat_of_fusion:
-    temperature: melting_temperature
-    values: [0, 171401.]
-#--> alloys
-# composition at least two elements!
 # interval for melting
 solidus_temperature: 1605.
 liquidus_temperature: 1735.
 # interval for evaporation
-liquidus_boiling_temperature: 6520.
-vapor_boiling_temperature: 6850.
-
-
-#--> pure metals
-composition:
-  Cu  0.9992
-  O   0.0005
-  P   0.0001
-  Fe  0.0002
-melting_temperature: 1655
-boiling_temperature: 6000
-solidus_temperature: 1605.
-liquidus_temperature: 1735.
+initial_boiling_temperature: 6520.
+final_boiling_temperature: 6850.
 
 # temperature_range: [300, 3000, 541]  # 541 (int) -> points
 #OR
@@ -49,7 +27,7 @@ properties:
     val: [0, 171401.]
     bounds: [constant, extrapolate]
     regression:
-      simplify: pre
+      simplify: post
       degree: 1
       segments: 1
 
@@ -120,7 +98,7 @@ properties:
     equation: 6594.65 * (1 + thermal_expansion_coefficient * (T - 2270)) ** (-3)
     bounds: [ constant, extrapolate ]
     regression:
-      simplify: pre
+      simplify: post
       degree: 1
       segments: 3
   # OR
@@ -137,10 +115,10 @@ properties:
   ##################################################
 
   thermal_expansion_coefficient:  # KEY_VAL
-    key: [300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1500, 2000, 2500, 3000]  # TODO; temperature
+    key: [300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1500, 2000, 2500, 3000]  # TODO: temperature
     val: [1.2632e-5, 1.468e-5, 1.524e-5, 1.581e-5, 1.639e-5, 1.699e-5, 1.759e-5, 1.821e-5, 1.885e-5, 2.1e-5, 2.3e-5, 2.5e-5, 2.7e-5]
     bounds: [constant, extrapolate]
     regression:
-      simplify: pre
+      simplify: post
       degree: 1
-      segments: 3
+      segments: 2

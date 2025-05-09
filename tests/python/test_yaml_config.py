@@ -1,10 +1,10 @@
-import sympy as sp
+import logging
 from pathlib import Path
+
+import sympy as sp
 
 from pymatlib.core.yaml_parser.api import create_alloy_from_yaml
 
-import logging
-# Set package/module logger to DEBUG
 logging.basicConfig(
     level=logging.INFO,  # Or INFO for less verbosity
     format="%(asctime)s %(levelname)s %(name)s -> %(message)s"
@@ -13,7 +13,6 @@ logging.basicConfig(
 logging.getLogger('matplotlib').setLevel(logging.WARNING)
 logging.getLogger('PIL').setLevel(logging.WARNING)
 logging.getLogger('fontTools').setLevel(logging.WARNING)
-
 
 # Create symbolic temperature variable
 T = sp.Symbol('T')
