@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 import numpy as np
 import sympy as sp
 
-from pymatlib.core.alloy import Alloy
+from pymatlib.core.material import Material
 from pymatlib.core.data_handler import read_data_from_file
 from pymatlib.core.symbol_registry import SymbolRegistry
 from pymatlib.core.yaml_parser.common_utils import (
@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 seed = 13579
 
 class PropertyProcessor:
-    """Handles processing of different property types for alloy objects."""
+    """Handles processing of different property types for material objects."""
 
     # --- Constructor ---
     def __init__(self) -> None:
@@ -41,24 +41,22 @@ class PropertyProcessor:
     # --- Public API ---
     def process_properties(
             self,
-            alloy: Alloy,
+            material: Material,
             T: Union[float, sp.Symbol],
             properties: Dict[str, Any],
             categorized_properties: Dict[PropertyType, List[Tuple[str, Any]]],
             temperature_array: np.ndarray,
             base_dir: Path,
             visualizer) -> None:
-        """
-        Process all properties for the alloy.
-        """
+        """Process all properties for the material."""
         logger.debug("""PropertyProcessor: process_properties:
-            alloy: %r
+            material: %r
             T: %r
             properties: %r
             categorized_properties: %r
             temperature_array: %r
             base_dir: %r""",
-                     alloy,
+                     material,
                      T,
                      properties,
                      categorized_properties,
@@ -72,42 +70,44 @@ class PropertyProcessor:
         self.processed_properties = set()
         try:
             for prop_type, prop_list in self.categorized_properties.items():
-                # Sort properties to ensure boiling_temperature is processed first
-                sorted_props = sorted(prop_list, key=lambda x: 0 if x[0] in ['melting_temperature', 'boiling_temperature'] else 1)
+                # Sort properties to ensure certain temperature intervals are processed first
+                sorted_props = sorted(prop_list, key=lambda x: 0 if x[0] in ['melting_temperature', 'boiling_temperature',
+                                                                             'solidus_temperature', 'liquidus_temperature',
+                                                                             'initial_boiling_temperature', 'final_boiling_temperature'] else 1)
                 print(f"sorted_props={sorted_props}")
                 for prop_name, config in sorted_props:
                     if prop_type == PropertyType.CONSTANT and prop_name not in ['latent_heat_of_fusion', 'latent_heat_of_vaporization']:
                         print(f"PropertyType.CONSTANT not in latent_heat: prop_name={prop_name}, config={config}")
-                        self._process_constant_property(alloy, prop_name, config, T)
+                        self._process_constant_property(material, prop_name, config, T)
                     elif prop_type == PropertyType.CONSTANT and prop_name in ['latent_heat_of_fusion', 'latent_heat_of_vaporization']:
                         print(f"PropertyType.CONSTANT in latent_heat: prop_name={prop_name}, config={config}")
-                        self._process_latent_heat_constant(alloy, prop_name, config, T)
+                        self._process_latent_heat_constant(material, prop_name, config, T)
                     elif prop_type == PropertyType.FILE:
-                        self._process_file_property(alloy, prop_name, config, T)
+                        self._process_file_property(material, prop_name, config, T)
                     elif prop_type == PropertyType.KEY_VAL:
-                        self._process_key_val_property(alloy, prop_name, config, T)
+                        self._process_key_val_property(material, prop_name, config, T)
                     elif prop_type == PropertyType.PIECEWISE_EQUATION:
-                        self._process_piecewise_equation_property(alloy, prop_name, config, T)
+                        self._process_piecewise_equation_property(material, prop_name, config, T)
                     elif prop_type == PropertyType.COMPUTE:
-                        self._process_computed_property(alloy, prop_name, T)
-            self._post_process_properties(alloy, T)
+                        self._process_computed_property(material, prop_name, T)
+            self._post_process_properties(material, T)
         except Exception as e:
             raise ValueError(f"Failed to process properties \n -> {e}")
 
     # --- Property-Type Processing Methods ---
-    def _process_constant_property(self, alloy: Alloy, prop_name: str, prop_config: Union[float, str], T: Union[float, sp.Symbol]) -> None:
+    def _process_constant_property(self, material: Material, prop_name: str, prop_config: Union[float, str], T: Union[float, sp.Symbol]) -> None:
         """Process constant float property."""
         logger.debug("""PropertyProcessor: _process_constant_property:
-            alloy: %r
+            material: %r
             prop_name: %r
             prop_config: %r
-            T: %r""", alloy, prop_name, prop_config, T)
+            T: %r""", material, prop_name, prop_config, T)
         try:
             value = float(prop_config)
-            setattr(alloy, prop_name, sp.Float(value))
+            setattr(material, prop_name, sp.Float(value))
             if self.visualizer is not None:
                 self.visualizer.visualize_property(
-                    alloy=alloy,
+                    material=material,
                     prop_name=prop_name,
                     T=T,
                     prop_type='CONSTANT',
@@ -118,17 +118,17 @@ class PropertyProcessor:
         except (ValueError, TypeError) as e:
             raise ValueError(f"Failed to process constant property \n -> {e}") from e
 
-    def _process_latent_heat_constant(self, alloy: Alloy, prop_name: str, prop_config: Union[float, str], T: Union[float, sp.Symbol]) -> None:
+    def _process_latent_heat_constant(self, material: Material, prop_name: str, prop_config: Union[float, str], T: Union[float, sp.Symbol]) -> None:
         """Process latent heat properties when provided as constants."""
         logger.debug("""PropertyProcessor: _process_latent_heat_constant:
-            alloy: %r
+            material: %r
             prop_name: %r
             prop_config: %r
-            T: %r""", alloy, prop_name, prop_config, T)
+            T: %r""", material, prop_name, prop_config, T)
         try:
             latent_heat_value = float(prop_config)
             # Different configuration based on material type
-            if alloy.material_type == 'pure_metal':
+            if material.material_type == 'pure_metal':
                 # For pure metals: step function at the transition temperature
                 if prop_name == 'latent_heat_of_fusion':
                     expanded_config = {
@@ -144,7 +144,7 @@ class PropertyProcessor:
                     }
                 else:
                     raise ValueError(f"Unsupported latent heat property: {prop_name}")
-            elif alloy.material_type == 'alloy':
+            elif material.material_type == 'alloy':
                 # For alloys: linear curve between temperature points
                 if prop_name == 'latent_heat_of_fusion':
                     expanded_config = {
@@ -164,17 +164,17 @@ class PropertyProcessor:
                     raise ValueError(f"Unsupported latent heat property: {prop_name}")
             else:
                 raise ValueError(f"Unsupported latent heat configuration: {prop_name}")
-            self._process_key_val_property(alloy, prop_name, expanded_config, T)
+            self._process_key_val_property(material, prop_name, expanded_config, T)
         except (ValueError, TypeError) as e:
             raise ValueError(f"Failed to process {prop_name} constant \n -> {e}") from e
 
-    def _process_file_property(self, alloy: Alloy, prop_name: str, file_config: Union[str, Dict[str, Any]], T: Union[float, sp.Symbol]) -> None:
+    def _process_file_property(self, material: Material, prop_name: str, file_config: Union[str, Dict[str, Any]], T: Union[float, sp.Symbol]) -> None:
         """Process property data from a file configuration."""
         logger.debug("""PropertyProcessor: _process_file_property:
-            alloy: %r
+            material: %r
             prop_name: %r
             file_config: %r
-            T: %r""", alloy, prop_name, file_config, T)
+            T: %r""", material, prop_name, file_config, T)
         try:
             yaml_dir = self.base_dir
             if isinstance(file_config, dict) and 'file' in file_config:
@@ -199,18 +199,18 @@ class PropertyProcessor:
             upper_bound = np.max(temp_array)
             if not isinstance(T, sp.Symbol):
                 interpolated_value = self._interpolate_value(T, temp_array, prop_array, lower_bound_type, upper_bound_type)
-                setattr(alloy, prop_name, sp.Float(interpolated_value))
+                setattr(material, prop_name, sp.Float(interpolated_value))
                 return
             has_regression, simplify_type, degree, segments = self._process_regression_params(file_config, prop_name, len(temp_array))
             if has_regression and simplify_type == 'pre':
                 pw = _process_regression(temp_array, prop_array, T, lower_bound_type, upper_bound_type, degree, segments, seed)
-                setattr(alloy, prop_name, pw)
+                setattr(material, prop_name, pw)
             else:  # No regression OR not pre
                 raw_pw = self._create_raw_piecewise(temp_array, prop_array, T, lower_bound_type, upper_bound_type)
-                setattr(alloy, prop_name, raw_pw)
+                setattr(material, prop_name, raw_pw)
             if self.visualizer is not None:
                 self.visualizer.visualize_property(
-                    alloy=alloy,
+                    material=material,
                     prop_name=prop_name,
                     T=T,
                     prop_type='FILE',
@@ -229,21 +229,21 @@ class PropertyProcessor:
         except Exception as e:
             raise ValueError(f"Failed to process file property {prop_name} \n -> {str(e)}") from e
 
-    def _process_key_val_property(self, alloy: Alloy, prop_name: str, prop_config: Dict[str, Any], T: Union[float, sp.Symbol]) -> None:
+    def _process_key_val_property(self, material: Material, prop_name: str, prop_config: Dict[str, Any], T: Union[float, sp.Symbol]) -> None:
         """Process property defined with key-val pairs."""
         logger.debug("""PropertyProcessor: _process_key_val_property:
-            alloy: %r
+            material: %r
             prop_name: %r
             prop_config: %r
-            T: %r""", alloy, prop_name, prop_config, T)
+            T: %r""", material, prop_name, prop_config, T)
         try:
             # Handle step function case for pure metals
-            if alloy.material_type == 'pure_metal' and isinstance(prop_config['key'], str) and prop_config['key'] in ['melting_temperature', 'boiling_temperature'] and len(prop_config['val']) == 2:
+            if material.material_type == 'pure_metal' and isinstance(prop_config['key'], str) and prop_config['key'] in ['melting_temperature', 'boiling_temperature'] and len(prop_config['val']) == 2:
                 # Get the transition temperature
                 if prop_config['key'] == 'melting_temperature':
-                    transition_temp = float(alloy.melting_temperature)
+                    transition_temp = float(material.melting_temperature)
                 elif prop_config['key'] == 'boiling_temperature':
-                    transition_temp = float(alloy.boiling_temperature)
+                    transition_temp = float(material.boiling_temperature)
                 else:
                     raise ValueError(f"Invalid key '{prop_config['key']}' for pure metal")
                 # Create step function
@@ -251,10 +251,10 @@ class PropertyProcessor:
                 val_array = np.array(prop_config['val'], dtype=float)
                 # Create step function: val[0] if T < transition_temp else val[1]
                 step_function = sp.Piecewise((val_array[0], T_sym < transition_temp), (val_array[1], True))
-                setattr(alloy, prop_name, step_function)
+                setattr(material, prop_name, step_function)
                 if not isinstance(T, sp.Symbol):
                     value = float(step_function.subs(T_sym, T).evalf())
-                    setattr(alloy, prop_name, sp.Float(value))
+                    setattr(material, prop_name, sp.Float(value))
                     return
                 f_pw = sp.lambdify(T_sym, step_function, 'numpy')
                 diff = abs(self.temperature_array[1] - self.temperature_array[0])
@@ -263,7 +263,7 @@ class PropertyProcessor:
                 # Visualize if needed
                 if self.visualizer is not None:
                     self.visualizer.visualize_property(
-                        alloy=alloy,
+                        material=material,
                         prop_name=prop_name,
                         T=T,
                         prop_type='KEY_VAL',
@@ -278,7 +278,7 @@ class PropertyProcessor:
                 self.processed_properties.add(prop_name)
                 return
             # Alloy case
-            key_array = self._process_key_definition(prop_config['key'], prop_config['val'], alloy)
+            key_array = self._process_key_definition(prop_config['key'], prop_config['val'], material)
             val_array = np.array(prop_config['val'], dtype=float)
             if len(key_array) != len(val_array):
                 raise ValueError(f"Length mismatch in {prop_name}: key and val arrays must have same length")
@@ -291,19 +291,19 @@ class PropertyProcessor:
             upper_bound = np.max(key_array)
             if not isinstance(T, sp.Symbol):
                 interpolated_value = self._interpolate_value(T, key_array, val_array, lower_bound_type, upper_bound_type)
-                setattr(alloy, prop_name, sp.Float(interpolated_value))
+                setattr(material, prop_name, sp.Float(interpolated_value))
                 return
             has_regression, simplify_type, degree, segments = self._process_regression_params(prop_config, prop_name, len(key_array))
             if has_regression and simplify_type == 'pre':
                 pw = _process_regression(key_array, val_array, T, lower_bound_type, upper_bound_type, degree, segments, seed)
                 print(f"pw={pw}\ntype(pw)={type(pw)}")
-                setattr(alloy, prop_name, pw)
+                setattr(material, prop_name, pw)
             else:  # No regression OR not pre
                 raw_pw = self._create_raw_piecewise(key_array, val_array, T, lower_bound_type, upper_bound_type)
-                setattr(alloy, prop_name, raw_pw)
+                setattr(material, prop_name, raw_pw)
             if self.visualizer is not None:
                 self.visualizer.visualize_property(
-                    alloy=alloy,
+                    material=material,
                     prop_name=prop_name,
                     T=T,
                     prop_type='KEY_VAL',
@@ -323,17 +323,17 @@ class PropertyProcessor:
             raise ValueError(f"Failed to process key-val property '{prop_name}' \n -> {str(e)}") from e
 
     # --- Key-Value Helpers ---
-    def _process_key_definition(self, key_def: Union[str, List[Union[str, float]]], val_array: List[float], alloy: Alloy) -> np.ndarray:
+    def _process_key_definition(self, key_def: Union[str, List[Union[str, float]]], val_array: List[float], material: Material) -> np.ndarray:
         """Process temperature key definition."""
         logger.debug("""PropertyProcessor: _process_key_definition:
             key_def: %r
             val_array: %r
-            alloy: %r""", key_def, val_array, alloy)
+            material: %r""", key_def, val_array, material)
         try:
             if isinstance(key_def, str) and key_def.startswith('(') and key_def.endswith(')'):
                 return self._process_equidistant_key(key_def, len(val_array))
             elif isinstance(key_def, list):
-                return self._process_list_key(key_def, alloy)
+                return self._process_list_key(key_def, material)
             else:
                 raise ValueError(f"Invalid key definition: {key_def}")
         except Exception as e:
@@ -356,46 +356,46 @@ class PropertyProcessor:
             raise ValueError(f"Invalid equidistant format: {key_def} \n -> {str(e)}") from e
 
     @staticmethod
-    def _process_list_key(key_def: List[Union[str, float]], alloy: Alloy) -> np.ndarray:
+    def _process_list_key(key_def: List[Union[str, float]], material: Material) -> np.ndarray:
         """Process list key definition."""
         logger.debug("""PropertyProcessor: _process_list_key:
             key_def: %r
-            alloy: %r""", key_def, alloy)
+            material: %r""", key_def, material)
         try:
             processed_key = []
             for k in key_def:
                 if isinstance(k, str):
                     # Handle pure metal properties
-                    if k == 'melting_temperature' and hasattr(alloy, 'melting_temperature'):
-                        processed_key.append(alloy.melting_temperature)
-                    elif k == 'boiling_temperature' and hasattr(alloy, 'boiling_temperature'):
-                        processed_key.append(alloy.boiling_temperature)
+                    if k == 'melting_temperature' and hasattr(material, 'melting_temperature'):
+                        processed_key.append(material.melting_temperature)
+                    elif k == 'boiling_temperature' and hasattr(material, 'boiling_temperature'):
+                        processed_key.append(material.boiling_temperature)
                     # Handle alloy properties
-                    elif k == 'solidus_temperature' and hasattr(alloy, 'solidus_temperature'):
-                        processed_key.append(alloy.solidus_temperature)
-                    elif k == 'liquidus_temperature' and hasattr(alloy, 'liquidus_temperature'):
-                        processed_key.append(alloy.liquidus_temperature)
-                    elif k == 'initial_boiling_temperature' and hasattr(alloy, 'initial_boiling_temperature'):
-                        processed_key.append(alloy.initial_boiling_temperature)
-                    elif k == 'final_boiling_temperature' and hasattr(alloy, 'final_boiling_temperature'):
-                        processed_key.append(alloy.final_boiling_temperature)
+                    elif k == 'solidus_temperature' and hasattr(material, 'solidus_temperature'):
+                        processed_key.append(material.solidus_temperature)
+                    elif k == 'liquidus_temperature' and hasattr(material, 'liquidus_temperature'):
+                        processed_key.append(material.liquidus_temperature)
+                    elif k == 'initial_boiling_temperature' and hasattr(material, 'initial_boiling_temperature'):
+                        processed_key.append(material.initial_boiling_temperature)
+                    elif k == 'final_boiling_temperature' and hasattr(material, 'final_boiling_temperature'):
+                        processed_key.append(material.final_boiling_temperature)
                     # Handle offset notation (e.g., "melting_temperature+10")
                     elif '+' in k:
                         base, offset = k.split('+')
                         offset_value = float(offset)
                         # Get base value based on material type
-                        if base == 'melting_temperature' and hasattr(alloy, 'melting_temperature'):
-                            base_value = alloy.melting_temperature
-                        elif base == 'boiling_temperature' and hasattr(alloy, 'boiling_temperature'):
-                            base_value = alloy.boiling_temperature
-                        elif base == 'solidus_temperature' and hasattr(alloy, 'solidus_temperature'):
-                            base_value = alloy.solidus_temperature
-                        elif base == 'liquidus_temperature' and hasattr(alloy, 'liquidus_temperature'):
-                            base_value = alloy.liquidus_temperature
-                        elif base == 'initial_boiling_temperature' and hasattr(alloy, 'initial_boiling_temperature'):
-                            base_value = alloy.initial_boiling_temperature
-                        elif base == 'final_boiling_temperature' and hasattr(alloy, 'final_boiling_temperature'):
-                            base_value = alloy.final_boiling_temperature
+                        if base == 'melting_temperature' and hasattr(material, 'melting_temperature'):
+                            base_value = material.melting_temperature
+                        elif base == 'boiling_temperature' and hasattr(material, 'boiling_temperature'):
+                            base_value = material.boiling_temperature
+                        elif base == 'solidus_temperature' and hasattr(material, 'solidus_temperature'):
+                            base_value = material.solidus_temperature
+                        elif base == 'liquidus_temperature' and hasattr(material, 'liquidus_temperature'):
+                            base_value = material.liquidus_temperature
+                        elif base == 'initial_boiling_temperature' and hasattr(material, 'initial_boiling_temperature'):
+                            base_value = material.initial_boiling_temperature
+                        elif base == 'final_boiling_temperature' and hasattr(material, 'final_boiling_temperature'):
+                            base_value = material.final_boiling_temperature
                         else:
                             base_value = float(base)
                         processed_key.append(base_value + offset_value)
@@ -405,18 +405,18 @@ class PropertyProcessor:
                         base, offset = k.split('-')
                         offset_value = float(offset)
                         # Get base value based on material type
-                        if base == 'melting_temperature' and hasattr(alloy, 'melting_temperature'):
-                            base_value = alloy.melting_temperature
-                        elif base == 'boiling_temperature' and hasattr(alloy, 'boiling_temperature'):
-                            base_value = alloy.boiling_temperature
-                        elif base == 'solidus_temperature' and hasattr(alloy, 'solidus_temperature'):
-                            base_value = alloy.solidus_temperature
-                        elif base == 'liquidus_temperature' and hasattr(alloy, 'liquidus_temperature'):
-                            base_value = alloy.liquidus_temperature
-                        elif base == 'initial_boiling_temperature' and hasattr(alloy, 'initial_boiling_temperature'):
-                            base_value = alloy.initial_boiling_temperature
-                        elif base == 'final_boiling_temperature' and hasattr(alloy, 'final_boiling_temperature'):
-                            base_value = alloy.final_boiling_temperature
+                        if base == 'melting_temperature' and hasattr(material, 'melting_temperature'):
+                            base_value = material.melting_temperature
+                        elif base == 'boiling_temperature' and hasattr(material, 'boiling_temperature'):
+                            base_value = material.boiling_temperature
+                        elif base == 'solidus_temperature' and hasattr(material, 'solidus_temperature'):
+                            base_value = material.solidus_temperature
+                        elif base == 'liquidus_temperature' and hasattr(material, 'liquidus_temperature'):
+                            base_value = material.liquidus_temperature
+                        elif base == 'initial_boiling_temperature' and hasattr(material, 'initial_boiling_temperature'):
+                            base_value = material.initial_boiling_temperature
+                        elif base == 'final_boiling_temperature' and hasattr(material, 'final_boiling_temperature'):
+                            base_value = material.final_boiling_temperature
                         else:
                             base_value = float(base)
                         processed_key.append(base_value - offset_value)
@@ -429,13 +429,13 @@ class PropertyProcessor:
         except Exception as e:
             raise ValueError(f"Error processing list key \n -> {str(e)}") from e
 
-    def _process_piecewise_equation_property(self, alloy: Alloy, prop_name: str, prop_config: Dict[str, Any], T: Union[float, sp.Symbol]) -> None:
+    def _process_piecewise_equation_property(self, material: Material, prop_name: str, prop_config: Dict[str, Any], T: Union[float, sp.Symbol]) -> None:
         """Process piecewise equation property."""
         logger.debug("""PropertyProcessor: _process_piecewise_equation_property:
-            alloy: %r
+            material: %r
             prop_name: %r
             prop_config: %r
-            T: %r""", alloy, prop_name, prop_config, T)
+            T: %r""", material, prop_name, prop_config, T)
         temp_points = np.array(prop_config['temperature'], dtype=float)
         eqn_strings = prop_config['equation']
         # Validate that only 'T' is used in equations
@@ -453,12 +453,12 @@ class PropertyProcessor:
         # print(f"pw={pw}, type(pw)={type(pw)}\neqn_strings={eqn_strings},\ntemp_points={temp_points}")
         if not isinstance(T, sp.Symbol):
             value = float(pw.subs(T_sym, T).evalf())
-            setattr(alloy, prop_name, sp.Float(value))
+            setattr(material, prop_name, sp.Float(value))
             self.processed_properties.add(prop_name)
             return
         has_regression, simplify_type, degree, segments = self._process_regression_params(prop_config, prop_name, len(temp_points))
-        if not has_regression:
-            simplify_type = 'post'
+        # if not has_regression:
+            # simplify_type = 'post'
         f_pw = sp.lambdify(T_sym, pw, 'numpy')
         diff = abs(self.temperature_array[1] - self.temperature_array[0])
         print(f"diff={diff}")
@@ -467,15 +467,15 @@ class PropertyProcessor:
         y_dense = f_pw(temp_dense)
         if has_regression and simplify_type == 'pre':
             pw_reg = _process_regression(temp_dense, y_dense, T_sym, lower_bound_type, upper_bound_type, degree, segments, seed)
-            setattr(alloy, prop_name, pw_reg)
+            setattr(material, prop_name, pw_reg)
         else:  # No regression OR not pre
             raw_pw = pw
             print(f"raw_pw={raw_pw}")
-            setattr(alloy, prop_name, raw_pw)
+            setattr(material, prop_name, raw_pw)
         self.processed_properties.add(prop_name)
         if self.visualizer is not None:
             self.visualizer.visualize_property(
-                alloy=alloy,
+                material=material,
                 prop_name=prop_name,
                 T=T,
                 prop_type='PIECEWISE_EQUATION',
@@ -491,20 +491,17 @@ class PropertyProcessor:
                 upper_bound_type=upper_bound_type
             )
 
-    def _process_computed_property(self, alloy: Alloy, prop_name: str, T: Union[float, sp.Symbol]) -> None:
+    def _process_computed_property(self, material: Material, prop_name: str, T: Union[float, sp.Symbol]) -> None:
         """Process computed properties using predefined models with dependency checking."""
         logger.debug("PropertyProcessor: _process_computed_property - prop_name: %r, T: %r", prop_name, T)
-
         # Skip if already processed
         if prop_name in self.processed_properties:
             return
-
         try:
             # Get property configuration
             prop_config = self.properties.get(prop_name)
             if prop_config is None:
                 raise ValueError(f"Property '{prop_name}' not found in configuration")
-
             # Extract expression from config
             if isinstance(prop_config, str):
                 expression = prop_config
@@ -512,53 +509,43 @@ class PropertyProcessor:
                 expression = prop_config['equation']
             else:
                 raise ValueError(f"Unsupported property configuration format for {prop_name}: {prop_config}")
-
             # Process the expression
-            material_property = self._parse_and_process_expression(expression, alloy, T)
-
-            # Set property on alloy
-            setattr(alloy, prop_name, material_property)
-
+            material_property = self._parse_and_process_expression(expression, material, T)
+            # Set property on material
+            setattr(material, prop_name, material_property)
             # Handle non-symbolic temperature case
             T_sym = T if isinstance(T, sp.Symbol) else sp.Symbol('T')
             if not isinstance(T, sp.Symbol):
                 value = float(material_property.subs(T_sym, T).evalf())
-                setattr(alloy, prop_name, sp.Float(value))
+                setattr(material, prop_name, sp.Float(value))
                 self.processed_properties.add(prop_name)
                 return
-
             # Extract bounds and regression parameters
             lower_bound_type, upper_bound_type = 'constant', 'constant'
             if isinstance(prop_config, dict) and 'bounds' in prop_config:
                 if isinstance(prop_config['bounds'], list) and len(prop_config['bounds']) == 2:
                     lower_bound_type, upper_bound_type = prop_config['bounds']
-
             temp_array = self.temperature_array
             lower_bound = np.min(temp_array)
             upper_bound = np.max(temp_array)
-
             # Get regression parameters
             has_regression, simplify_type, degree, segments = self._process_regression_params(prop_config, prop_name, len(temp_array))
             if not has_regression:
                 simplify_type = 'post'
-
             # Create function from symbolic expression
             f_pw = sp.lambdify(T_sym, material_property, 'numpy')
             y_dense = f_pw(temp_array)  # TODO: <lambdifygenerated-16>:2: RuntimeWarning: divide by zero encountered in reciprocal
-
             # Apply regression if needed
             if has_regression and simplify_type == 'pre':
                 pw_reg = _process_regression(temp_array, y_dense, T_sym, lower_bound_type, upper_bound_type, degree, segments, seed)
-                setattr(alloy, prop_name, pw_reg)
+                setattr(material, prop_name, pw_reg)
             else:  # No regression OR not pre
                 raw_pw = self._create_raw_piecewise(temp_array, y_dense, T, lower_bound_type, upper_bound_type)
-                setattr(alloy, prop_name, raw_pw)
-
+                setattr(material, prop_name, raw_pw)
             self.processed_properties.add(prop_name)
-
             if self.visualizer is not None:
                 self.visualizer.visualize_property(
-                    alloy=alloy,
+                    material=material,
                     prop_name=prop_name,
                     T=T,
                     prop_type='COMPUTE',
@@ -577,7 +564,7 @@ class PropertyProcessor:
             raise ValueError(f"Failed to process computed property '{prop_name}' \n -> {str(e)}") from e
 
     # --- Expression/Dependency Helpers ---
-    def _parse_and_process_expression(self, expression: str, alloy: Alloy, T: Union[float, sp.Symbol]) -> sp.Expr:
+    def _parse_and_process_expression(self, expression: str, material: Material, T: Union[float, sp.Symbol]) -> sp.Expr:
         """Parse and process a mathematical expression string into a SymPy expression."""
         logger.debug("PropertyProcessor: _parse_and_process_expression - expression: %r, T: %r", expression, T)
 
@@ -593,21 +580,21 @@ class PropertyProcessor:
 
             # Process dependencies first
             for dep in dependencies:
-                if not hasattr(alloy, dep) or getattr(alloy, dep) is None:
+                if not hasattr(material, dep) or getattr(material, dep) is None:
                     if dep in self.properties:
-                        self._process_computed_property(alloy, dep, T)
+                        self._process_computed_property(material, dep, T)
                     else:
                         raise ValueError(f"Dependency '{dep}' not found in properties configuration")
 
             # Verify all dependencies are now available
-            missing_deps = [dep for dep in dependencies if not hasattr(alloy, dep) or getattr(alloy, dep) is None]
+            missing_deps = [dep for dep in dependencies if not hasattr(material, dep) or getattr(material, dep) is None]
             if missing_deps:
                 raise ValueError(f"Cannot compute expression. Missing dependencies: {missing_deps}")
 
             # Create substitution dictionary
             substitutions = {}
             for dep in dependencies:
-                dep_value = getattr(alloy, dep)
+                dep_value = getattr(material, dep)
                 dep_symbol = SymbolRegistry.get(dep)
                 if dep_symbol is None:
                     raise ValueError(f"Symbol '{dep}' not found in symbol registry")
@@ -665,11 +652,11 @@ class PropertyProcessor:
                     self._check_circular_dependencies(dep, dep_deps, visited.copy(), path)
 
     # --- Post-Processing ---
-    def _post_process_properties(self, alloy: Alloy, T: Union[float, sp.Symbol]) -> None:
+    def _post_process_properties(self, material: Material, T: Union[float, sp.Symbol]) -> None:
         """Perform post-processing on properties after all have been initially processed."""
         logger.debug("""PropertyProcessor: _post_process_properties:
-            alloy: %r
-            T: %r""", alloy, T)
+            material: %r
+            T: %r""", material, T)
         if not isinstance(T, sp.Symbol):
             return
         properties = self.properties
@@ -677,13 +664,12 @@ class PropertyProcessor:
         for prop_name, prop_config in properties.items():
             try:
                 if not isinstance(prop_config, dict) or 'regression' not in prop_config:
-                    # print("QUIT")
                     continue
                 regression_config = prop_config['regression']
                 simplify_type = regression_config['simplify']
                 if simplify_type != 'post':
                     continue
-                prop_value = getattr(alloy, prop_name)
+                prop_value = getattr(material, prop_name)
                 print(prop_value)
                 if isinstance(prop_value, sp.Integral):
                     raise ValueError(f"Property '{prop_name}' is an integral and cannot be post-processed.")
@@ -698,7 +684,7 @@ class PropertyProcessor:
                         prop_value = pw
                     else:
                         prop_value = result
-                    setattr(alloy, prop_name, prop_value)
+                    setattr(material, prop_name, prop_value)
                 if not isinstance(prop_value, sp.Expr):
                     logger.debug("""PropertyVisualizer: _post_process_properties:
                     Skipping - not symbolic for property: %r
@@ -719,7 +705,7 @@ class PropertyProcessor:
                     logger.warning(f"Not enough valid points to fit {prop_name}. Skipping post-processing.")
                     continue
                 pw = _process_regression(temp_array, prop_array, T, lower_bound_type, upper_bound_type, degree, segments, seed)
-                setattr(alloy, prop_name, pw)
+                setattr(material, prop_name, pw)
                 logger.debug("""PropertyVisualizer: _post_process_properties:
                     Post-processed property with simplify type 'post': %r""", prop_name)
             except Exception as e:

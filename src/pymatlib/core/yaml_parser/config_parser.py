@@ -7,7 +7,7 @@ import numpy as np
 import sympy as sp
 from ruamel.yaml import YAML, constructor, scanner
 
-from pymatlib.core.alloy import Alloy
+from pymatlib.core.material import Material
 from pymatlib.core.yaml_parser.common_utils import ensure_ascending_order
 from pymatlib.core.yaml_parser.property_processing import PropertyProcessor
 from pymatlib.core.yaml_parser.property_types import PropertyType, PropertyTypeDetector
@@ -87,20 +87,20 @@ class MaterialConfigParser(YAMLConfigParser):
         logger.debug(f"Finished loading configuration from {yaml_path}")
 
     # --- Public API ---
-    def create_alloy(self, T: Union[float, sp.Symbol]) -> Alloy:
+    def create_material(self, T: Union[float, sp.Symbol]) -> Material:
         """
-        Create an Alloy instance from the parsed configuration and temperature.
+        Create an Material instance from the parsed configuration and temperature.
         """
         print("\n")
-        logger.debug("""MaterialConfigParser: create_alloy:
+        logger.debug("""MaterialConfigParser: create_material:
             T: %r""", T)
         try:
             material_type = self.config['material_type']
             elements = self._get_elements()
             composition = [val for val in self.config['composition'].values()]
-            # Create alloy with different parameters based on material_type
+            # Create material with different parameters based on material_type
             if material_type == 'pure_metal':
-                alloy = Alloy(
+                material = Material(
                     elements=elements,
                     composition=composition,
                     material_type=material_type,
@@ -108,7 +108,7 @@ class MaterialConfigParser(YAMLConfigParser):
                     boiling_temperature=sp.Float(self.config['boiling_temperature']),
                 )
             else:  # alloy
-                alloy = Alloy(
+                material = Material(
                     elements=elements,
                     composition=composition,
                     material_type=material_type,
@@ -120,7 +120,7 @@ class MaterialConfigParser(YAMLConfigParser):
             self.visualizer.initialize_plots()
             self.visualizer.reset_visualization_tracking()
             self.property_processor.process_properties(
-                alloy=alloy,
+                material=material,
                 T=T,
                 properties=self.config['properties'],
                 categorized_properties=self.categorized_properties,
@@ -129,11 +129,11 @@ class MaterialConfigParser(YAMLConfigParser):
                 visualizer=self.visualizer
             )
             self.visualizer.save_property_plots()
-            return alloy
+            return material
         except KeyError as e:
             raise ValueError(f"Configuration error: Missing {e}")
         except Exception as e:
-            raise ValueError(f"Failed to create alloy \n -> {e}")
+            raise ValueError(f"Failed to create material \n -> {e}")
 
     # --- Validation Methods ---
     def _validate_config(self) -> None:
@@ -195,22 +195,17 @@ class MaterialConfigParser(YAMLConfigParser):
     # --- Processing Methods ---
     def _process_temperature_range(self, array_def: List[Union[int, float]]) -> np.ndarray:
         logger.debug("MaterialConfigParser: _process_temperature_range: array_def: %r", array_def)
-
         # Validate input format
         if not (isinstance(array_def, list) and len(array_def) == 3):
             raise ValueError("Temperature array must be defined as [start, end, points/delta]")
-
         # Extract and validate values
         start, end, step = float(array_def[0]), float(array_def[1]), array_def[2]
-
         # Check for temperatures below absolute zero
         if start <= self.ABSOLUTE_ZERO or end <= self.ABSOLUTE_ZERO:
             raise ValueError(f"Temperature must be above absolute zero ({self.ABSOLUTE_ZERO}K), got {start}K and {end}K")
-
         # Check for zero step
         if isinstance(step, (int, float)) and abs(float(step)) <= self.EPSILON:
             raise ValueError("Delta or number of points cannot be zero")
-
         # Create array based on step type
         if isinstance(step, int):
             # Handle number of points
@@ -218,21 +213,15 @@ class MaterialConfigParser(YAMLConfigParser):
                 raise ValueError(f"Number of points must be positive, got {step}")
             if step < self.MIN_POINTS:
                 raise ValueError(f"Number of points must be at least {self.MIN_POINTS}, got {step}")
-
             temperature_array = np.linspace(start, end, step)
-        else:
-            # Handle step size
+        else:  # Handle step size
             if (start < end and step <= 0) or (start > end and step >= 0):
                 raise ValueError("Delta sign must match range direction (positive for increasing, negative for decreasing)")
-
             if abs(step) > abs(end - start):
                 raise ValueError(f"Absolute value of delta ({abs(step)}) is too large for the range. It should be <= {abs(end - start)}")
-
             temperature_array = np.arange(start, end + step/2, step)
-
         # Ensure array is in ascending order
         temperature_array, = ensure_ascending_order(temperature_array)
-
         return temperature_array
 
     def _get_elements(self) -> List:

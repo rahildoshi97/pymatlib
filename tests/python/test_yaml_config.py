@@ -3,7 +3,7 @@ from pathlib import Path
 
 import sympy as sp
 
-from pymatlib.core.yaml_parser.api import create_alloy_from_yaml
+from pymatlib.core.yaml_parser.api import create_material_from_yaml
 
 logging.basicConfig(
     level=logging.INFO,  # Or INFO for less verbosity
@@ -23,8 +23,8 @@ current_file = Path(__file__)
 # yaml_path = current_file.parent.parent.parent / "src" / "pymatlib" / "data" / "alloys" / "SS304L" / "SS304L_comprehensive_2_copy.yaml"
 yaml_path = current_file.parent.parent.parent / "src" / "pymatlib" / "data" / "alloys" / "SS304L" / "pure_metal.yaml"
 # Create alloy from YAML
-ss316l = create_alloy_from_yaml(yaml_path, T=T)
-#ss316l_1 = create_alloy_from_yaml("SS304L_1.yaml", T)
+ss316l = create_material_from_yaml(yaml_path, T=T)
+#ss316l_1 = create_material_from_yaml("SS304L_1.yaml", T)
 
 # Test various properties
 print(f"Elements: {ss316l.elements}")

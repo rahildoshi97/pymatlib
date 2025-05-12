@@ -3,16 +3,16 @@ from typing import Union
 
 import sympy as sp
 
-from pymatlib.core.alloy import Alloy
+from pymatlib.core.material import Material
 from pymatlib.core.yaml_parser.config_parser import MaterialConfigParser
 
-def create_alloy_from_yaml(yaml_path: Union[str, Path], T: Union[float, sp.Symbol]) -> Alloy:
+def create_material_from_yaml(yaml_path: Union[str, Path], T: Union[float, sp.Symbol]) -> Material:
     """
-    Create alloy instance from YAML configuration file.
+    Create material instance from YAML configuration file.
     
-    This function serves as the main entry point for creating alloy objects
+    This function serves as the main entry point for creating material (pure metal or alloy) objects
     from YAML configuration files. It handles the parsing of the configuration
-    and creation of the alloy with the specified temperature.
+    and creation of the material with the specified temperature.
     
     Args:
         yaml_path: Path to the YAML configuration file
@@ -20,19 +20,19 @@ def create_alloy_from_yaml(yaml_path: Union[str, Path], T: Union[float, sp.Symbo
             - Use a float value for a specific temperature
             - Use sp.Symbol('T') for symbolic temperature expressions
     Returns:
-        The alloy instance with all properties initialized
+        The material instance with all properties initialized
     Examples:
-        # Create an alloy at a specific temperature
-        alloy = create_alloy_from_yaml('aluminum.yaml', 500.0)
+        # Create a material at a specific temperature
+        material = create_material_from_yaml('aluminum.yaml', 500.0)
         
-        # Create an alloy with symbolic temperature expressions
+        # Create a material with symbolic temperature expressions
         import sympy as sp
         T = sp.Symbol('T')
-        alloy = create_alloy_from_yaml('steel.yaml', T)
+        material = create_material_from_yaml('steel.yaml', T)
     """
     parser = MaterialConfigParser(yaml_path)
-    alloy = parser.create_alloy(T)
-    return alloy
+    material = parser.create_material(T)
+    return material
 
 def get_supported_properties() -> list:
     """
@@ -44,7 +44,7 @@ def get_supported_properties() -> list:
 
 def validate_yaml_file(yaml_path: Union[str, Path]) -> bool:
     """
-    Validate a YAML file without creating an alloy.
+    Validate a YAML file without creating the material.
     Args:
         yaml_path: Path to the YAML configuration file to validate
     Returns:
@@ -71,5 +71,5 @@ def _test_api():
     T = sp.Symbol('T')
     try:
         assert validate_yaml_file('example.yaml') is True
-    except Exception:
-        pass
+    except (FileNotFoundError, ValueError, AssertionError) as e:
+        print(f"_test_api failed: {e}")

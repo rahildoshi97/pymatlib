@@ -177,13 +177,11 @@ def create_piecewise_from_formulas(
         elif i == len(eqn_exprs) - 1 and upper_bound_type == 'extrapolate':
             # Last segment with extrapolation
             conditions.append((expr, T >= temp_points[i]))
-        else:
-            # Regular interval
+        else:  # Regular interval
             conditions.append((expr, sp.And(T >= temp_points[i], T < temp_points[i+1])))
     # Handle upper bound
     if upper_bound_type == 'constant':
         conditions.append((eqn_exprs[-1].subs(T, temp_points[-1]), T >= temp_points[-1]))
-
     return sp.Piecewise(*conditions)
 
 #https://github.com/cjekel/piecewise_linear_fit_py/blob/master/examples/understanding_higher_degrees/polynomials_in_pwlf.ipynb
@@ -210,42 +208,34 @@ def get_symbolic_eqn(pwlf_: pwlf.PiecewiseLinFit, segment_number: int, x: Union[
     # Only call simplify if x is symbolic
     if is_symbolic:
         return my_eqn.simplify()
-    else:
-        # For numeric x, just return the equation
+    else:  # For numeric x, just return the equation
         return my_eqn
 
 def get_symbolic_conditions(pwlf_: pwlf.PiecewiseLinFit, x: sp.Symbol, lower_: str, upper_: str):
     """Create symbolic conditions for a piecewise function from a pwlf fit."""
     conditions = []
-
     # Special case: single segment with extrapolation at both ends
     if pwlf_.n_segments == 1 and lower_ == "extrapolate" and upper_ == "extrapolate":
         eqn = get_symbolic_eqn(pwlf_, 1, x)
         conditions.append((eqn, True))
         return conditions
-
     # Handle lower bound for all cases
     if lower_ == "constant":
         eqn = get_symbolic_eqn(pwlf_, 1, x)
         conditions.append((eqn.evalf(subs={x: pwlf_.fit_breaks[0]}), x < pwlf_.fit_breaks[0]))
-
     # Process all segments
     for i in range(pwlf_.n_segments):
         eqn = get_symbolic_eqn(pwlf_, i + 1, x)
-
         # First segment with extrapolation
         if i == 0 and lower_ == "extrapolate":
             conditions.append((eqn, x < pwlf_.fit_breaks[i+1]))
         # Last segment with extrapolation
         elif i == pwlf_.n_segments - 1 and upper_ == "extrapolate":
             conditions.append((eqn, x >= pwlf_.fit_breaks[i]))
-        # Regular intervals (including first/last with constant bounds)
-        else:
+        else:  # Regular intervals (including first/last with constant bounds)
             conditions.append((eqn, sp.And(x >= pwlf_.fit_breaks[i], x < pwlf_.fit_breaks[i+1])))
-
     # Handle upper bound
     if upper_ == "constant":
         eqn = get_symbolic_eqn(pwlf_, pwlf_.n_segments, x)
         conditions.append((eqn.evalf(subs={x: pwlf_.fit_breaks[-1]}), x >= pwlf_.fit_breaks[-1]))
-
     return conditions

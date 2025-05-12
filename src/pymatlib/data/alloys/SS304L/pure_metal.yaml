@@ -12,6 +12,12 @@ properties:
     val: [0, 10700.0]
     bounds: [constant, constant]
 
+  # TODO: latent_heat_of_fusion can also be defined as a PIECEWISE_EQUATION. If so, shall we discard the above definition?
+  # latent_heat_of_fusion:  # Will still be processed as a step function
+    # temperature:    [0, 933.47, 3000]
+    # equation:       [0.0, 10700.0]  # for partially defined equations
+    # bounds:         [constant, constant]
+
   latent_heat_of_vaporization: 294000.0  # Will be processed as a step function
     # key: boiling_temperature
     # value: [0, 294000.0]

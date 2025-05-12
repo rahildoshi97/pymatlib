@@ -7,7 +7,7 @@ import numpy as np
 import sympy as sp
 from matplotlib.gridspec import GridSpec
 
-from pymatlib.core.alloy import Alloy
+from pymatlib.core.material import Material
 from pymatlib.core.yaml_parser.common_utils import _process_regression
 
 logger = logging.getLogger(__name__)
@@ -44,7 +44,7 @@ class PropertyVisualizer:
 
     def visualize_property(
             self,
-            alloy: Alloy,
+            material: Material,
             prop_name: str,
             T: Union[float, sp.Symbol],
             prop_type: str,
@@ -60,7 +60,7 @@ class PropertyVisualizer:
             upper_bound_type: str = 'constant') -> None:
         """Visualize a single property."""
         logger.debug("""PropertyVisualizer: visualize_property:
-            alloy: %r
+            material: %r
             prop_name: %r
             T: %r
             prop_type: %r
@@ -72,7 +72,7 @@ class PropertyVisualizer:
             segments: %r
             lower_bound: %r
             upper_bound: %r""",
-                     alloy,
+                     material,
                      prop_name,
                      T,
                      prop_type,
@@ -106,7 +106,7 @@ class PropertyVisualizer:
             self.current_subplot += 1
 
             # Get property and prepare temperature array
-            current_prop = getattr(alloy, prop_name)
+            current_prop = getattr(material, prop_name)
             temp_array = self.parser.temperature_array
             step = temp_array[1] - temp_array[0]
 
