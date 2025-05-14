@@ -4,6 +4,10 @@ from typing import Any, Dict, Set, Union
 
 import sympy as sp
 
+from pymatlib.core.yaml_parser.yaml_keys import FILE_PATH_KEY, TEMPERATURE_HEADER_KEY, VALUE_HEADER_KEY, BOUNDS_KEY, \
+    REGRESSION_KEY, TEMPERATURE_KEY, VALUE_KEY, EQUATION_KEY, CONSTANT_KEY, EXTRAPOLATE_KEY, SIMPLIFY_KEY, DEGREE_KEY, \
+    SEGMENTS_KEY, PRE_KEY, POST_KEY
+
 logger = logging.getLogger(__name__)
 
 # --- Enum ---
@@ -68,13 +72,13 @@ class PropertyTypeDetector:
             value: %r""", value)
         if isinstance(value, str):
             return value.endswith(('.txt', '.csv', '.xlsx'))
-        if isinstance(value, dict) and 'file_path' in value:
-            required_keys = {'file_path', 'temperature_header', 'value_header', 'bounds'}
-            optional_keys = {'regression'}
+        if isinstance(value, dict) and FILE_PATH_KEY in value:
+            required_keys = {FILE_PATH_KEY, TEMPERATURE_HEADER_KEY, VALUE_HEADER_KEY, BOUNDS_KEY}
+            optional_keys = {REGRESSION_KEY}
             PropertyTypeDetector.validate_keys(value, required_keys, optional_keys, "'FILE' config")
-            PropertyTypeDetector.validate_bounds(value['bounds'], "'FILE' config bound")
-            if 'regression' in value:
-                PropertyTypeDetector.validate_regression(value['regression'])
+            PropertyTypeDetector.validate_bounds(value[BOUNDS_KEY], "'FILE' config bound")
+            if REGRESSION_KEY in value:
+                PropertyTypeDetector.validate_regression(value[REGRESSION_KEY])
             return True
         return False
 
@@ -83,13 +87,13 @@ class PropertyTypeDetector:
         """Check if the value is a key-value property definition."""
         logger.debug("""PropertyTypeDetector: is_key_val_property:
             value: %r""", value)
-        required_keys = {'key', 'val', 'bounds'}
-        optional_keys = {'regression'}
+        required_keys = {TEMPERATURE_KEY, VALUE_KEY, BOUNDS_KEY}
+        optional_keys = {REGRESSION_KEY}
         try:
             PropertyTypeDetector.validate_keys(value, required_keys, optional_keys, "'KEY_VAL' config")
-            PropertyTypeDetector.validate_bounds(value['bounds'], "'KEY_VAL' config bound")
-            if 'regression' in value:
-                PropertyTypeDetector.validate_regression(value['regression'])
+            PropertyTypeDetector.validate_bounds(value[BOUNDS_KEY], "'KEY_VAL' config bound")
+            if REGRESSION_KEY in value:
+                PropertyTypeDetector.validate_regression(value[REGRESSION_KEY])
             return True
         except (ValueError, TypeError):
             return False
@@ -99,13 +103,13 @@ class PropertyTypeDetector:
         """Check if the value is a piecewise equation property definition."""
         logger.debug("""PropertyTypeDetector: is_piecewise_equation:
             value: %r""", value)
-        required_keys = {'temperature', 'equation', 'bounds'}
-        optional_keys = {'regression'}
+        required_keys = {TEMPERATURE_KEY, EQUATION_KEY, BOUNDS_KEY}
+        optional_keys = {REGRESSION_KEY}
         try:
             PropertyTypeDetector.validate_keys(value, required_keys, optional_keys, "'PIECEWISE_EQUATION' config bound")
-            PropertyTypeDetector.validate_bounds(value['bounds'], "'PIECEWISE_EQUATION' config bound")
-            if 'regression' in value:
-                PropertyTypeDetector.validate_regression(value['regression'])
+            PropertyTypeDetector.validate_bounds(value[BOUNDS_KEY], "'PIECEWISE_EQUATION' config bound")
+            if REGRESSION_KEY in value:
+                PropertyTypeDetector.validate_regression(value[REGRESSION_KEY])
             return True
         except (ValueError, TypeError):
             return False
@@ -122,13 +126,13 @@ class PropertyTypeDetector:
             except (sp.SympifyError, ValueError, TypeError):
                 math_operators = ['+', '-', '*', '/', '**', '(', ')', ' ']
                 return any(op in value for op in math_operators)
-        elif isinstance(value, dict) and 'equation' in value:
-            required_keys = {'equation', 'bounds'}
-            optional_keys = {'regression'}
+        elif isinstance(value, dict) and EQUATION_KEY in value:
+            required_keys = {EQUATION_KEY, BOUNDS_KEY}
+            optional_keys = {REGRESSION_KEY}
             PropertyTypeDetector.validate_keys(value, required_keys, optional_keys, "'COMPUTE' Config")
-            PropertyTypeDetector.validate_bounds(value['bounds'], "'COMPUTE' config bound")
-            if 'regression' in value:
-                PropertyTypeDetector.validate_regression(value['regression'])
+            PropertyTypeDetector.validate_bounds(value[BOUNDS_KEY], "'COMPUTE' config bound")
+            if REGRESSION_KEY in value:
+                PropertyTypeDetector.validate_regression(value[REGRESSION_KEY])
             return True
         return False
 
@@ -161,7 +165,7 @@ class PropertyTypeDetector:
             raise ValueError(f"{context}s must be a list, got {type(bounds).__name__}")
         if len(bounds) != 2:
             raise ValueError(f"{context} must have exactly two elements")
-        valid_bound_types = {'constant', 'extrapolate'}
+        valid_bound_types = {CONSTANT_KEY, EXTRAPOLATE_KEY}
         if bounds[0] not in valid_bound_types:
             raise ValueError(f"Lower {context} type must be one of: {valid_bound_types}, got '{bounds[0]}'")
         if bounds[1] not in valid_bound_types:
@@ -174,12 +178,12 @@ class PropertyTypeDetector:
             regression: %r""", regression)
         if not isinstance(regression, dict):
             raise ValueError(f"Regression must be a dictionary, got {type(regression).__name__}")
-        required_keys = {'simplify', 'degree', 'segments'}
+        required_keys = {SIMPLIFY_KEY, DEGREE_KEY, SEGMENTS_KEY}
         optional_keys = set()
         PropertyTypeDetector.validate_keys(regression, required_keys, optional_keys, "regression")
-        if not isinstance(regression['simplify'], str) or regression['simplify'] not in {'pre', 'post'}:
-            raise ValueError(f"Invalid regression simplify type '{regression['simplify']}'. Must be 'pre', or 'post'")
-        if not isinstance(regression['degree'], int) or regression['degree'] < 1:
+        if not isinstance(regression[SIMPLIFY_KEY], str) or regression[SIMPLIFY_KEY] not in {PRE_KEY, POST_KEY}:
+            raise ValueError(f"Invalid regression simplify type '{regression[SIMPLIFY_KEY]}'. Must be {PRE_KEY}, or {POST_KEY}")
+        if not isinstance(regression[DEGREE_KEY], int) or regression[DEGREE_KEY] < 1:
             raise ValueError("Regression degree must be a positive integer")
-        if not isinstance(regression['segments'], int) or regression['segments'] < 1:
+        if not isinstance(regression[SEGMENTS_KEY], int) or regression[SEGMENTS_KEY] < 1:
             raise ValueError("Regression segments must be an integer >= 1")

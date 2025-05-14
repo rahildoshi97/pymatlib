@@ -12,6 +12,9 @@ from pymatlib.core.yaml_parser.common_utils import ensure_ascending_order
 from pymatlib.core.yaml_parser.property_processing import PropertyProcessor
 from pymatlib.core.yaml_parser.property_types import PropertyType, PropertyTypeDetector
 from pymatlib.core.yaml_parser.visualization import PropertyVisualizer
+from pymatlib.core.yaml_parser.yaml_keys import TEMPERATURE_RANGE_KEY, PROPERTIES_KEY, MATERIAL_TYPE_KEY, \
+    COMPOSITION_KEY, PURE_METAL_KEY, MELTING_TEMPERATURE_KEY, BOILING_TEMPERATURE_KEY, SOLIDUS_TEMPERATURE_KEY, \
+    LIQUIDUS_TEMPERATURE_KEY, INITIAL_BOILING_TEMPERATURE_KEY, FINAL_BOILING_TEMPERATURE_KEY, ALLOY_KEY, NAME_KEY
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +61,6 @@ class MaterialConfigParser(YAMLConfigParser):
     EPSILON = 1e-10
     ABSOLUTE_ZERO = 0.0
     VALID_YAML_PROPERTIES = {
-        'boiling_temperature',
         'density',
         'dynamic_viscosity',
         'energy_density',
@@ -67,7 +69,6 @@ class MaterialConfigParser(YAMLConfigParser):
         'kinematic_viscosity',
         'latent_heat_of_fusion',
         'latent_heat_of_vaporization',
-        'melting_temperature',
         'specific_enthalpy',
         'surface_tension',
         'thermal_diffusivity',
@@ -80,8 +81,8 @@ class MaterialConfigParser(YAMLConfigParser):
             yaml_path: %r""", yaml_path)
         super().__init__(yaml_path)
         self._validate_config()
-        self.temperature_array = self._process_temperature_range(self.config['temperature_range'])
-        self.categorized_properties = self._categorize_properties(self.config['properties'])
+        self.temperature_array = self._process_temperature_range(self.config[TEMPERATURE_RANGE_KEY])
+        self.categorized_properties = self._categorize_properties(self.config[PROPERTIES_KEY])
         self.property_processor = PropertyProcessor()
         self.visualizer = PropertyVisualizer(self)
         logger.debug(f"Finished loading configuration from {yaml_path}")
@@ -95,34 +96,34 @@ class MaterialConfigParser(YAMLConfigParser):
         logger.debug("""MaterialConfigParser: create_material:
             T: %r""", T)
         try:
-            material_type = self.config['material_type']
+            material_type = self.config[MATERIAL_TYPE_KEY]
             elements = self._get_elements()
-            composition = [val for val in self.config['composition'].values()]
+            composition = [val for val in self.config[COMPOSITION_KEY].values()]
             # Create material with different parameters based on material_type
-            if material_type == 'pure_metal':
+            if material_type == PURE_METAL_KEY:
                 material = Material(
                     elements=elements,
                     composition=composition,
                     material_type=material_type,
-                    melting_temperature=sp.Float(self.config['melting_temperature']),
-                    boiling_temperature=sp.Float(self.config['boiling_temperature']),
+                    melting_temperature=sp.Float(self.config[MELTING_TEMPERATURE_KEY]),
+                    boiling_temperature=sp.Float(self.config[BOILING_TEMPERATURE_KEY]),
                 )
             else:  # alloy
                 material = Material(
                     elements=elements,
                     composition=composition,
                     material_type=material_type,
-                    solidus_temperature=sp.Float(self.config['solidus_temperature']),
-                    liquidus_temperature=sp.Float(self.config['liquidus_temperature']),
-                    initial_boiling_temperature=sp.Float(self.config['initial_boiling_temperature']),
-                    final_boiling_temperature=sp.Float(self.config['final_boiling_temperature']),
+                    solidus_temperature=sp.Float(self.config[SOLIDUS_TEMPERATURE_KEY]),
+                    liquidus_temperature=sp.Float(self.config[LIQUIDUS_TEMPERATURE_KEY]),
+                    initial_boiling_temperature=sp.Float(self.config[INITIAL_BOILING_TEMPERATURE_KEY]),
+                    final_boiling_temperature=sp.Float(self.config[FINAL_BOILING_TEMPERATURE_KEY]),
                 )
             self.visualizer.initialize_plots()
             self.visualizer.reset_visualization_tracking()
             self.property_processor.process_properties(
                 material=material,
                 T=T,
-                properties=self.config['properties'],
+                properties=self.config[PROPERTIES_KEY],
                 categorized_properties=self.categorized_properties,
                 temperature_array=self.temperature_array,
                 base_dir=self.base_dir,
@@ -141,7 +142,7 @@ class MaterialConfigParser(YAMLConfigParser):
         if not isinstance(self.config, dict):
             raise ValueError("The YAML file must start with a dictionary/object structure with key-value pairs, not a list or scalar value")
         self._validate_required_fields()
-        properties = self.config.get('properties', {})
+        properties = self.config.get(PROPERTIES_KEY, {})
         if not isinstance(properties, dict):
             raise ValueError("The 'properties' section in your YAML file must be a dictionary with key-value pairs")
         self._validate_property_names(properties)
@@ -149,19 +150,19 @@ class MaterialConfigParser(YAMLConfigParser):
     def _validate_required_fields(self) -> None:
         logger.debug(f"MaterialConfigParser: _validate_required_fields")
         # Check for material_type first
-        if 'material_type' not in self.config:
+        if MATERIAL_TYPE_KEY not in self.config:
             raise ValueError("Missing required field: material_type")
-        material_type = self.config['material_type']
-        if material_type not in ['alloy', 'pure_metal']:
-            raise ValueError(f"Invalid material_type: {material_type}. Must be 'alloy' or 'pure_metal'")
+        material_type = self.config[MATERIAL_TYPE_KEY]
+        if material_type not in [ALLOY_KEY, PURE_METAL_KEY]:
+            raise ValueError(f"Invalid material_type: {material_type}. Must be {PURE_METAL_KEY} or {ALLOY_KEY}")
         # Common required fields
-        common_fields = {'name', 'material_type', 'composition', 'temperature_range', 'properties'}
+        common_fields = {NAME_KEY, MATERIAL_TYPE_KEY, COMPOSITION_KEY, TEMPERATURE_RANGE_KEY, PROPERTIES_KEY}
         # Material-type specific fields
-        if material_type == 'pure_metal':
-            required_fields = common_fields | {'melting_temperature', 'boiling_temperature'}
+        if material_type == PURE_METAL_KEY:
+            required_fields = common_fields | {MELTING_TEMPERATURE_KEY, BOILING_TEMPERATURE_KEY}
         else:  # alloy
-            required_fields = common_fields | {'solidus_temperature', 'liquidus_temperature',
-                                               'initial_boiling_temperature', 'final_boiling_temperature'}
+            required_fields = common_fields | {SOLIDUS_TEMPERATURE_KEY, LIQUIDUS_TEMPERATURE_KEY,
+                                               INITIAL_BOILING_TEMPERATURE_KEY, FINAL_BOILING_TEMPERATURE_KEY}
         missing_fields = required_fields - set(self.config.keys())
         if missing_fields:
             raise ValueError(f"Missing required fields for {material_type}: {', '.join(missing_fields)}")
@@ -227,9 +228,9 @@ class MaterialConfigParser(YAMLConfigParser):
     def _get_elements(self) -> List:
         from pymatlib.data.element_data import element_map
         logger.debug("""MaterialConfigParser: _get_elements:
-            composition: %r""", self.config['composition'])
+            composition: %r""", self.config[COMPOSITION_KEY])
         try:
-            return [element_map[sym] for sym in self.config['composition'].keys()]
+            return [element_map[sym] for sym in self.config[COMPOSITION_KEY].keys()]
         except KeyError as e:
             raise ValueError(f"Invalid element symbol: {e}")
 

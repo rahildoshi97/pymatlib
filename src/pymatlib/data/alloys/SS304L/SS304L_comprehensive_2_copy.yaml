@@ -23,8 +23,8 @@ temperature_range: [3000, 300, -5.0]  # 5.0 (float) -> decrement
 properties:
 
   latent_heat_of_fusion:  # KEY_VAL
-    key: [solidus_temperature, liquidus_temperature]  # expanded config if material_type is alloy
-    val: [0, 171401.]
+    temperature: [solidus_temperature, liquidus_temperature]  # expanded config if material_type is alloy
+    value: [0, 171401.]
     bounds: [constant, extrapolate]
     regression:
       simplify: pre
@@ -32,8 +32,8 @@ properties:
       segments: 1
 
   latent_heat_of_vaporization:
-    key: [initial_boiling_temperature, final_boiling_temperature]  # expanded config if material_type is alloy
-    val: [0, 171401.]
+    temperature: [initial_boiling_temperature, final_boiling_temperature]  # expanded config if material_type is alloy
+    value: [0, 171401.]
     bounds: [constant, extrapolate]
     regression:
       simplify: pre

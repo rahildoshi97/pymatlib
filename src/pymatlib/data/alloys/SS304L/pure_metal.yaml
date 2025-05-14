@@ -8,8 +8,8 @@ temperature_range: [3000, 300, 541]
 
 properties:
   latent_heat_of_fusion: # 10700.0  # Will be processed as a step function
-    key: melting_temperature
-    val: [0, 10700.0]
+    temperature: melting_temperature
+    value: [0, 10700.0]
     bounds: [constant, constant]
 
   # TODO: latent_heat_of_fusion can also be defined as a PIECEWISE_EQUATION. If so, shall we discard the above definition?
@@ -19,7 +19,7 @@ properties:
     # bounds:         [constant, constant]
 
   latent_heat_of_vaporization: 294000.0  # Will be processed as a step function
-    # key: boiling_temperature
+    # temperature: boiling_temperature
     # value: [0, 294000.0]
     # bounds: [constant, constant]
 
@@ -44,8 +44,8 @@ properties:
       segments: 4
 
   thermal_expansion_coefficient:  # KEY_VAL
-    key: [300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1500, 2000, 2500, 3000]  # TODO: temperature
-    val: [1.2632e-5, 1.468e-5, 1.524e-5, 1.581e-5, 1.639e-5, 1.699e-5, 1.759e-5, 1.821e-5, 1.885e-5, 2.1e-5, 2.3e-5, 2.5e-5, 2.7e-5]
+    temperature: [300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1500, 2000, 2500, 3000]  # TODO: temperature
+    value: [1.2632e-5, 1.468e-5, 1.524e-5, 1.581e-5, 1.639e-5, 1.699e-5, 1.759e-5, 1.821e-5, 1.885e-5, 2.1e-5, 2.3e-5, 2.5e-5, 2.7e-5]
     bounds: [constant, extrapolate]
     regression:
       simplify: post

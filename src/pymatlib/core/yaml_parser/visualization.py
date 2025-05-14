@@ -9,6 +9,7 @@ from matplotlib.gridspec import GridSpec
 
 from pymatlib.core.material import Material
 from pymatlib.core.yaml_parser.common_utils import _process_regression
+from pymatlib.core.yaml_parser.yaml_keys import CONSTANT_KEY, PRE_KEY, POST_KEY, NAME_KEY, MATERIAL_TYPE_KEY
 
 logger = logging.getLogger(__name__)
 
@@ -56,8 +57,8 @@ class PropertyVisualizer:
             segments: int = 3,
             lower_bound: Optional[float] = None,
             upper_bound: Optional[float] = None,
-            lower_bound_type: str = 'constant',
-            upper_bound_type: str = 'constant') -> None:
+            lower_bound_type: str = CONSTANT_KEY,
+            upper_bound_type: str = CONSTANT_KEY) -> None:
         """Visualize a single property."""
         logger.debug("""PropertyVisualizer: visualize_property:
             material: %r
@@ -130,12 +131,12 @@ class PropertyVisualizer:
 
             # Define a color palette for better visualization
             colors = {
-                'constant': '#1f77b4',  # blue
-                'raw': '#ff7f0e',       # orange
-                'regression_pre': '#2ca02c',  # green
-                'regression_post': '#d62728',  # red
-                'bounds': '#9467bd',    # purple
-                'extended': '#8c564b',  # brown
+                'constant': '#1f77b4',          # blue
+                'raw': '#ff7f0e',               # orange
+                'regression_pre': '#2ca02c',    # green
+                'regression_post': '#d62728',   # red
+                'bounds': '#9467bd',            # purple
+                'extended': '#8c564b',          # brown
             }
 
             if prop_type == 'CONSTANT':
@@ -161,7 +162,7 @@ class PropertyVisualizer:
                                    # alpha=0.7, label='data points', zorder=3)
 
                     # Main line: either pre-regression or raw (extended)
-                    if has_regression and simplify_type == 'pre':
+                    if has_regression and simplify_type == PRE_KEY:
                         if prop_name in ['latent_heat_of_fusion', 'latent_heat_of_vaporization']:
                             # Calculate padding based on x_data range (15% on each side)
                             x_min, x_max = np.min(x_data), np.max(x_data)
@@ -185,7 +186,7 @@ class PropertyVisualizer:
                     y_value = np.max(y_data) if y_data is not None else f_current(upper_bound)
 
                     # Overlay post-regression fit if requested
-                    if has_regression and simplify_type == 'post' and degree is not None and segments is not None:
+                    if has_regression and simplify_type == POST_KEY and degree is not None and segments is not None:
                         try:
                             preview_pw = _process_regression(
                                 temp_array=x_data, prop_array=y_data, T=T,
@@ -252,13 +253,13 @@ class PropertyVisualizer:
 
     def save_property_plots(self) -> None:
         logger.debug("""PropertyVisualizer: save_property_plots:
-            material name: %r""", self.parser.config['name'])
+            material name: %r""", self.parser.config[NAME_KEY])
         if hasattr(self, 'fig') and self.fig is not None:
-            material_type = self.parser.config['material_type']
-            title = f"Material Properties: {self.parser.config['name']} ({material_type})"
+            material_type = self.parser.config[MATERIAL_TYPE_KEY]
+            title = f"Material Properties: {self.parser.config[NAME_KEY]} ({material_type})"
             self.fig.suptitle(title, fontsize=16, fontweight='bold')
             plt.tight_layout(rect=[0, 0, 1, 0.97])
-            filepath = os.path.join(self.plot_directory, f"{self.parser.config['name'].replace(' ', '_')}_properties.png")
+            filepath = os.path.join(self.plot_directory, f"{self.parser.config[NAME_KEY].replace(' ', '_')}_properties.png")
             self.fig.savefig(filepath, dpi=300, bbox_inches="tight")
             logger.info(f"All properties plot saved as {filepath}")
             plt.close(self.fig)

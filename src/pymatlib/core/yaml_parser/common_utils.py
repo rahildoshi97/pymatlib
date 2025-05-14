@@ -1,9 +1,12 @@
 import logging
-from typing import Any, Dict, List, Tuple, Union
+from typing import List, Tuple, Union
 
 import numpy as np
 import pwlf
 import sympy as sp
+
+from pymatlib.core.yaml_parser.yaml_keys import CONSTANT_KEY, REGRESSION_KEY, SIMPLIFY_KEY, DEGREE_KEY, \
+    SEGMENTS_KEY, EXTRAPOLATE_KEY
 
 logger = logging.getLogger(__name__)
 
@@ -69,7 +72,7 @@ def interpolate_value(
             lower_bound_type: %r
             upper_bound_type: %r""", T, x_array, y_array, lower_bound_type, upper_bound_type)
     if T < x_array[0]:
-        if lower_bound_type == 'constant':
+        if lower_bound_type == CONSTANT_KEY:
             return float(y_array[0])
         else:  # 'extrapolate'
             denominator = x_array[1] - x_array[0]
@@ -78,7 +81,7 @@ def interpolate_value(
             slope = (y_array[1] - y_array[0]) / denominator
             return float(y_array[0] + slope * (T - x_array[0]))
     elif T >= x_array[-1]:
-        if upper_bound_type == 'constant':
+        if upper_bound_type == CONSTANT_KEY:
             return float(y_array[-1])
         else:  # 'extrapolate'
             denominator = x_array[-1] - x_array[-2]
@@ -98,13 +101,13 @@ def process_regression_params(
             prop_config: %r
             prop_name: %r
             data_length: %r""", prop_config, prop_name, data_length)
-    has_regression = isinstance(prop_config, dict) and 'regression' in prop_config
+    has_regression = isinstance(prop_config, dict) and REGRESSION_KEY in prop_config
     if not has_regression:
         return False, None, None, None
-    regression_config = prop_config['regression']
-    simplify_type = regression_config['simplify']
-    degree = regression_config['degree']
-    segments = regression_config['segments']
+    regression_config = prop_config[REGRESSION_KEY]
+    simplify_type = regression_config[SIMPLIFY_KEY]
+    degree = regression_config[DEGREE_KEY]
+    segments = regression_config[SEGMENTS_KEY]
     if segments >= data_length:
         raise ValueError(f"Number of segments ({segments}) must be less than number of data points ({data_length})")
     if segments > 8:
@@ -131,17 +134,17 @@ def create_raw_piecewise(temp_array: np.ndarray, prop_array: np.ndarray, T: sp.S
                  T, lower, upper)
     # if temp_array[0] > temp_array[-1]: temp_array, prop_array = np.flip(temp_array), np.flip(prop_array)
     if temp_array[0] > temp_array[-1]: raise ValueError("Temperature array is not in ascending order.")
-    conditions = [((prop_array[0] if lower=='constant' else prop_array[0]+(prop_array[1]-prop_array[0])/(temp_array[1]-temp_array[0])*(T-temp_array[0])), T<temp_array[0])] + \
+    conditions = [((prop_array[0] if lower==CONSTANT_KEY else prop_array[0]+(prop_array[1]-prop_array[0])/(temp_array[1]-temp_array[0])*(T-temp_array[0])), T<temp_array[0])] + \
                  [(prop_array[i]+(prop_array[i+1]-prop_array[i])/(temp_array[i+1]-temp_array[i])*(T-temp_array[i]), sp.And(T>=temp_array[i], T<temp_array[i+1])) for i in range(len(temp_array)-1)] + \
-                 [((prop_array[-1] if upper=='constant' else prop_array[-1]+(prop_array[-1]-prop_array[-2])/(temp_array[-1]-temp_array[-2])*(T-temp_array[-1])), T>=temp_array[-1])]
+                 [((prop_array[-1] if upper==CONSTANT_KEY else prop_array[-1]+(prop_array[-1]-prop_array[-2])/(temp_array[-1]-temp_array[-2])*(T-temp_array[-1])), T>=temp_array[-1])]
     return sp.Piecewise(*conditions)
 
 def create_piecewise_from_formulas(
         temp_points: np.ndarray,
         eqn_exprs: List[Union[str, sp.Expr]],
         T: sp.Symbol,
-        lower_bound_type: str = 'constant',
-        upper_bound_type: str = 'constant') -> sp.Piecewise:
+        lower_bound_type: str = CONSTANT_KEY,
+        upper_bound_type: str = CONSTANT_KEY) -> sp.Piecewise:
     """Create a SymPy Piecewise function from breakpoints and symbolic expressions."""
     logger.debug("""create_piecewise_from_formulas:
             temp_points: %r
@@ -159,7 +162,7 @@ def create_piecewise_from_formulas(
             f"Number of formulas ({len(eqn_exprs)}) must be one less than number of breakpoints ({len(temp_points)})"
         )
     # Special case: single expression with extrapolation at both ends
-    if len(eqn_exprs) == 1 and lower_bound_type == 'extrapolate' and upper_bound_type == 'extrapolate':
+    if len(eqn_exprs) == 1 and lower_bound_type == EXTRAPOLATE_KEY and upper_bound_type == EXTRAPOLATE_KEY:
         logger.warning(
             "Using a single expression with extrapolation at both ends. "
             "Consider simplifying your YAML definition to use a direct equation."
@@ -167,20 +170,20 @@ def create_piecewise_from_formulas(
         return eqn_exprs[0]
     conditions = []
     # Handle lower bound
-    if lower_bound_type == 'constant':
+    if lower_bound_type == CONSTANT_KEY:
         conditions.append((eqn_exprs[0].subs(T, temp_points[0]), T < temp_points[0]))
     # Handle intervals (including special cases for first and last)
     for i, expr in enumerate(eqn_exprs):
-        if i == 0 and lower_bound_type == 'extrapolate':
+        if i == 0 and lower_bound_type == EXTRAPOLATE_KEY:
             # First segment with extrapolation
             conditions.append((expr, T < temp_points[i+1]))
-        elif i == len(eqn_exprs) - 1 and upper_bound_type == 'extrapolate':
+        elif i == len(eqn_exprs) - 1 and upper_bound_type == EXTRAPOLATE_KEY:
             # Last segment with extrapolation
             conditions.append((expr, T >= temp_points[i]))
         else:  # Regular interval
             conditions.append((expr, sp.And(T >= temp_points[i], T < temp_points[i+1])))
     # Handle upper bound
-    if upper_bound_type == 'constant':
+    if upper_bound_type == CONSTANT_KEY:
         conditions.append((eqn_exprs[-1].subs(T, temp_points[-1]), T >= temp_points[-1]))
     return sp.Piecewise(*conditions)
 
@@ -190,8 +193,6 @@ def get_symbolic_eqn(pwlf_: pwlf.PiecewiseLinFit, segment_number: int, x: Union[
         raise ValueError('Degree must be at least 1')
     if segment_number < 1 or segment_number > pwlf_.n_segments:
         raise ValueError('segment_number not possible')
-    # Check if x is a symbolic variable
-    is_symbolic = isinstance(x, (sp.Symbol, sp.Expr))
     my_eqn = 0  # Initialize my_eqn before the loop
     # assemble degree = 1 first
     for line in range(segment_number):
@@ -206,7 +207,7 @@ def get_symbolic_eqn(pwlf_: pwlf.PiecewiseLinFit, segment_number: int, x: Union[
                 beta_index = pwlf_.n_segments*(k-1) + line + 1
                 my_eqn += (pwlf_.beta[beta_index])*(x-pwlf_.fit_breaks[line])**k
     # Only call simplify if x is symbolic
-    if is_symbolic:
+    if isinstance(x, (sp.Symbol, sp.Expr)):
         return my_eqn.simplify()
     else:  # For numeric x, just return the equation
         return my_eqn
@@ -215,27 +216,27 @@ def get_symbolic_conditions(pwlf_: pwlf.PiecewiseLinFit, x: sp.Symbol, lower_: s
     """Create symbolic conditions for a piecewise function from a pwlf fit."""
     conditions = []
     # Special case: single segment with extrapolation at both ends
-    if pwlf_.n_segments == 1 and lower_ == "extrapolate" and upper_ == "extrapolate":
+    if pwlf_.n_segments == 1 and lower_ == EXTRAPOLATE_KEY and upper_ == EXTRAPOLATE_KEY:
         eqn = get_symbolic_eqn(pwlf_, 1, x)
         conditions.append((eqn, True))
         return conditions
     # Handle lower bound for all cases
-    if lower_ == "constant":
+    if lower_ == CONSTANT_KEY:
         eqn = get_symbolic_eqn(pwlf_, 1, x)
         conditions.append((eqn.evalf(subs={x: pwlf_.fit_breaks[0]}), x < pwlf_.fit_breaks[0]))
     # Process all segments
     for i in range(pwlf_.n_segments):
         eqn = get_symbolic_eqn(pwlf_, i + 1, x)
         # First segment with extrapolation
-        if i == 0 and lower_ == "extrapolate":
+        if i == 0 and lower_ == EXTRAPOLATE_KEY:
             conditions.append((eqn, x < pwlf_.fit_breaks[i+1]))
         # Last segment with extrapolation
-        elif i == pwlf_.n_segments - 1 and upper_ == "extrapolate":
+        elif i == pwlf_.n_segments - 1 and upper_ == EXTRAPOLATE_KEY:
             conditions.append((eqn, x >= pwlf_.fit_breaks[i]))
         else:  # Regular intervals (including first/last with constant bounds)
             conditions.append((eqn, sp.And(x >= pwlf_.fit_breaks[i], x < pwlf_.fit_breaks[i+1])))
     # Handle upper bound
-    if upper_ == "constant":
+    if upper_ == CONSTANT_KEY:
         eqn = get_symbolic_eqn(pwlf_, pwlf_.n_segments, x)
         conditions.append((eqn.evalf(subs={x: pwlf_.fit_breaks[-1]}), x >= pwlf_.fit_breaks[-1]))
     return conditions
