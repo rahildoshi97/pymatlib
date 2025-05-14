@@ -68,8 +68,8 @@ class PropertyTypeDetector:
             value: %r""", value)
         if isinstance(value, str):
             return value.endswith(('.txt', '.csv', '.xlsx'))
-        if isinstance(value, dict) and 'file' in value:
-            required_keys = {'file', 'temp_col', 'prop_col', 'bounds'}
+        if isinstance(value, dict) and 'file_path' in value:
+            required_keys = {'file_path', 'temperature_header', 'value_header', 'bounds'}
             optional_keys = {'regression'}
             PropertyTypeDetector.validate_keys(value, required_keys, optional_keys, "'FILE' config")
             PropertyTypeDetector.validate_bounds(value['bounds'], "'FILE' config bound")

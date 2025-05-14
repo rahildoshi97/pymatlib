@@ -177,8 +177,9 @@ class PropertyProcessor:
             T: %r""", material, prop_name, file_config, T)
         try:
             yaml_dir = self.base_dir
-            if isinstance(file_config, dict) and 'file' in file_config:
-                file_config['file'] = str(yaml_dir / file_config['file'])
+            FILE_PATH_KEY = "file_path"
+            if isinstance(file_config, dict) and FILE_PATH_KEY in file_config:
+                file_config[FILE_PATH_KEY] = str(yaml_dir / file_config[FILE_PATH_KEY])
                 temp_array, prop_array = read_data_from_file(file_config)
             else:
                 file_path = str(yaml_dir / file_config)

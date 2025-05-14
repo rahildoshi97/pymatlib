@@ -34,9 +34,9 @@ properties:
   density: 6594.65 * ((1 + thermal_expansion_coefficient * (T - 2270)) ** (-3))  # COMPUTE
 
   heat_capacity:  # FILE
-    file: ./304L_Erstarrungsdaten_edited.xlsx
-    temp_col: T (K)  # TODO: change to temp_header
-    prop_col: Specific heat (J/(Kg K))
+    file_path: ./304L_Erstarrungsdaten_edited.xlsx
+    temperature_header: T (K)
+    value_header: Specific heat (J/(Kg K))
     bounds: [extrapolate, extrapolate]
     regression:
       simplify: post  # TODO: 'post' causes errors: <lambdifygenerated-8>:2: RuntimeWarning: divide by zero encountered in reciprocal

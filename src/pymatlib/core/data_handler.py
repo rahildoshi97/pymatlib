@@ -134,9 +134,9 @@ def read_data_from_file1(file_config: Union[str, Dict], header: bool = True) -> 
         prop_col = 1
     else:
         #print('dict')
-        file_path = file_config['file']
-        temp_col = file_config['temp_col']
-        prop_col = file_config['prop_col']
+        file_path = file_config['file_path']
+        temp_col = file_config['temperature_header']
+        prop_col = file_config['value_header']
         #temp_col = file_config.get('temp_col', 0)
         #prop_col = file_config.get('prop_col', 1)
 
@@ -254,10 +254,10 @@ def read_data_from_file(file_config: Union[str, Dict], header: bool = True) -> T
         temp_col = 0
         prop_col = 1
     else:
-        file_path = file_config['file']
+        file_path = file_config['file_path']
         direct_path = False
-        temp_col = file_config['temp_col']
-        prop_col = file_config['prop_col']
+        temp_col = file_config['temperature_header']
+        prop_col = file_config['value_header']
 
     print(f"Reading data from file: {file_path}")
 
@@ -413,49 +413,6 @@ def fahrenheit_to_kelvin(temp: Union[float, np.ndarray]) -> Union[float, np.ndar
         Union[float, np.ndarray]: Temperature(s) in Kelvin.
     """
     return celsius_to_kelvin((temp - 32.0) * (5.0 / 9.0))
-
-
-def thousand_times(q: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
-    """
-    Multiplies the input value by 1000.
-    Example: J/g-K -> J/kg-K
-    Example: g/cm³ -> kg/m³
-
-    Parameters:
-        q (Union[float, np.ndarray]): Input value(s).
-
-    Returns:
-        Union[float, np.ndarray]: Scaled value(s).
-    """
-    return q * 1000
-
-'''def check_equidistant(temp: np.ndarray, tolerance: float = 1.0e-3) -> Union[float, bool]:
-    """
-    Tests if the temperature values are equidistant.
-
-    Parameters:
-        temp (np.ndarray): Array of temperature values.
-        tolerance (float): Tolerance for checking equidistant spacing.
-
-    Returns:
-        Union[float, bool]: The common difference if equidistant, otherwise False.
-    """
-    if len(temp) < 2:
-        return False
-
-    temperature_diffs = np.diff(temp)
-    unique_diffs = np.unique(temperature_diffs)
-
-    if len(unique_diffs) == 1:
-        return float(unique_diffs[0])
-
-    # Check if the differences are approximately the same within the tolerance
-    if len(unique_diffs) > 1:
-        diffs_within_tolerance = np.all(np.abs(unique_diffs - unique_diffs[0]) <= tolerance)
-        if diffs_within_tolerance:
-            return float(unique_diffs[0])
-
-    return False'''
 
 
 # Moved from interpolators.py to data_handler.py
