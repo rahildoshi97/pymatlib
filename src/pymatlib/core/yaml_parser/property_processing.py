@@ -301,7 +301,6 @@ class PropertyProcessor:
             has_regression, simplify_type, degree, segments = self._process_regression_params(prop_config, prop_name, len(key_array))
             if has_regression and simplify_type == PRE_KEY:
                 pw = _process_regression(key_array, val_array, T, lower_bound_type, upper_bound_type, degree, segments, seed)
-                print(f"pw={pw}\ntype(pw)={type(pw)}")
                 setattr(material, prop_name, pw)
             else:  # No regression OR not pre
                 raw_pw = self._create_raw_piecewise(key_array, val_array, T, lower_bound_type, upper_bound_type)
@@ -441,8 +440,10 @@ class PropertyProcessor:
             prop_name: %r
             prop_config: %r
             T: %r""", material, prop_name, prop_config, T)
+
         temp_points = np.array(prop_config[TEMPERATURE_KEY], dtype=float)
         eqn_strings = prop_config[EQUATION_KEY]
+
         # Validate that only 'T' is used in equations
         for eq in eqn_strings:
             expr = sp.sympify(eq)
@@ -450,34 +451,52 @@ class PropertyProcessor:
             for sym in symbols:
                 if str(sym) != 'T':
                     raise ValueError(f"Unsupported symbol '{sym}' found in equation '{eq}' for property '{prop_name}'. Only 'T' is allowed.")
+
         lower_bound_type, upper_bound_type = prop_config[BOUNDS_KEY]
-        T_sym = T if isinstance(T, sp.Symbol) else sp.Symbol('T')
+
+        # Use standard symbol for parsing
+        T_standard = sp.Symbol('T')
         temp_points, eqn_strings = ensure_ascending_order(temp_points, eqn_strings)
-        eqn_exprs = [sp.sympify(eq, locals={'T': T_sym}) for eq in eqn_strings]
-        pw = self._create_piecewise_from_formulas(temp_points, eqn_exprs, T_sym, lower_bound_type, upper_bound_type)
-        # print(f"pw={pw}, type(pw)={type(pw)}\neqn_strings={eqn_strings},\ntemp_points={temp_points}")
+
+        # Parse expressions with standard symbol
+        eqn_exprs = [sp.sympify(eq, locals={'T': T_standard}) for eq in eqn_strings]
+
+        # Create piecewise function with standard symbol
+        pw_standard = self._create_piecewise_from_formulas(temp_points, eqn_exprs, T_standard, lower_bound_type, upper_bound_type)
+
+        # If T is a different symbol, substitute T_standard with the actual symbol
+        if isinstance(T, sp.Symbol) and str(T) != 'T':
+            pw = pw_standard.subs(T_standard, T)
+        else:
+            pw = pw_standard
+
+        # Handle numeric temperature
         if not isinstance(T, sp.Symbol):
-            value = float(pw.subs(T_sym, T).evalf())
+            value = float(pw_standard.subs(T_standard, T).evalf())
             setattr(material, prop_name, sp.Float(value))
             self.processed_properties.add(prop_name)
             return
+
         has_regression, simplify_type, degree, segments = self._process_regression_params(prop_config, prop_name, len(temp_points))
-        # if not has_regression:
-            # simplify_type = 'post'
-        f_pw = sp.lambdify(T_sym, pw, 'numpy')
+
+        f_pw = sp.lambdify(T, pw, 'numpy')
         diff = abs(self.temperature_array[1] - self.temperature_array[0])
-        print(f"diff={diff}")
         temp_dense = np.arange(temp_points[0], temp_points[-1]+diff/2, diff)
-        print(f"temp_dense.shape={temp_dense.shape}")
         y_dense = f_pw(temp_dense)
+
         if has_regression and simplify_type == PRE_KEY:
-            pw_reg = _process_regression(temp_dense, y_dense, T_sym, lower_bound_type, upper_bound_type, degree, segments, seed)
+            # Use T_standard for regression and then substitute if needed
+            pw_reg = _process_regression(temp_dense, y_dense, T_standard, lower_bound_type, upper_bound_type, degree, segments, seed)
+            # If T is a different symbol, substitute T_standard with the actual symbol
+            if isinstance(T, sp.Symbol) and str(T) != 'T':
+                pw_reg = pw_reg.subs(T_standard, T)
             setattr(material, prop_name, pw_reg)
-        else:  # No regression OR not pre
+        else: # No regression OR not pre
             raw_pw = pw
-            print(f"raw_pw={raw_pw}")
             setattr(material, prop_name, raw_pw)
+
         self.processed_properties.add(prop_name)
+
         if self.visualizer is not None:
             self.visualizer.visualize_property(
                 material=material,
@@ -499,55 +518,82 @@ class PropertyProcessor:
     def _process_computed_property(self, material: Material, prop_name: str, T: Union[float, sp.Symbol]) -> None:
         """Process computed properties using predefined models with dependency checking."""
         logger.debug("PropertyProcessor: _process_computed_property - prop_name: %r, T: %r", prop_name, T)
+
         # Skip if already processed
         if prop_name in self.processed_properties:
             return
+
         try:
             # Get property configuration
             prop_config = self.properties.get(prop_name)
             if prop_config is None:
                 raise ValueError(f"Property '{prop_name}' not found in configuration")
+
             # Extract expression from config
             if isinstance(prop_config, str):
                 expression = prop_config
             elif isinstance(prop_config, dict) and EQUATION_KEY in prop_config:
-                expression = prop_config['equation']
+                expression = prop_config[EQUATION_KEY]
             else:
                 raise ValueError(f"Unsupported property configuration format for {prop_name}: {prop_config}")
+
             # Process the expression
             material_property = self._parse_and_process_expression(expression, material, T)
+
             # Set property on material
             setattr(material, prop_name, material_property)
+
             # Handle non-symbolic temperature case
-            T_sym = T if isinstance(T, sp.Symbol) else sp.Symbol('T')
             if not isinstance(T, sp.Symbol):
-                value = float(material_property.subs(T_sym, T).evalf())
+                # For numeric T, we've already substituted the value in _parse_and_process_expression
+                # Just ensure it's a float value
+                if hasattr(material_property, 'evalf'):
+                    value = float(material_property.evalf())
+                else:
+                    value = float(material_property)
                 setattr(material, prop_name, sp.Float(value))
                 self.processed_properties.add(prop_name)
                 return
+
             # Extract bounds and regression parameters
             lower_bound_type, upper_bound_type = CONSTANT_KEY, CONSTANT_KEY
             if isinstance(prop_config, dict) and BOUNDS_KEY in prop_config:
                 if isinstance(prop_config[BOUNDS_KEY], list) and len(prop_config[BOUNDS_KEY]) == 2:
                     lower_bound_type, upper_bound_type = prop_config[BOUNDS_KEY]
+
             temp_array = self.temperature_array
             lower_bound = np.min(temp_array)
             upper_bound = np.max(temp_array)
+
             # Get regression parameters
             has_regression, simplify_type, degree, segments = self._process_regression_params(prop_config, prop_name, len(temp_array))
-            # if not has_regression:
-                # simplify_type = 'post'
+
             # Create function from symbolic expression
-            f_pw = sp.lambdify(T_sym, material_property, 'numpy')
-            y_dense = f_pw(temp_array)  # TODO: <lambdifygenerated-16>:2: RuntimeWarning: divide by zero encountered in reciprocal
+            # Use standard symbol for lambdification if T is a different symbol
+            T_standard = sp.Symbol('T')
+            if isinstance(T, sp.Symbol) and str(T) != 'T':
+                standard_expr = material_property.subs(T, T_standard)
+                f_pw = sp.lambdify(T_standard, standard_expr, 'numpy')
+            else:
+                f_pw = sp.lambdify(T, material_property, 'numpy')
+
+            y_dense = f_pw(temp_array)
+
             # Apply regression if needed
             if has_regression and simplify_type == PRE_KEY:
-                pw_reg = _process_regression(temp_array, y_dense, T_sym, lower_bound_type, upper_bound_type, degree, segments, seed)
+                # Use T_standard for regression and then substitute if needed
+                T_for_regression = T_standard if isinstance(T, sp.Symbol) and str(T) != 'T' else T
+                pw_reg = _process_regression(temp_array, y_dense, T_for_regression, lower_bound_type, upper_bound_type, degree, segments, seed)
+                # If T is a different symbol, substitute T_standard with the actual symbol
+                if isinstance(T, sp.Symbol) and str(T) != 'T':
+                    pw_reg = pw_reg.subs(T_standard, T)
                 setattr(material, prop_name, pw_reg)
-            else:  # No regression OR not pre
+            else: # No regression OR not pre
                 raw_pw = self._create_raw_piecewise(temp_array, y_dense, T, lower_bound_type, upper_bound_type)
                 setattr(material, prop_name, raw_pw)
+
             self.processed_properties.add(prop_name)
+
             if self.visualizer is not None:
                 self.visualizer.visualize_property(
                     material=material,
@@ -565,6 +611,7 @@ class PropertyProcessor:
                     lower_bound_type=lower_bound_type,
                     upper_bound_type=upper_bound_type
                 )
+
         except Exception as e:
             raise ValueError(f"Failed to process computed property '{prop_name}' \n -> {str(e)}") from e
 
@@ -574,11 +621,14 @@ class PropertyProcessor:
         logger.debug("PropertyProcessor: _parse_and_process_expression - expression: %r, T: %r", expression, T)
 
         try:
+            # Create a standard symbol 'T' for parsing the expression
+            T_standard = sp.Symbol('T')
+
+            # Parse the expression with the standard symbol
             sympy_expr = sp.sympify(expression, evaluate=False)
 
-            # Extract dependencies (excluding temperature symbol if symbolic)
-            dependencies = [str(symbol) for symbol in sympy_expr.free_symbols
-                            if not (str(symbol) == 'T' and isinstance(T, sp.Symbol))]
+            # Extract dependencies (always excluding 'T' as it's handled separately)
+            dependencies = [str(symbol) for symbol in sympy_expr.free_symbols if str(symbol) != 'T']
 
             # Check for circular dependencies
             self._check_circular_dependencies(prop_name=None, current_deps=dependencies, visited=set())
@@ -605,9 +655,13 @@ class PropertyProcessor:
                     raise ValueError(f"Symbol '{dep}' not found in symbol registry")
                 substitutions[dep_symbol] = dep_value
 
-            # Add temperature symbol if needed
+            # Handle temperature substitution based on type
             if isinstance(T, sp.Symbol):
-                substitutions[sp.Symbol('T')] = T
+                # If T is a symbolic variable, substitute the standard 'T' with it
+                substitutions[T_standard] = T
+            else:
+                # For numeric T, substitute with the value directly
+                substitutions[T_standard] = T
 
             # Perform substitution and evaluate integrals if present
             result_expr = sympy_expr.subs(substitutions)
@@ -622,23 +676,32 @@ class PropertyProcessor:
     def _check_circular_dependencies(self, prop_name, current_deps, visited, path=None):
         """Check for circular dependencies in property definitions."""
         logger.debug("""PropertyProcessor: _check_circular_dependencies:
-            prop_name: %r
-            current_deps: %r
-            visited: %r
-            path: %r""", prop_name, current_deps, visited, path)
+                prop_name: %r
+                current_deps: %r
+                visited: %r
+                path: %r""", prop_name, current_deps, visited, path)
+
         if path is None:
             path = []
+
+        # Always filter out 'T' from dependencies to check
+        current_deps = [dep for dep in current_deps if dep != 'T']
+
         if prop_name is not None:
             if prop_name in visited:
                 cycle_path = path + [prop_name]
                 raise ValueError(f"Circular dependency detected: {' -> '.join(cycle_path)}")
+
             visited.add(prop_name)
             path = path + [prop_name]
+
         for dep in current_deps:
             if dep in self.properties:
                 dep_config = self.properties[dep]
+
                 if isinstance(dep_config, str):
                     expr = sp.sympify(dep_config)
+                    # Always exclude 'T' from dependencies
                     dep_deps = [str(symbol) for symbol in expr.free_symbols if str(symbol) != 'T']
                 elif isinstance(dep_config, dict) and EQUATION_KEY in dep_config:
                     eqn = dep_config[EQUATION_KEY]
@@ -647,12 +710,15 @@ class PropertyProcessor:
                         for eq in eqn:
                             expr = sp.sympify(eq)
                             symbols.update(expr.free_symbols)
+                        # Always exclude 'T' from dependencies
                         dep_deps = [str(symbol) for symbol in symbols if str(symbol) != 'T']
                     else:
                         expr = sp.sympify(eqn)
+                        # Always exclude 'T' from dependencies
                         dep_deps = [str(symbol) for symbol in expr.free_symbols if str(symbol) != 'T']
                 else:
                     dep_deps = []
+
                 if dep_deps:
                     self._check_circular_dependencies(dep, dep_deps, visited.copy(), path)
 
@@ -675,7 +741,6 @@ class PropertyProcessor:
                 if simplify_type != POST_KEY:
                     continue
                 prop_value = getattr(material, prop_name)
-                print(prop_value)
                 if isinstance(prop_value, sp.Integral):
                     raise ValueError(f"Property '{prop_name}' is an integral and cannot be post-processed.")
                     result = prop_value.doit()

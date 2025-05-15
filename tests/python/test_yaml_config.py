@@ -15,7 +15,7 @@ logging.getLogger('PIL').setLevel(logging.WARNING)
 logging.getLogger('fontTools').setLevel(logging.WARNING)
 
 # Create symbolic temperature variable
-T = sp.Symbol('T')
+T = sp.Symbol('u_C')
 
 # Get the path to the YAML file
 current_file = Path(__file__)
@@ -24,7 +24,6 @@ current_file = Path(__file__)
 yaml_path = current_file.parent.parent.parent / "src" / "pymatlib" / "data" / "alloys" / "SS304L" / "pure_metal.yaml"
 # Create alloy from YAML
 ss316l = create_material_from_yaml(yaml_path, T=T)
-#ss316l_1 = create_material_from_yaml("SS304L_1.yaml", T)
 
 # Test various properties
 print(f"Elements: {ss316l.elements}")

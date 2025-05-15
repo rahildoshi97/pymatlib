@@ -17,18 +17,29 @@ def create_material_from_yaml(yaml_path: Union[str, Path], T: Union[float, sp.Sy
     Args:
         yaml_path: Path to the YAML configuration file
         T: Temperature value or symbol for property evaluation
-            - Use a float value for a specific temperature
-            - Use sp.Symbol('T') for symbolic temperature expressions
+           - Use a float value for a specific temperature
+           - Use a symbolic variable (e.g., sp.Symbol('T') or sp.Symbol('u_C'))
+             for symbolic temperature expressions
+
+    Notes:
+        In YAML files, always use 'T' as the temperature variable in equations.
+        The system will automatically substitute this with your provided symbol.
+
     Returns:
         The material instance with all properties initialized
+
     Examples:
         # Create a material at a specific temperature
         material = create_material_from_yaml('aluminum.yaml', 500.0)
-        
+
         # Create a material with symbolic temperature expressions
         import sympy as sp
         T = sp.Symbol('T')
         material = create_material_from_yaml('steel.yaml', T)
+
+        # Create a material with a custom temperature symbol
+        u_C = sp.Symbol('u_C')
+        material = create_material_from_yaml('copper.yaml', u_C)
     """
     parser = MaterialConfigParser(yaml_path)
     material = parser.create_material(T)

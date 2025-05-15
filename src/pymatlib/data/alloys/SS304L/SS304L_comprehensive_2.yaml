@@ -33,7 +33,7 @@ properties:
 
   ##################################################
 
-  latent_heat_of_vaporization: 171401.  # CONSTANT -> KEY_VAL  # TODO:
+  latent_heat_of_vaporization: 171401.  # CONSTANT -> KEY_VAL
 
   ##################################################
 
@@ -68,7 +68,7 @@ properties:
 
   heat_capacity:  # FILE
     file_path: ./304L_Erstarrungsdaten_edited.xlsx
-    temperature_header: T (K)  # TODO: change to temp_header
+    temperature_header: T (K)
     value_header: Specific heat (J/(Kg K))
     bounds: [extrapolate, extrapolate]
     regression:
@@ -111,7 +111,7 @@ properties:
   ##################################################
 
   thermal_expansion_coefficient:  # KEY_VAL
-    temperature: [300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1500, 2000, 2500, 3000]  # TODO: temperature
+    temperature: [300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1500, 2000, 2500, 3000]
     value: [1.2632e-5, 1.468e-5, 1.524e-5, 1.581e-5, 1.639e-5, 1.699e-5, 1.759e-5, 1.821e-5, 1.885e-5, 2.1e-5, 2.3e-5, 2.5e-5, 2.7e-5]
     bounds: [constant, extrapolate]
     regression:

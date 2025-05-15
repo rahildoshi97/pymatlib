@@ -1,3 +1,4 @@
+import logging
 import sympy as sp
 import pystencils as ps
 from importlib.resources import files
@@ -7,12 +8,16 @@ from importlib.resources import files
 # sys.path.append(walberla_dir)
 from pystencilssfg import SourceFileGenerator
 from sfg_walberla import Sweep
-# from pymatlib.data.alloys.SS304L import SS304L
-from pymatlib.core.yaml_parser import create_alloy_from_yaml
-from pymatlib.core.assignment_converter import assignment_converter
-from pymatlib.core.codegen.interpolation_array_container import InterpolationArrayContainer
-from pymatlib.core.property_array_extractor import PropertyArrayExtractor
+from pymatlib.core.yaml_parser.api import create_material_from_yaml
 
+logging.basicConfig(
+    level=logging.INFO,  # DEBUG/INFO/WARNING
+    format="%(asctime)s %(levelname)s %(name)s -> %(message)s"
+)
+# Silence matplotlib and other noisy libraries
+logging.getLogger('matplotlib').setLevel(logging.WARNING)
+logging.getLogger('PIL').setLevel(logging.WARNING)
+logging.getLogger('fontTools').setLevel(logging.WARNING)
 with SourceFileGenerator() as sfg:
     data_type = "float64"  # if ctx.double_accuracy else "float32"
 
@@ -27,38 +32,14 @@ with SourceFileGenerator() as sfg:
     heat_pde_discretized = discretize(heat_pde)
     heat_pde_discretized = heat_pde_discretized.args[1] + heat_pde_discretized.args[0].simplify()
 
-    # mat = SS304L.create_SS316L(u.center())
-
     from pathlib import Path
     # Relative path to the package
     #yaml_path = Path(__file__).parent.parent / "src" / "pymatlib" / "data" / "alloys" / "SS304L" / "SS304L.yaml"
 
     from importlib.resources import files
-    # Access the YAML file as a package resource
-    yaml_path = files('pymatlib.data.alloys.SS304L').joinpath('SS304L.yaml')
-    # Create alloy and get temperature array
-    mat, temperature_array = create_alloy_from_yaml(yaml_path, u.center())
-    # yaml_path_1 = files('pymatlib.data.alloys.SS304L').joinpath('SS304L_1.yaml')
-    # mat1 = create_alloy_from_yaml(yaml_path_1, u.center())
-    # Create property extractor with the alloy and temperature array
-    array_extractor = PropertyArrayExtractor(mat, temperature_array, u.center)
-    arr_container = InterpolationArrayContainer("SS304L", temperature_array, array_extractor.energy_density_array)
-    sfg.generate(arr_container)
-    # arr_container = InterpolationArrayContainer.from_material("SS304L_1", mat1)
-    # sfg.generate(arr_container)
-
-    # Convert assignments to pystencils format
-    print("Print statements")
-    print(mat.thermal_diffusivity)
-    print(mat.thermal_diffusivity.expr)
-    print(mat.thermal_diffusivity.assignments)
-    subexp, subs = assignment_converter(mat.thermal_diffusivity.assignments)
-    print(f"subexp\n{subexp}")
-    print(f"subs\n{subs}")
-    # subexp_ed, _ = assignment_converter(mat.energy_density.assignments)
-    # print(f"subexp_ed =\n{subexp_ed}")
-
-    subexp.append(ps.Assignment(thermal_diffusivity, mat.thermal_diffusivity.expr))
+    yaml_path = files('pymatlib.data.alloys.SS304L').joinpath('SS304L_comprehensive_2.yaml')
+    mat = create_material_from_yaml(yaml_path, u.center())
+    subexp = [ps.Assignment(thermal_diffusivity, mat.thermal_diffusivity)]
 
     ac = ps.AssignmentCollection(
         subexpressions=subexp,

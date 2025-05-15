@@ -23,7 +23,7 @@ class PropertyVisualizer:
         self.fig = None
         self.gs = None
         self.current_subplot = 0
-        self.plot_directory = "property_plots"
+        self.plot_directory = "pymatlib_plots"
         self.visualized_properties = set()
 
     # --- Public API Methods ---
@@ -156,7 +156,6 @@ class PropertyVisualizer:
                     # Plot raw data if available
                     if x_data is not None and y_data is not None and prop_type in ['FILE', 'KEY_VAL', 'PIECEWISE_EQUATION', 'COMPUTE']:
                         print(f"property {prop_name} has raw data")
-                        print(f"prop_type: {prop_type}")
                         # marker_size = 6 if prop_type == 'Key-Value' else 3
                         # ax.scatter(x_data, y_data, color=colors['raw'], marker='o', s=marker_size**2,
                                    # alpha=0.7, label='data points', zorder=3)

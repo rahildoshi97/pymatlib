@@ -70,7 +70,10 @@ def interpolate_value(
             x_array: %r
             y_array: %r
             lower_bound_type: %r
-            upper_bound_type: %r""", T, x_array, y_array, lower_bound_type, upper_bound_type)
+            upper_bound_type: %r""", T,
+                 x_array.shape if x_array is not None else None,
+                 y_array.shape if y_array is not None else None,
+                 lower_bound_type, upper_bound_type)
     if T < x_array[0]:
         if lower_bound_type == CONSTANT_KEY:
             return float(y_array[0])
@@ -132,7 +135,6 @@ def create_raw_piecewise(temp_array: np.ndarray, prop_array: np.ndarray, T: sp.S
                  temp_array.shape if temp_array is not None else None,
                  prop_array.shape if prop_array is not None else None,
                  T, lower, upper)
-    # if temp_array[0] > temp_array[-1]: temp_array, prop_array = np.flip(temp_array), np.flip(prop_array)
     if temp_array[0] > temp_array[-1]: raise ValueError("Temperature array is not in ascending order.")
     conditions = [((prop_array[0] if lower==CONSTANT_KEY else prop_array[0]+(prop_array[1]-prop_array[0])/(temp_array[1]-temp_array[0])*(T-temp_array[0])), T<temp_array[0])] + \
                  [(prop_array[i]+(prop_array[i+1]-prop_array[i])/(temp_array[i+1]-temp_array[i])*(T-temp_array[i]), sp.And(T>=temp_array[i], T<temp_array[i+1])) for i in range(len(temp_array)-1)] + \
@@ -153,38 +155,43 @@ def create_piecewise_from_formulas(
             lower_bound_type: %r
             upper_bound_type: %r""", temp_points, eqn_exprs, T, lower_bound_type, upper_bound_type)
     temp_points = np.asarray(temp_points, dtype=float)
-    eqn_exprs = [
-        sp.sympify(expr, locals={'T': T}) if isinstance(expr, str) else expr
-        for expr in eqn_exprs
-    ]
-    if len(eqn_exprs) != len(temp_points) - 1:
+    # Process expressions using the provided symbol T
+    processed_exprs = []
+    for expr in eqn_exprs:
+        if isinstance(expr, str):
+            # For string expressions, use the provided symbol T
+            processed_exprs.append(sp.sympify(expr, locals={'T': T}))
+        else:
+            # For SymPy expressions, use as is
+            processed_exprs.append(expr)
+    if len(processed_exprs) != len(temp_points) - 1:
         raise ValueError(
-            f"Number of formulas ({len(eqn_exprs)}) must be one less than number of breakpoints ({len(temp_points)})"
+            f"Number of formulas ({len(processed_exprs)}) must be one less than number of breakpoints ({len(temp_points)})"
         )
     # Special case: single expression with extrapolation at both ends
-    if len(eqn_exprs) == 1 and lower_bound_type == EXTRAPOLATE_KEY and upper_bound_type == EXTRAPOLATE_KEY:
+    if len(processed_exprs) == 1 and lower_bound_type == EXTRAPOLATE_KEY and upper_bound_type == EXTRAPOLATE_KEY:
         logger.warning(
             "Using a single expression with extrapolation at both ends. "
             "Consider simplifying your YAML definition to use a direct equation."
         )
-        return eqn_exprs[0]
+        return processed_exprs[0]
     conditions = []
     # Handle lower bound
     if lower_bound_type == CONSTANT_KEY:
-        conditions.append((eqn_exprs[0].subs(T, temp_points[0]), T < temp_points[0]))
+        conditions.append((processed_exprs[0].subs(T, temp_points[0]), T < temp_points[0]))
     # Handle intervals (including special cases for first and last)
-    for i, expr in enumerate(eqn_exprs):
+    for i, expr in enumerate(processed_exprs):
         if i == 0 and lower_bound_type == EXTRAPOLATE_KEY:
             # First segment with extrapolation
             conditions.append((expr, T < temp_points[i+1]))
-        elif i == len(eqn_exprs) - 1 and upper_bound_type == EXTRAPOLATE_KEY:
+        elif i == len(processed_exprs) - 1 and upper_bound_type == EXTRAPOLATE_KEY:
             # Last segment with extrapolation
             conditions.append((expr, T >= temp_points[i]))
-        else:  # Regular interval
+        else: # Regular interval
             conditions.append((expr, sp.And(T >= temp_points[i], T < temp_points[i+1])))
     # Handle upper bound
     if upper_bound_type == CONSTANT_KEY:
-        conditions.append((eqn_exprs[-1].subs(T, temp_points[-1]), T >= temp_points[-1]))
+        conditions.append((processed_exprs[-1].subs(T, temp_points[-1]), T >= temp_points[-1]))
     return sp.Piecewise(*conditions)
 
 #https://github.com/cjekel/piecewise_linear_fit_py/blob/master/examples/understanding_higher_degrees/polynomials_in_pwlf.ipynb
