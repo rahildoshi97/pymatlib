@@ -42,14 +42,14 @@ class YAMLConfigParser(ConfigParser):
         try:
             with open(self.config_path, 'r') as f:
                 return yaml.load(f)
-        except FileNotFoundError:
-            raise FileNotFoundError(f"YAML file not found: {self.config_path}")
+        except FileNotFoundError as e:
+            raise FileNotFoundError(f"YAML file not found: {self.config_path}") from e
         except constructor.DuplicateKeyError as e:
-            raise constructor.DuplicateKeyError(f"Duplicate key in {self.config_path}: {e}")
+            raise constructor.DuplicateKeyError(f"Duplicate key in {self.config_path}: {str(e)}") from e
         except scanner.ScannerError as e:
-            raise scanner.ScannerError(f"YAML syntax error in {self.config_path}: {e}")
+            raise scanner.ScannerError(f"YAML syntax error in {self.config_path}: {str(e)}") from e
         except Exception as e:
-            raise ValueError(f"Error parsing {self.config_path}: {str(e)}")
+            raise ValueError(f"Error parsing {self.config_path}: {str(e)}") from e
 
 class MaterialConfigParser(YAMLConfigParser):
     """
@@ -132,9 +132,9 @@ class MaterialConfigParser(YAMLConfigParser):
             self.visualizer.save_property_plots()
             return material
         except KeyError as e:
-            raise ValueError(f"Configuration error: Missing {e}")
+            raise ValueError(f"Configuration error: Missing {str(e)}") from e
         except Exception as e:
-            raise ValueError(f"Failed to create material \n -> {e}")
+            raise ValueError(f"Failed to create material \n -> {str(e)}") from e
 
     # --- Validation Methods ---
     def _validate_config(self) -> None:
@@ -172,7 +172,7 @@ class MaterialConfigParser(YAMLConfigParser):
                 field: get_close_matches(field, required_fields, n=1, cutoff=0.6)
                 for field in extra_fields
             }
-            error_msg = "Extra fields found in configuration:\n"
+            error_msg = "Extra fields found in configuration: \n ->"
             for field, matches in suggestions.items():
                 suggestion = f" (did you mean '{matches[0]}'?)" if matches else ""
                 error_msg += f" - '{field}'{suggestion}\n"
@@ -187,7 +187,7 @@ class MaterialConfigParser(YAMLConfigParser):
                 prop: get_close_matches(prop, self.VALID_YAML_PROPERTIES, n=1, cutoff=0.6)
                 for prop in invalid_props
             }
-            error_msg = "Invalid properties found:\n"
+            error_msg = "Invalid properties found: \n ->"
             for prop, matches in suggestions.items():
                 suggestion = f" (did you mean '{matches[0]}'?)" if matches else ""
                 error_msg += f" - '{prop}'{suggestion}\n"
@@ -232,7 +232,7 @@ class MaterialConfigParser(YAMLConfigParser):
         try:
             return [element_map[sym] for sym in self.config[COMPOSITION_KEY].keys()]
         except KeyError as e:
-            raise ValueError(f"Invalid element symbol: {e}")
+            raise ValueError(f"Invalid element symbol: {str(e)}") from e
 
     @staticmethod
     def _categorize_properties(properties: Dict[str, Any]) -> Dict[PropertyType, List[Tuple[str, Any]]]:
@@ -245,8 +245,8 @@ class MaterialConfigParser(YAMLConfigParser):
             try:
                 prop_type = PropertyTypeDetector.determine_property_type(prop_name, config)
                 if prop_type == PropertyType.INVALID:
-                    raise ValueError(f"Invalid configuration format for property '{prop_name}': {config}")
+                    raise ValueError(f"Could not determine property type for '{prop_name}'")
                 categorized_properties[prop_type].append((prop_name, config))
             except Exception as e:
-                raise ValueError(f"Failed to categorize properties \n -> {e}")
+                raise ValueError(f"Failed to categorize property '{prop_name}' \n -> {str(e)}") from e
         return categorized_properties

@@ -114,7 +114,7 @@ def process_regression_params(
     if segments >= data_length:
         raise ValueError(f"Number of segments ({segments}) must be less than number of data points ({data_length})")
     if segments > 8:
-        raise ValueError(f"Number of segments ({segments}) is too high for {prop_name}. Please reduce it.")
+        raise ValueError(f"Number of segments ({segments}) is too high for {prop_name}. Please reduce it to 8 or less.")
     elif segments > 6:
         logger.warning(f"Number of segments ({segments}) for {prop_name} may lead to overfitting.")
     return has_regression, simplify_type, degree, segments

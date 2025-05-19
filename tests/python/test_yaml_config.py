@@ -20,7 +20,7 @@ T = sp.Symbol('u_C')
 # Get the path to the YAML file
 current_file = Path(__file__)
 # yaml_path = current_file.parent.parent.parent / "src" / "pymatlib" / "data" / "alloys" / "SS304L" / "SS304L.yaml"  # SS304L_pwlf_1
-# yaml_path = current_file.parent.parent.parent / "src" / "pymatlib" / "data" / "alloys" / "SS304L" / "SS304L_comprehensive_2_copy.yaml"
+#yaml_path = current_file.parent.parent.parent / "src" / "pymatlib" / "data" / "alloys" / "SS304L" / "SS304L_comprehensive_2.yaml"
 yaml_path = current_file.parent.parent.parent / "src" / "pymatlib" / "data" / "alloys" / "SS304L" / "pure_metal.yaml"
 # Create alloy from YAML
 ss316l = create_material_from_yaml(yaml_path, T=T)

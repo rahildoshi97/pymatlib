@@ -78,13 +78,10 @@ class PropertyProcessor:
                 sorted_props = sorted(prop_list, key=lambda x: 0 if x[0] in [MELTING_TEMPERATURE_KEY, BOILING_TEMPERATURE_KEY,
                                                                              SOLIDUS_TEMPERATURE_KEY, LIQUIDUS_TEMPERATURE_KEY,
                                                                              INITIAL_BOILING_TEMPERATURE_KEY, FINAL_BOILING_TEMPERATURE_KEY] else 1)
-                print(f"sorted_props={sorted_props}")
                 for prop_name, config in sorted_props:
                     if prop_type == PropertyType.CONSTANT and prop_name not in ['latent_heat_of_fusion', 'latent_heat_of_vaporization']:
-                        print(f"{prop_type} not in latent_heat: prop_name={prop_name}, config={config}")
                         self._process_constant_property(material, prop_name, config, T)
                     elif prop_type == PropertyType.CONSTANT and prop_name in ['latent_heat_of_fusion', 'latent_heat_of_vaporization']:
-                        print(f"{prop_type} in latent_heat: prop_name={prop_name}, config={config}")
                         self._process_latent_heat_constant(material, prop_name, config, T)
                     elif prop_type == PropertyType.FILE:
                         self._process_file_property(material, prop_name, config, T)
@@ -96,7 +93,7 @@ class PropertyProcessor:
                         self._process_computed_property(material, prop_name, T)
             self._post_process_properties(material, T)
         except Exception as e:
-            raise ValueError(f"Failed to process properties \n -> {e}")
+            raise ValueError(f"Failed to process properties \n -> {str(e)}") from e
 
     # --- Property-Type Processing Methods ---
     def _process_constant_property(self, material: Material, prop_name: str, prop_config: Union[float, str], T: Union[float, sp.Symbol]) -> None:
@@ -120,7 +117,7 @@ class PropertyProcessor:
                 )
             self.processed_properties.add(prop_name)
         except (ValueError, TypeError) as e:
-            raise ValueError(f"Failed to process constant property \n -> {e}") from e
+            raise ValueError(f"Failed to process constant property \n -> {str(e)}") from e
 
     def _process_latent_heat_constant(self, material: Material, prop_name: str, prop_config: Union[float, str], T: Union[float, sp.Symbol]) -> None:
         """Process latent heat properties when provided as constants."""
@@ -170,7 +167,7 @@ class PropertyProcessor:
                 raise ValueError(f"Unsupported latent heat configuration: {prop_name}")
             self._process_key_val_property(material, prop_name, expanded_config, T)
         except (ValueError, TypeError) as e:
-            raise ValueError(f"Failed to process {prop_name} constant \n -> {e}") from e
+            raise ValueError(f"Failed to process {prop_name} constant \n -> {str(e)}") from e
 
     def _process_file_property(self, material: Material, prop_name: str, file_config: Union[str, Dict[str, Any]], T: Union[float, sp.Symbol]) -> None:
         """Process property data from a file configuration."""
@@ -181,12 +178,8 @@ class PropertyProcessor:
             T: %r""", material, prop_name, file_config, T)
         try:
             yaml_dir = self.base_dir
-            if isinstance(file_config, dict) and FILE_PATH_KEY in file_config:
-                file_config[FILE_PATH_KEY] = str(yaml_dir / file_config[FILE_PATH_KEY])
-                temp_array, prop_array = read_data_from_file(file_config)
-            else:
-                file_path = str(yaml_dir / file_config)
-                temp_array, prop_array = read_data_from_file(file_path)
+            file_config[FILE_PATH_KEY] = str(yaml_dir / file_config[FILE_PATH_KEY])
+            temp_array, prop_array = read_data_from_file(file_config)
             if not (np.all(np.isfinite(temp_array)) and np.all(np.isfinite(prop_array))):
                 bad_temps = np.where(~np.isfinite(temp_array))[0]
                 bad_props = np.where(~np.isfinite(prop_array))[0]
@@ -784,7 +777,7 @@ class PropertyProcessor:
                 errors.append(error_msg)
         if errors:
             error_msg = "\n".join(errors)
-            raise ValueError(f"Post-processing errors occurred:\n{error_msg}")
+            raise ValueError(f"Post-processing errors occurred: \n -> {error_msg}")
 
     def _validate_temperature_range(self, prop: str, temp_array: np.ndarray) -> None:
         from pymatlib.core.yaml_parser.common_utils import validate_temperature_range

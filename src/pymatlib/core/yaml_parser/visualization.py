@@ -140,7 +140,6 @@ class PropertyVisualizer:
             }
 
             if prop_type == 'CONSTANT':
-                print(f"property {prop_name} is constant")
                 value = float(current_prop)
                 ax.axhline(y=value, color=colors['constant'], linestyle='-', linewidth=2.5, label='constant')
                 ax.text(0.5, 0.9, f"Value: {value}", transform=ax.transAxes,
@@ -148,14 +147,13 @@ class PropertyVisualizer:
                 ax.set_ylim(value * 0.9, value * 1.1)
                 y_value = value
             else:
-                print(f"property {prop_name} is not constant")
                 try:
                     f_current = sp.lambdify(T, current_prop, 'numpy')
                     y_value = None
 
                     # Plot raw data if available
                     if x_data is not None and y_data is not None and prop_type in ['FILE', 'KEY_VAL', 'PIECEWISE_EQUATION', 'COMPUTE']:
-                        print(f"property {prop_name} has raw data")
+                        pass
                         # marker_size = 6 if prop_type == 'Key-Value' else 3
                         # ax.scatter(x_data, y_data, color=colors['raw'], marker='o', s=marker_size**2,
                                    # alpha=0.7, label='data points', zorder=3)
