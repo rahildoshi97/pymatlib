@@ -632,7 +632,8 @@ class PropertyProcessor:
                     if dep in self.properties:
                         self._process_computed_property(material, dep, T)
                     else:
-                        raise ValueError(f"Dependency '{dep}' not found in properties configuration")
+                        available_props = ", ".join(self.properties.keys())
+                        raise ValueError(f"Dependency '{dep}' not found in properties configuration. Available properties: {available_props}")
 
             # Verify all dependencies are now available
             missing_deps = [dep for dep in dependencies if not hasattr(material, dep) or getattr(material, dep) is None]

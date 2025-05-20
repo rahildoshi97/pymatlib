@@ -206,12 +206,7 @@ class PropertyTypeDetector:
             raise ValueError(f"Regression must be a dictionary, got {type(regression).__name__}")
         required_keys = {SIMPLIFY_KEY, DEGREE_KEY, SEGMENTS_KEY}
         optional_keys = set()
-        missing_keys = required_keys - set(regression.keys())
-        if missing_keys:
-            raise ValueError(f"Missing required keys in regression configuration: {missing_keys}")
-        extra_keys = set(regression.keys()) - required_keys - optional_keys
-        if extra_keys:
-            raise ValueError(f"Unexpected keys in regression configuration: {extra_keys}")
+        PropertyTypeDetector._check_keys(regression, required_keys, optional_keys, "regression configuration")
         if not isinstance(regression[SIMPLIFY_KEY], str) or regression[SIMPLIFY_KEY] not in {PRE_KEY, POST_KEY}:
             raise ValueError(f"Invalid regression simplify type '{regression[SIMPLIFY_KEY]}'. Must be '{PRE_KEY}' or '{POST_KEY}'")
         if not isinstance(regression[DEGREE_KEY], int) or regression[DEGREE_KEY] < 1:

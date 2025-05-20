@@ -251,12 +251,16 @@ class PropertyVisualizer:
     def save_property_plots(self) -> None:
         logger.debug("""PropertyVisualizer: save_property_plots:
             material name: %r""", self.parser.config[NAME_KEY])
-        if hasattr(self, 'fig') and self.fig is not None:
-            material_type = self.parser.config[MATERIAL_TYPE_KEY]
-            title = f"Material Properties: {self.parser.config[NAME_KEY]} ({material_type})"
-            self.fig.suptitle(title, fontsize=16, fontweight='bold')
-            plt.tight_layout(rect=[0, 0, 1, 0.97])
-            filepath = os.path.join(self.plot_directory, f"{self.parser.config[NAME_KEY].replace(' ', '_')}_properties.png")
-            self.fig.savefig(filepath, dpi=300, bbox_inches="tight")
-            logger.info(f"All properties plot saved as {filepath}")
-            plt.close(self.fig)
+        try:
+            if hasattr(self, 'fig') and self.fig is not None:
+                material_type = self.parser.config[MATERIAL_TYPE_KEY]
+                title = f"Material Properties: {self.parser.config[NAME_KEY]} ({material_type})"
+                self.fig.suptitle(title, fontsize=16, fontweight='bold')
+                plt.tight_layout(rect=[0, 0, 1, 0.97])
+                filepath = os.path.join(self.plot_directory, f"{self.parser.config[NAME_KEY].replace(' ', '_')}_properties.png")
+                self.fig.savefig(filepath, dpi=300, bbox_inches="tight")
+                logger.info(f"All properties plot saved as {filepath} \n")
+        finally:  # Always close the figure to prevent memory leaks
+            if hasattr(self, 'fig') and self.fig is not None:
+                plt.close(self.fig)
+                self.fig = None

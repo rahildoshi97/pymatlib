@@ -135,6 +135,7 @@ def create_raw_piecewise(temp_array: np.ndarray, prop_array: np.ndarray, T: sp.S
                  temp_array.shape if temp_array is not None else None,
                  prop_array.shape if prop_array is not None else None,
                  T, lower, upper)
+    if temp_array is None or len(temp_array) == 0: raise ValueError("Temperature array is empty")
     if temp_array[0] > temp_array[-1]: raise ValueError("Temperature array is not in ascending order.")
     conditions = [((prop_array[0] if lower==CONSTANT_KEY else prop_array[0]+(prop_array[1]-prop_array[0])/(temp_array[1]-temp_array[0])*(T-temp_array[0])), T<temp_array[0])] + \
                  [(prop_array[i]+(prop_array[i+1]-prop_array[i])/(temp_array[i+1]-temp_array[i])*(T-temp_array[i]), sp.And(T>=temp_array[i], T<temp_array[i+1])) for i in range(len(temp_array)-1)] + \
