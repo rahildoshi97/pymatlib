@@ -18,6 +18,7 @@ from pymatlib.core.yaml_parser.common_utils import (
     process_regression_params,
     validate_temperature_range
 )
+from pymatlib.core.yaml_parser.custom_error import DependencyError, CircularDependencyError
 from pymatlib.core.yaml_parser.property_types import PropertyType
 from pymatlib.core.yaml_parser.yaml_keys import MELTING_TEMPERATURE_KEY, BOILING_TEMPERATURE_KEY, \
     SOLIDUS_TEMPERATURE_KEY, LIQUIDUS_TEMPERATURE_KEY, INITIAL_BOILING_TEMPERATURE_KEY, FINAL_BOILING_TEMPERATURE_KEY, \
@@ -531,7 +532,14 @@ class PropertyProcessor:
                 raise ValueError(f"Unsupported property configuration format for {prop_name}: {prop_config}")
 
             # Process the expression
-            material_property = self._parse_and_process_expression(expression, material, T)
+            try:
+                material_property = self._parse_and_process_expression(expression, material, T)
+            except CircularDependencyError:
+                # Re-raise CircularDependencyError without wrapping it
+                raise
+            except Exception as e:
+                # Wrap other exceptions with more context
+                raise ValueError(f"Failed to process computed property '{prop_name}' \n -> {str(e)}") from e
 
             # Set property on material
             setattr(material, prop_name, material_property)
@@ -545,10 +553,10 @@ class PropertyProcessor:
                 else:
                     value = float(material_property)
                 setattr(material, prop_name, sp.Float(value))
-                self.processed_properties.add(prop_name)
-                return
 
-            # Extract bounds and regression parameters
+            self.processed_properties.add(prop_name)
+
+            # Extract bounds and regression parameters for visualization
             lower_bound_type, upper_bound_type = CONSTANT_KEY, CONSTANT_KEY
             if isinstance(prop_config, dict) and BOUNDS_KEY in prop_config:
                 if isinstance(prop_config[BOUNDS_KEY], list) and len(prop_config[BOUNDS_KEY]) == 2:
@@ -570,41 +578,59 @@ class PropertyProcessor:
             else:
                 f_pw = sp.lambdify(T, material_property, 'numpy')
 
-            y_dense = f_pw(temp_array)
+            # Evaluate the function over the temperature range
+            try:
+                y_dense = f_pw(temp_array)
 
-            # Apply regression if needed
-            if has_regression and simplify_type == PRE_KEY:
-                # Use T_standard for regression and then substitute if needed
-                T_for_regression = T_standard if isinstance(T, sp.Symbol) and str(T) != 'T' else T
-                pw_reg = _process_regression(temp_array, y_dense, T_for_regression, lower_bound_type, upper_bound_type, degree, segments, seed)
-                # If T is a different symbol, substitute T_standard with the actual symbol
-                if isinstance(T, sp.Symbol) and str(T) != 'T':
-                    pw_reg = pw_reg.subs(T_standard, T)
-                setattr(material, prop_name, pw_reg)
-            else: # No regression OR not pre
-                raw_pw = self._create_raw_piecewise(temp_array, y_dense, T, lower_bound_type, upper_bound_type)
-                setattr(material, prop_name, raw_pw)
+                # Check for invalid values
+                if not np.all(np.isfinite(y_dense)):
+                    invalid_count = np.sum(~np.isfinite(y_dense))
+                    logger.warning(
+                        f"Property '{prop_name}' has {invalid_count} non-finite values. "
+                        f"This may indicate issues with the expression: {expression}"
+                    )
 
-            self.processed_properties.add(prop_name)
+                # Apply regression if needed
+                if has_regression and simplify_type == PRE_KEY:
+                    # Use T_standard for regression and then substitute if needed
+                    T_for_regression = T_standard if isinstance(T, sp.Symbol) and str(T) != 'T' else T
+                    pw_reg = _process_regression(temp_array, y_dense, T_for_regression, lower_bound_type, upper_bound_type, degree, segments, seed)
 
-            if self.visualizer is not None:
-                self.visualizer.visualize_property(
-                    material=material,
-                    prop_name=prop_name,
-                    T=T,
-                    prop_type='COMPUTE',
-                    x_data=temp_array,
-                    y_data=y_dense,
-                    has_regression=has_regression,
-                    simplify_type=simplify_type,
-                    degree=degree,
-                    segments=segments,
-                    lower_bound=lower_bound,
-                    upper_bound=upper_bound,
-                    lower_bound_type=lower_bound_type,
-                    upper_bound_type=upper_bound_type
-                )
+                    # If T is a different symbol, substitute T_standard with the actual symbol
+                    if isinstance(T, sp.Symbol) and str(T) != 'T':
+                        pw_reg = pw_reg.subs(T_standard, T)
+                    setattr(material, prop_name, pw_reg)
+                else:  # No regression OR not pre
+                    raw_pw = self._create_raw_piecewise(temp_array, y_dense, T, lower_bound_type, upper_bound_type)
+                    setattr(material, prop_name, raw_pw)
 
+                self.processed_properties.add(prop_name)
+
+                # Visualize the property if a visualizer is available
+                if self.visualizer is not None:
+                    self.visualizer.visualize_property(
+                        material=material,
+                        prop_name=prop_name,
+                        T=T,
+                        prop_type='COMPUTE',
+                        x_data=temp_array,
+                        y_data=y_dense,
+                        has_regression=has_regression,
+                        simplify_type=simplify_type,
+                        degree=degree,
+                        segments=segments,
+                        lower_bound=lower_bound,
+                        upper_bound=upper_bound,
+                        lower_bound_type=lower_bound_type,
+                        upper_bound_type=upper_bound_type
+                    )
+
+            except Exception as e:
+                raise ValueError(f"Error evaluating expression for '{prop_name}': {str(e)}") from e
+
+        except CircularDependencyError:
+            # Re-raise CircularDependencyError without wrapping it
+            raise
         except Exception as e:
             raise ValueError(f"Failed to process computed property '{prop_name}' \n -> {str(e)}") from e
 
@@ -623,6 +649,16 @@ class PropertyProcessor:
             # Extract dependencies (always excluding 'T' as it's handled separately)
             dependencies = [str(symbol) for symbol in sympy_expr.free_symbols if str(symbol) != 'T']
 
+            # Check for missing dependencies before processing
+            missing_deps = []
+            for dep in dependencies:
+                if not hasattr(material, dep) and dep not in self.properties:
+                    missing_deps.append(dep)
+
+            if missing_deps:
+                available_props = sorted(list(self.properties.keys()))
+                raise DependencyError(expression=expression, missing_deps=missing_deps, available_props=available_props)
+
             # Check for circular dependencies
             self._check_circular_dependencies(prop_name=None, current_deps=dependencies, visited=set())
 
@@ -632,8 +668,9 @@ class PropertyProcessor:
                     if dep in self.properties:
                         self._process_computed_property(material, dep, T)
                     else:
-                        available_props = ", ".join(self.properties.keys())
-                        raise ValueError(f"Dependency '{dep}' not found in properties configuration. Available properties: {available_props}")
+                        # This should not happen due to the check above, but just in case
+                        available_props = sorted(list(self.properties.keys()))
+                        raise DependencyError(expression=expression, missing_deps=[dep], available_props=available_props)
 
             # Verify all dependencies are now available
             missing_deps = [dep for dep in dependencies if not hasattr(material, dep) or getattr(material, dep) is None]
@@ -643,7 +680,10 @@ class PropertyProcessor:
             # Create substitution dictionary
             substitutions = {}
             for dep in dependencies:
-                dep_value = getattr(material, dep)
+                dep_value = getattr(material, dep, None)
+                if dep_value is None:
+                    # This is a safety check - if we get here, something went wrong during dependency processing
+                    raise ValueError(f"Dependency '{dep}' was processed but is still not available on the material")
                 dep_symbol = SymbolRegistry.get(dep)
                 if dep_symbol is None:
                     raise ValueError(f"Symbol '{dep}' not found in symbol registry")
@@ -664,7 +704,14 @@ class PropertyProcessor:
 
             return result_expr
 
+        except CircularDependencyError:
+            # Re-raise the circular dependency error directly without wrapping it
+            raise
+        except DependencyError as e:
+            # Re-raise with the original exception as the cause
+            raise e
         except Exception as e:
+            # Wrap other exceptions with more context
             raise ValueError(f"Failed to parse and process expression: {expression}") from e
 
     def _check_circular_dependencies(self, prop_name, current_deps, visited, path=None):
@@ -684,7 +731,7 @@ class PropertyProcessor:
         if prop_name is not None:
             if prop_name in visited:
                 cycle_path = path + [prop_name]
-                raise ValueError(f"Circular dependency detected: {' -> '.join(cycle_path)}")
+                raise CircularDependencyError(dependency_path=cycle_path)
 
             visited.add(prop_name)
             path = path + [prop_name]
