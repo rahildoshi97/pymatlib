@@ -1,17 +1,34 @@
-numpy~=2.1.3
-pystencils~=2.0.dev0+58.g4876f0b
-pystencilssfg~=0.1a4+23.g71ba6dc
-pymatlib~=0.1.0
-pytest~=8.3.4
-sympy~=1.12.1
-#pyyaml~=6.0.2
-ruamel.yaml>=0.15.70
-matplotlib~=3.9.2
-scipy~=1.15.1
-setuptools~=75.8.0
-versioneer~=0.29
-# pybind11~=2.14.0.dev1
-pandas~=2.2.3
-openpyxl~=3.1.5
-pwlf~=2.5.1
-pycallgraph2~=1.1.3
+# Core runtime dependencies for pymatlib
+# This file should match pyproject.toml dependencies
+
+# Scientific computing core
+numpy>=1.18.0,<3.0.0
+sympy>=1.7.0,<2.0.0
+scipy>=1.6.0,<2.0.0
+
+# Data handling
+pandas>=1.3.0,<3.0.0
+openpyxl>=3.1.5
+
+# Visualization
+matplotlib>=3.3.0,<4.0.0
+
+# Configuration parsing
+ruamel.yaml>=0.15.70,<1.0.0
+
+# Mathematical fitting
+pwlf>=2.5.1,<3.0.0
+
+# Optional: High-performance simulation (install via: pip install -e ".[simulation]")
+# pystencils>=2.0.dev0
+
+# Development dependencies (install via: pip install -e ".[dev]")
+# pytest>=6.0.0
+# pytest-cov>=2.10.0
+# black>=22.0.0
+# isort>=5.10.0
+# flake8>=4.0.0
+# mypy>=0.910
+
+# For development installation with all dependencies:
+# pip install -e ".[all]"

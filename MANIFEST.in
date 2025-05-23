@@ -2,12 +2,37 @@ include LICENSE
 include README.md
 include AUTHORS.txt
 include pyproject.toml
+include requirements.txt
 
-recursive-include src/pymatlib *
-recursive-include docs *
+# Include all source code and data files
+graft src
 
-recursive-exclude * __pycache__
-recursive-exclude * *.py[co]
+# Include documentation
+graft docs
 
+# Exclude applications directory - not part of the library
 prune apps
+
+# Exclude tests directory - not needed in distribution
 prune tests
+
+# Global exclusions - bytecode and cache files
+global-exclude *.py[co]
+global-exclude __pycache__
+global-exclude .DS_Store
+global-exclude *.so
+global-exclude .git*
+global-exclude .pytest_cache
+
+# Exclude build artifacts
+prune build
+prune dist
+prune *.egg-info
+prune src/*.egg-info
+
+# Exclude IDE and editor files
+global-exclude .vscode
+global-exclude .idea
+global-exclude *.swp
+global-exclude *.swo
+global-exclude *~

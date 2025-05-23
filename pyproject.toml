@@ -1,78 +1,191 @@
+[build-system]
+requires = ["setuptools>=69.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "pymatlib"
 version = "0.1.0"
-description = "Python based material library"
+description = "Python based material library for thermophysical property calculations"
+readme = "README.md"
+license = {file = "LICENSE"}
 authors = [
     {name = "Rahil Doshi", email = "rahil.doshi@fau.de"},
 ]
-dependencies = [
-    "numpy>=1.18.0",
-    "pystencils>=2.0.dev0",
-    "scipy",
-    "matplotlib",
-    "ruamel.yaml>=0.15.70",
-    #"PyYAML",
-    "pandas",
-    "openpyxl>=3.1.5",
-    "pwlf>=2.5.1",
+maintainers = [
+    {name = "Rahil Doshi", email = "rahil.doshi@fau.de"},
 ]
-requires-python = ">=3.10"
-readme = "README.md"
-license = {file = "LICENSE"}
+keywords = ["materials", "thermophysical", "properties", "yaml", "scientific-computing"]
 classifiers = [
-    "Programming Language :: Python :: 3",
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Developers",
     "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
     "Operating System :: OS Independent",
-    "Topic :: Software Development",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     "Topic :: Scientific/Engineering :: Physics",
-    "Intended Audience :: Developers",
-    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Chemistry",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+requires-python = ">=3.10"
+dependencies = [
+    "numpy>=1.18.0,<3.0.0",
+    "sympy>=1.7.0,<2.0.0",
+    "scipy>=1.6.0,<2.0.0",
+    "matplotlib>=3.3.0,<4.0.0",
+    "ruamel.yaml>=0.15.70,<1.0.0",
+    "pandas>=1.3.0,<3.0.0",
+    "openpyxl>=3.1.5",
+    "pwlf>=2.5.1,<3.0.0",
 ]
 
 [project.optional-dependencies]
+dev = [
+    "pytest>=6.0.0",
+    "pytest-cov>=2.10.0",
+    "black>=22.0.0",
+    "isort>=5.10.0",
+    "flake8>=4.0.0",
+    "mypy>=0.910",
+    "pre-commit>=2.15.0",
+]
 test = [
-    "pytest",
-    "pytest-cov",
+    "pytest>=6.0.0",
+    "pytest-cov>=2.10.0",
+    "pytest-xdist>=2.4.0",
+]
+docs = [
+    "sphinx>=4.0.0",
+    "sphinx-rtd-theme>=1.0.0",
+    "myst-parser>=0.15.0",
+]
+performance = [
+    "pycallgraph2>=1.1.3",
+]
+simulation = [
+    "pystencils>=2.0.dev0",
+]
+all = [
+    "pymatlib[dev,test,docs,performance,simulation]"
 ]
 
 [project.urls]
-"Homepage" = "https://i10git.cs.fau.de/rahil.doshi/pymatlib"
+Homepage = "https://i10git.cs.fau.de/rahil.doshi/pymatlib"
+Repository = "https://i10git.cs.fau.de/rahil.doshi/pymatlib"
 "Bug Tracker" = "https://i10git.cs.fau.de/rahil.doshi/pymatlib/-/issues"
+Documentation = "https://i10git.cs.fau.de/rahil.doshi/pymatlib/-/wikis/home"
 
-[build-system]
-requires = [
-    "setuptools>=69",
-    "wheel",
-    # "pybind11",
-    "ruamel.yaml>=0.15.70",
-    #"PyYAML",
-    "pandas",
-    "openpyxl>=3.1.5",
-    "pwlf>=2.5.1",
-]
-build-backend = "setuptools.build_meta"
+[project.scripts]
+pymatlib-validate = "pymatlib.core.yaml_parser.api:validate_yaml_file"
 
 [tool.setuptools.packages.find]
 where = ["src"]
 include = ["pymatlib*"]
+exclude = ["tests*", "apps*"]
+
+[tool.setuptools.package-data]
+pymatlib = [
+    "data/**/*",
+    "data/alloys/**/*",
+    "*.yaml",
+    "*.yml",
+    "*.json",
+    "*.xlsx",
+]
 
 [tool.pytest.ini_options]
-addopts = "-v" # --cov=pymatlib
-testpaths = [
-    "tests",
-]
+addopts = "-v --cov=pymatlib --cov-report=html --cov-report=term-missing"
+testpaths = ["tests"]
 pythonpath = ["src"]
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
 
-[tool.setuptools]
-include-package-data = true
+[tool.coverage.run]
+source = ["src/pymatlib"]
+omit = [
+    "*/tests/*",
+    "*/test_*",
+    "*/__pycache__/*",
+    "*/apps/*",
+]
 
-[tool.mypy]
-ignore_missing_imports = true
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+]
 
 [tool.black]
 line-length = 120
 target-version = ['py310']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | build
+  | dist
+  | apps/cmake-build-.*
+  | apps/walberla
+  | apps/sfg-walberla
+)/
+'''
 
 [tool.isort]
 profile = "black"
 line_length = 120
+multi_line_output = 3
+include_trailing_comma = true
+force_grid_wrap = 0
+use_parentheses = true
+ensure_newline_before_comments = true
+src_paths = ["src", "tests"]
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
+strict_equality = true
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = [
+    "pwlf.*",
+    "pystencils.*",
+    "ruamel.*",
+]
+ignore_missing_imports = true
+
+[tool.flake8]
+max-line-length = 120
+extend-ignore = ["E203", "W503"]
+exclude = [
+    ".git",
+    "__pycache__",
+    "build",
+    "dist",
+    ".eggs",
+    "*.egg-info",
+    ".venv",
+    ".tox",
+]

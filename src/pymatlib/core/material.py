@@ -1,6 +1,6 @@
 import logging
 from dataclasses import dataclass, field
-from typing import List, Tuple
+from typing import List, Tuple, Union
 
 import numpy as np
 import sympy as sp
@@ -10,7 +10,6 @@ from pymatlib.core.elements import (ChemicalElement,
                                     interpolate_atomic_number,
                                     interpolate_boiling_temperature,
                                     interpolate_melting_temperature)
-from pymatlib.core.typedefs import ArrayTypes
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +26,7 @@ class Material:
     """Represents a material (alloy or pure metal) composed of various elements with given fractions."""
     material_type: str  # 'alloy' or 'pure_metal'
     elements: List[ChemicalElement]
-    composition: ArrayTypes  # List of fractions summing to 1.0
+    composition: Union[np.ndarray, List, Tuple]  # List of fractions summing to 1.0
 
     # Temperature properties - different requirements based on material_type
     # For pure metals
