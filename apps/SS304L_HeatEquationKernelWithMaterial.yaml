@@ -1,0 +1,81 @@
+name: SS304L_HeatEquationKernelWithMaterial
+
+material_type: alloy  # or pure_metal
+
+composition:
+  Fe: 0.675
+  Cr: 0.170
+  Ni: 0.120
+  Mo: 0.025
+  Mn: 0.010
+
+# interval for melting
+solidus_temperature: 1605.
+liquidus_temperature: 1735.
+# interval for evaporation
+initial_boiling_temperature: 6520.
+final_boiling_temperature: 6850.
+
+# temperature_range: [300, 3000, 541]  # 541 (int) -> points
+#OR
+temperature_range: [300, 3000, 5.0]  # 5.0 (float) -> increment
+
+properties:
+
+  thermal_diffusivity: # COMPUTE
+    equation: heat_conductivity /(density * heat_capacity)
+    bounds: [ extrapolate, extrapolate ]
+    regression:
+      simplify: post
+      degree: 1
+      segments: 3
+
+  ##################################################
+
+  energy_density:  # COMPUTE
+    equation: density * specific_enthalpy
+    bounds: [ constant, constant ]
+    regression:
+        simplify: post
+        degree: 2
+        segments: 4
+
+  ##################################################
+
+  specific_enthalpy: Integral(heat_capacity, T)  # COMPUTE
+
+  ##################################################
+
+  heat_capacity:  # FILE
+    file_path: ./304L_Erstarrungsdaten_HeatEquationKernelWithMaterial.xlsx
+    temperature_header: T (K)
+    value_header: Specific heat (J/(Kg K))
+    bounds: [extrapolate, extrapolate]
+    regression:
+      simplify: pre  # TODO: 'post' causes errors: <lambdifygenerated-8>:2: RuntimeWarning: divide by zero encountered in reciprocal
+      degree: 1
+      segments: 4
+
+  ##################################################
+
+  heat_conductivity:  # FILE
+    file_path: ./304L_Erstarrungsdaten_HeatEquationKernelWithMaterial.xlsx
+    temperature_header: T (K)
+    value_header: Thermal conductivity (W/(m*K))-TOTAL-10000.0(K/s)
+    bounds: [extrapolate, extrapolate]
+    regression:
+      simplify: post
+      degree: 1
+      segments: 3
+
+  ##################################################
+
+  density:  # FILE
+    file_path: ./304L_Erstarrungsdaten_HeatEquationKernelWithMaterial.xlsx
+    temperature_header: T (K)
+    value_header: Density (kg/(m)^3)
+    bounds: [extrapolate, extrapolate]
+    regression:
+      simplify: post
+      degree: 1  # 2
+      segments: 3  # 4

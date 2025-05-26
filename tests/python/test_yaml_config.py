@@ -20,8 +20,9 @@ T = sp.Symbol('u_C')
 # Get the path to the YAML file
 current_file = Path(__file__)
 # yaml_path = current_file.parent.parent.parent / "src" / "pymatlib" / "data" / "alloys" / "SS304L" / "SS304L.yaml"  # SS304L_pwlf_1
-yaml_path = current_file.parent.parent.parent / "src" / "pymatlib" / "data" / "alloys" / "SS304L" / "SS304L_comprehensive_2.yaml"
-# yaml_path = current_file.parent.parent.parent / "src" / "pymatlib" / "data" / "alloys" / "SS304L" / "pure_metal.yaml"
+# yaml_path = current_file.parent.parent.parent / "src" / "pymatlib" / "data" / "alloys" / "SS304L" / "SS304L_comprehensive.yaml"
+yaml_path = current_file.parent.parent.parent / "src" / "pymatlib" / "data" / "alloys" / "SS304L" / "pure_metal.yaml"
+#yaml_path = current_file.parent.parent.parent / "apps" / "SS304L_HeatEquationKernelWithMaterial.yaml"
 # Create alloy from YAML
 ss316l = create_material_from_yaml(yaml_path, T=T)
 
@@ -45,11 +46,5 @@ print(f"\nProperties at {test_temp}K:")
 print(f"Density: {(ss316l.density, T, test_temp)}")
 print(f"Specific enthalpy: {(ss316l.specific_enthalpy, T, test_temp)}")
 print(f"Heat Capacity: {(ss316l.heat_capacity, T, test_temp)}")
-"""print(f"Heat Conductivity: {ss316l.heat_conductivity.evalf(T, test_temp)}")
-print(f"Thermal Diffusivity: {ss316l.thermal_diffusivity.evalf(T, test_temp)}")
-print(f"Energy Density: {ss316l.energy_density.evalf(T, test_temp)}")
-print(f"Latent heat: {ss316l.latent_heat_of_fusion.evalf(T, test_temp)}")"""
-
-# Test array generation for energy density
-if hasattr(ss316l, 'energy_density_array'):
-    print(f"\nEnergy Density Array Shape: {ss316l.energy_density_array.shape}")
+print(f"Energy Density: {(ss316l.energy_density, T, test_temp)}")
+print(f"Energy Density: {ss316l.energy_density.subs(T, test_temp)}")
