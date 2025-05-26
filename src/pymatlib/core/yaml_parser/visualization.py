@@ -25,9 +25,18 @@ class PropertyVisualizer:
         self.current_subplot = 0
         self.plot_directory = "pymatlib_plots"
         self.visualized_properties = set()
+        self.is_enabled = True  # Track if visualization is enabled
+
+    def is_visualization_enabled(self) -> bool:
+        """Check if visualization is currently enabled."""
+        return self.is_enabled and self.fig is not None
 
     # --- Public API Methods ---
     def initialize_plots(self) -> None:
+        """Initialize plots only if visualization is enabled."""
+        if not self.is_enabled:
+            logger.debug("Visualization disabled, skipping plot initialization")
+            return
         logger.debug("""PropertyVisualizer: initialize_plots:
             material name: %r""", self.parser.config['name'])
         if self.parser.categorized_properties is None:
@@ -249,6 +258,10 @@ class PropertyVisualizer:
             raise ValueError(f"Unexpected error in property {prop_name}: {str(e)}")
 
     def save_property_plots(self) -> None:
+        """Save plots only if visualization is enabled and plots exist."""
+        if not self.is_enabled or not hasattr(self, 'fig') or self.fig is None:
+            logger.debug("No plots to save - visualization disabled or no plots created")
+            return
         logger.debug("""PropertyVisualizer: save_property_plots:
             material name: %r""", self.parser.config[NAME_KEY])
         try:

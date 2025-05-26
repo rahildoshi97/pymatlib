@@ -88,9 +88,9 @@ class MaterialConfigParser(YAMLConfigParser):
         logger.debug(f"Finished loading configuration from {yaml_path}")
 
     # --- Public API ---
-    def create_material(self, T: Union[float, sp.Symbol]) -> Material:
+    def create_material(self, T: Union[float, sp.Symbol], enable_plotting: bool = True) -> Material:
         """
-        Create an Material instance from the parsed configuration and temperature.
+        Create a Material instance from the parsed configuration and temperature.
         """
         print("\n")
         logger.debug("""MaterialConfigParser: create_material:
@@ -118,8 +118,12 @@ class MaterialConfigParser(YAMLConfigParser):
                     initial_boiling_temperature=sp.Float(self.config[INITIAL_BOILING_TEMPERATURE_KEY]),
                     final_boiling_temperature=sp.Float(self.config[FINAL_BOILING_TEMPERATURE_KEY]),
                 )
-            self.visualizer.initialize_plots()
-            self.visualizer.reset_visualization_tracking()
+            # Initialize visualizer only if plotting is enabled
+            visualizer = None
+            if enable_plotting:
+                self.visualizer.initialize_plots()
+                self.visualizer.reset_visualization_tracking()
+                visualizer = self.visualizer
             self.property_processor.process_properties(
                 material=material,
                 T=T,
@@ -127,9 +131,11 @@ class MaterialConfigParser(YAMLConfigParser):
                 categorized_properties=self.categorized_properties,
                 temperature_array=self.temperature_array,
                 base_dir=self.base_dir,
-                visualizer=self.visualizer
+                visualizer=visualizer
             )
-            self.visualizer.save_property_plots()
+            # Save plots only if plotting was enabled
+            if enable_plotting:
+                self.visualizer.save_property_plots()
             return material
         except KeyError as e:
             raise ValueError(f"Configuration error: Missing {str(e)}") from e

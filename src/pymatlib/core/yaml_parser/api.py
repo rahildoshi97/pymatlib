@@ -6,7 +6,7 @@ import sympy as sp
 from pymatlib.core.material import Material
 from pymatlib.core.yaml_parser.config_parser import MaterialConfigParser
 
-def create_material_from_yaml(yaml_path: Union[str, Path], T: Union[float, sp.Symbol]) -> Material:
+def create_material_from_yaml(yaml_path: Union[str, Path], T: Union[float, sp.Symbol], enable_plotting: bool = True) -> Material:
     """
     Create material instance from YAML configuration file.
     
@@ -20,6 +20,7 @@ def create_material_from_yaml(yaml_path: Union[str, Path], T: Union[float, sp.Sy
            - Use a float value for a specific temperature
            - Use a symbolic variable (e.g., sp.Symbol('T') or sp.Symbol('u_C'))
              for symbolic temperature expressions
+        enable_plotting: Whether to generate visualization plots (default: True)
 
     Notes:
         In YAML files, always use 'T' as the temperature variable in equations.
@@ -42,7 +43,7 @@ def create_material_from_yaml(yaml_path: Union[str, Path], T: Union[float, sp.Sy
         material = create_material_from_yaml('copper.yaml', u_C)
     """
     parser = MaterialConfigParser(yaml_path)
-    material = parser.create_material(T)
+    material = parser.create_material(T, enable_plotting=enable_plotting)
     return material
 
 def get_supported_properties() -> list:

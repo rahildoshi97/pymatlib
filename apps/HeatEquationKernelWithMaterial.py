@@ -40,7 +40,7 @@ with SourceFileGenerator() as sfg:
     from importlib.resources import files
     # yaml_path = files('pymatlib.data.alloys.SS304L').joinpath('SS304L_comprehensive.yaml')
     yaml_path = files('apps').joinpath('SS304L_HeatEquationKernelWithMaterial.yaml')
-    mat = create_material_from_yaml(yaml_path, u.center())
+    mat = create_material_from_yaml(yaml_path=yaml_path, T=u.center(), enable_plotting=False)
     subexp = [ps.Assignment(thermal_diffusivity, mat.thermal_diffusivity)]
 
     ac = ps.AssignmentCollection(

@@ -21,10 +21,10 @@ T = sp.Symbol('u_C')
 current_file = Path(__file__)
 # yaml_path = current_file.parent.parent.parent / "src" / "pymatlib" / "data" / "alloys" / "SS304L" / "SS304L.yaml"  # SS304L_pwlf_1
 # yaml_path = current_file.parent.parent.parent / "src" / "pymatlib" / "data" / "alloys" / "SS304L" / "SS304L_comprehensive.yaml"
-yaml_path = current_file.parent.parent.parent / "src" / "pymatlib" / "data" / "alloys" / "SS304L" / "pure_metal.yaml"
-#yaml_path = current_file.parent.parent.parent / "apps" / "SS304L_HeatEquationKernelWithMaterial.yaml"
+# yaml_path = current_file.parent.parent.parent / "src" / "pymatlib" / "data" / "alloys" / "SS304L" / "pure_metal.yaml"
+yaml_path = current_file.parent.parent.parent / "apps" / "SS304L_HeatEquationKernelWithMaterial.yaml"
 # Create alloy from YAML
-ss316l = create_material_from_yaml(yaml_path, T=T)
+ss316l = create_material_from_yaml(yaml_path=yaml_path, T=T, enable_plotting=True)
 
 # Test various properties
 print(f"Elements: {ss316l.elements}")

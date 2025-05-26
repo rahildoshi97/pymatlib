@@ -107,6 +107,7 @@ class PropertyProcessor:
         try:
             value = float(prop_config)
             setattr(material, prop_name, sp.Float(value))
+            # Only visualize if visualizer is available
             if self.visualizer is not None:
                 self.visualizer.visualize_property(
                     material=material,
@@ -206,6 +207,7 @@ class PropertyProcessor:
             else:  # No regression OR not pre
                 raw_pw = self._create_raw_piecewise(temp_array, prop_array, T, lower_bound_type, upper_bound_type)
                 setattr(material, prop_name, raw_pw)
+            # Only visualize if visualizer is available
             if self.visualizer is not None:
                 self.visualizer.visualize_property(
                     material=material,
@@ -259,7 +261,7 @@ class PropertyProcessor:
                 diff = abs(self.temperature_array[1] - self.temperature_array[0])
                 temp_dense = np.arange(np.min(self.temperature_array), np.max(self.temperature_array)+diff/2, diff)
                 y_dense = f_pw(temp_dense)
-                # Visualize if needed
+                # Only visualize if visualizer is available
                 if self.visualizer is not None:
                     self.visualizer.visualize_property(
                         material=material,
@@ -299,6 +301,7 @@ class PropertyProcessor:
             else:  # No regression OR not pre
                 raw_pw = self._create_raw_piecewise(key_array, val_array, T, lower_bound_type, upper_bound_type)
                 setattr(material, prop_name, raw_pw)
+            # Only visualize if visualizer is available
             if self.visualizer is not None:
                 self.visualizer.visualize_property(
                     material=material,
@@ -491,6 +494,7 @@ class PropertyProcessor:
 
         self.processed_properties.add(prop_name)
 
+        # Only visualize if visualizer is available
         if self.visualizer is not None:
             self.visualizer.visualize_property(
                 material=material,
@@ -606,7 +610,7 @@ class PropertyProcessor:
 
                 self.processed_properties.add(prop_name)
 
-                # Visualize the property if a visualizer is available
+                # Only visualize if visualizer is available
                 if self.visualizer is not None:
                     self.visualizer.visualize_property(
                         material=material,
