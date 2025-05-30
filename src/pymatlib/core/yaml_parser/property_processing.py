@@ -16,7 +16,8 @@ from pymatlib.core.yaml_parser.common_utils import (
     get_symbolic_conditions,
     interpolate_value,
     process_regression_params,
-    validate_temperature_range
+    validate_temperature_range,
+    _validate_energy_density_monotonicity
 )
 from pymatlib.core.yaml_parser.custom_error import DependencyError, CircularDependencyError
 from pymatlib.core.yaml_parser.property_types import PropertyType
@@ -27,7 +28,9 @@ from pymatlib.core.yaml_parser.yaml_keys import MELTING_TEMPERATURE_KEY, BOILING
 
 logger = logging.getLogger(__name__)
 
+
 seed = 13579
+
 
 class PropertyProcessor:
     """Handles processing of different property types for material objects."""
@@ -42,6 +45,7 @@ class PropertyProcessor:
         self.base_dir: Optional[Path] = None
         self.visualizer = None
         self.processed_properties: set = set()
+
 
     # --- Public API ---
     def process_properties(
@@ -96,6 +100,7 @@ class PropertyProcessor:
         except Exception as e:
             raise ValueError(f"Failed to process properties \n -> {str(e)}") from e
 
+
     # --- Property-Type Processing Methods ---
     def _process_constant_property(self, material: Material, prop_name: str, prop_config: Union[float, str], T: Union[float, sp.Symbol]) -> None:
         """Process constant float property."""
@@ -120,6 +125,7 @@ class PropertyProcessor:
             self.processed_properties.add(prop_name)
         except (ValueError, TypeError) as e:
             raise ValueError(f"Failed to process constant property \n -> {str(e)}") from e
+
 
     def _process_latent_heat_constant(self, material: Material, prop_name: str, prop_config: Union[float, str], T: Union[float, sp.Symbol]) -> None:
         """Process latent heat properties when provided as constants."""
@@ -171,6 +177,7 @@ class PropertyProcessor:
         except (ValueError, TypeError) as e:
             raise ValueError(f"Failed to process {prop_name} constant \n -> {str(e)}") from e
 
+
     def _process_file_property(self, material: Material, prop_name: str, file_config: Union[str, Dict[str, Any]], T: Union[float, sp.Symbol]) -> None:
         """Process property data from a file configuration."""
         logger.debug("""PropertyProcessor: _process_file_property:
@@ -193,6 +200,7 @@ class PropertyProcessor:
                 raise ValueError(f"Non-finite values detected in property '{prop_name}': " + "; ".join(msg))
             self._validate_temperature_range(prop_name, temp_array)
             temp_array, prop_array = ensure_ascending_order(temp_array, prop_array)
+            _validate_energy_density_monotonicity(prop_name, temp_array, prop_array)
             lower_bound_type, upper_bound_type = file_config[BOUNDS_KEY]
             lower_bound = np.min(temp_array)
             upper_bound = np.max(temp_array)
@@ -228,6 +236,7 @@ class PropertyProcessor:
             self.processed_properties.add(prop_name)
         except Exception as e:
             raise ValueError(f"Failed to process file property {prop_name} \n -> {str(e)}") from e
+
 
     def _process_key_val_property(self, material: Material, prop_name: str, prop_config: Dict[str, Any], T: Union[float, sp.Symbol]) -> None:
         """Process property defined with key-val pairs."""
@@ -287,6 +296,7 @@ class PropertyProcessor:
             if prop_name not in ['latent_heat_of_fusion', 'latent_heat_of_vaporization']:
                 self._validate_temperature_range(prop_name, key_array)
             key_array, val_array = ensure_ascending_order(key_array, val_array)
+            _validate_energy_density_monotonicity(prop_name, key_array, val_array)
             lower_bound_type, upper_bound_type = prop_config[BOUNDS_KEY]
             lower_bound = np.min(key_array)
             upper_bound = np.max(key_array)
@@ -323,6 +333,7 @@ class PropertyProcessor:
         except Exception as e:
             raise ValueError(f"Failed to process key-val property '{prop_name}' \n -> {str(e)}") from e
 
+
     # --- Key-Value Helpers ---
     def _process_key_definition(self, key_def: Union[str, List[Union[str, float]]], val_array: List[float], material: Material) -> np.ndarray:
         """Process temperature key definition."""
@@ -340,6 +351,7 @@ class PropertyProcessor:
         except Exception as e:
             raise ValueError(f"Failed to process key definition \n -> {str(e)}") from e
 
+
     @staticmethod
     def _process_equidistant_key(key_def: str, n_points: int) -> np.ndarray:
         """Process equidistant key definition."""
@@ -355,6 +367,7 @@ class PropertyProcessor:
             return key_array
         except Exception as e:
             raise ValueError(f"Invalid equidistant format: {key_def} \n -> {str(e)}") from e
+
 
     @staticmethod
     def _process_list_key(key_def: List[Union[str, float]], material: Material) -> np.ndarray:
@@ -430,6 +443,7 @@ class PropertyProcessor:
         except Exception as e:
             raise ValueError(f"Error processing list key \n -> {str(e)}") from e
 
+
     def _process_piecewise_equation_property(self, material: Material, prop_name: str, prop_config: Dict[str, Any], T: Union[float, sp.Symbol]) -> None:
         """Process piecewise equation property."""
         logger.debug("""PropertyProcessor: _process_piecewise_equation_property:
@@ -437,10 +451,8 @@ class PropertyProcessor:
             prop_name: %r
             prop_config: %r
             T: %r""", material, prop_name, prop_config, T)
-
         temp_points = np.array(prop_config[TEMPERATURE_KEY], dtype=float)
         eqn_strings = prop_config[EQUATION_KEY]
-
         # Validate that only 'T' is used in equations
         for eq in eqn_strings:
             expr = sp.sympify(eq)
@@ -448,39 +460,31 @@ class PropertyProcessor:
             for sym in symbols:
                 if str(sym) != 'T':
                     raise ValueError(f"Unsupported symbol '{sym}' found in equation '{eq}' for property '{prop_name}'. Only 'T' is allowed.")
-
         lower_bound_type, upper_bound_type = prop_config[BOUNDS_KEY]
-
         # Use standard symbol for parsing
         T_standard = sp.Symbol('T')
         temp_points, eqn_strings = ensure_ascending_order(temp_points, eqn_strings)
-
         # Parse expressions with standard symbol
         eqn_exprs = [sp.sympify(eq, locals={'T': T_standard}) for eq in eqn_strings]
-
         # Create piecewise function with standard symbol
         pw_standard = self._create_piecewise_from_formulas(temp_points, eqn_exprs, T_standard, lower_bound_type, upper_bound_type)
-
         # If T is a different symbol, substitute T_standard with the actual symbol
         if isinstance(T, sp.Symbol) and str(T) != 'T':
             pw = pw_standard.subs(T_standard, T)
         else:
             pw = pw_standard
-
         # Handle numeric temperature
         if not isinstance(T, sp.Symbol):
             value = float(pw_standard.subs(T_standard, T).evalf())
             setattr(material, prop_name, sp.Float(value))
             self.processed_properties.add(prop_name)
             return
-
         has_regression, simplify_type, degree, segments = self._process_regression_params(prop_config, prop_name, len(temp_points))
-
         f_pw = sp.lambdify(T, pw, 'numpy')
         diff = abs(self.temperature_array[1] - self.temperature_array[0])
         temp_dense = np.arange(temp_points[0], temp_points[-1]+diff/2, diff)
         y_dense = f_pw(temp_dense)
-
+        _validate_energy_density_monotonicity(prop_name, temp_dense, y_dense)
         if has_regression and simplify_type == PRE_KEY:
             # Use T_standard for regression and then substitute if needed
             pw_reg = _process_regression(temp_dense, y_dense, T_standard, lower_bound_type, upper_bound_type, degree, segments, seed)
@@ -491,9 +495,6 @@ class PropertyProcessor:
         else: # No regression OR not pre
             raw_pw = pw
             setattr(material, prop_name, raw_pw)
-
-        self.processed_properties.add(prop_name)
-
         # Only visualize if visualizer is available
         if self.visualizer is not None:
             self.visualizer.visualize_property(
@@ -512,21 +513,20 @@ class PropertyProcessor:
                 lower_bound_type=lower_bound_type,
                 upper_bound_type=upper_bound_type
             )
+        self.processed_properties.add(prop_name)
+
 
     def _process_computed_property(self, material: Material, prop_name: str, T: Union[float, sp.Symbol]) -> None:
         """Process computed properties using predefined models with dependency checking."""
         logger.debug("PropertyProcessor: _process_computed_property - prop_name: %r, T: %r", prop_name, T)
-
         # Skip if already processed
         if prop_name in self.processed_properties:
             return
-
         try:
             # Get property configuration
             prop_config = self.properties.get(prop_name)
             if prop_config is None:
                 raise ValueError(f"Property '{prop_name}' not found in configuration")
-
             # Extract expression from config
             if isinstance(prop_config, str):
                 expression = prop_config
@@ -534,7 +534,6 @@ class PropertyProcessor:
                 expression = prop_config[EQUATION_KEY]
             else:
                 raise ValueError(f"Unsupported property configuration format for {prop_name}: {prop_config}")
-
             # Process the expression
             try:
                 material_property = self._parse_and_process_expression(expression, material, T)
@@ -544,10 +543,8 @@ class PropertyProcessor:
             except Exception as e:
                 # Wrap other exceptions with more context
                 raise ValueError(f"Failed to process computed property '{prop_name}' \n -> {str(e)}") from e
-
             # Set property on material
             setattr(material, prop_name, material_property)
-
             # Handle non-symbolic temperature case
             if not isinstance(T, sp.Symbol):
                 # For numeric T, we've already substituted the value in _parse_and_process_expression
@@ -557,22 +554,17 @@ class PropertyProcessor:
                 else:
                     value = float(material_property)
                 setattr(material, prop_name, sp.Float(value))
-
             self.processed_properties.add(prop_name)
-
             # Extract bounds and regression parameters for visualization
             lower_bound_type, upper_bound_type = CONSTANT_KEY, CONSTANT_KEY
             if isinstance(prop_config, dict) and BOUNDS_KEY in prop_config:
                 if isinstance(prop_config[BOUNDS_KEY], list) and len(prop_config[BOUNDS_KEY]) == 2:
                     lower_bound_type, upper_bound_type = prop_config[BOUNDS_KEY]
-
             temp_array = self.temperature_array
             lower_bound = np.min(temp_array)
             upper_bound = np.max(temp_array)
-
             # Get regression parameters
             has_regression, simplify_type, degree, segments = self._process_regression_params(prop_config, prop_name, len(temp_array))
-
             # Create function from symbolic expression
             # Use standard symbol for lambdification if T is a different symbol
             T_standard = sp.Symbol('T')
@@ -581,11 +573,9 @@ class PropertyProcessor:
                 f_pw = sp.lambdify(T_standard, standard_expr, 'numpy')
             else:
                 f_pw = sp.lambdify(T, material_property, 'numpy')
-
             # Evaluate the function over the temperature range
             try:
                 y_dense = f_pw(temp_array)
-
                 # Check for invalid values
                 if not np.all(np.isfinite(y_dense)):
                     invalid_count = np.sum(~np.isfinite(y_dense))
@@ -593,13 +583,12 @@ class PropertyProcessor:
                         f"Property '{prop_name}' has {invalid_count} non-finite values. "
                         f"This may indicate issues with the expression: {expression}"
                     )
-
+                _validate_energy_density_monotonicity(prop_name, temp_array, y_dense)
                 # Apply regression if needed
                 if has_regression and simplify_type == PRE_KEY:
                     # Use T_standard for regression and then substitute if needed
                     T_for_regression = T_standard if isinstance(T, sp.Symbol) and str(T) != 'T' else T
                     pw_reg = _process_regression(temp_array, y_dense, T_for_regression, lower_bound_type, upper_bound_type, degree, segments, seed)
-
                     # If T is a different symbol, substitute T_standard with the actual symbol
                     if isinstance(T, sp.Symbol) and str(T) != 'T':
                         pw_reg = pw_reg.subs(T_standard, T)
@@ -607,9 +596,6 @@ class PropertyProcessor:
                 else:  # No regression OR not pre
                     raw_pw = self._create_raw_piecewise(temp_array, y_dense, T, lower_bound_type, upper_bound_type)
                     setattr(material, prop_name, raw_pw)
-
-                self.processed_properties.add(prop_name)
-
                 # Only visualize if visualizer is available
                 if self.visualizer is not None:
                     self.visualizer.visualize_property(
@@ -628,44 +614,37 @@ class PropertyProcessor:
                         lower_bound_type=lower_bound_type,
                         upper_bound_type=upper_bound_type
                     )
-
+                self.processed_properties.add(prop_name)
             except Exception as e:
                 raise ValueError(f"Error evaluating expression for '{prop_name}': {str(e)}") from e
-
         except CircularDependencyError:
             # Re-raise CircularDependencyError without wrapping it
             raise
         except Exception as e:
             raise ValueError(f"Failed to process computed property '{prop_name}' \n -> {str(e)}") from e
 
+
     # --- Expression/Dependency Helpers ---
     def _parse_and_process_expression(self, expression: str, material: Material, T: Union[float, sp.Symbol]) -> sp.Expr:
         """Parse and process a mathematical expression string into a SymPy expression."""
         logger.debug("PropertyProcessor: _parse_and_process_expression - expression: %r, T: %r", expression, T)
-
         try:
             # Create a standard symbol 'T' for parsing the expression
             T_standard = sp.Symbol('T')
-
             # Parse the expression with the standard symbol
             sympy_expr = sp.sympify(expression, evaluate=False)
-
             # Extract dependencies (always excluding 'T' as it's handled separately)
             dependencies = [str(symbol) for symbol in sympy_expr.free_symbols if str(symbol) != 'T']
-
             # Check for missing dependencies before processing
             missing_deps = []
             for dep in dependencies:
                 if not hasattr(material, dep) and dep not in self.properties:
                     missing_deps.append(dep)
-
             if missing_deps:
                 available_props = sorted(list(self.properties.keys()))
                 raise DependencyError(expression=expression, missing_deps=missing_deps, available_props=available_props)
-
             # Check for circular dependencies
             self._check_circular_dependencies(prop_name=None, current_deps=dependencies, visited=set())
-
             # Process dependencies first
             for dep in dependencies:
                 if not hasattr(material, dep) or getattr(material, dep) is None:
@@ -675,12 +654,10 @@ class PropertyProcessor:
                         # This should not happen due to the check above, but just in case
                         available_props = sorted(list(self.properties.keys()))
                         raise DependencyError(expression=expression, missing_deps=[dep], available_props=available_props)
-
             # Verify all dependencies are now available
             missing_deps = [dep for dep in dependencies if not hasattr(material, dep) or getattr(material, dep) is None]
             if missing_deps:
                 raise ValueError(f"Cannot compute expression. Missing dependencies: {missing_deps}")
-
             # Create substitution dictionary
             substitutions = {}
             for dep in dependencies:
@@ -692,7 +669,6 @@ class PropertyProcessor:
                 if dep_symbol is None:
                     raise ValueError(f"Symbol '{dep}' not found in symbol registry")
                 substitutions[dep_symbol] = dep_value
-
             # Handle temperature substitution based on type
             if isinstance(T, sp.Symbol):
                 # If T is a symbolic variable, substitute the standard 'T' with it
@@ -700,14 +676,11 @@ class PropertyProcessor:
             else:
                 # For numeric T, substitute with the value directly
                 substitutions[T_standard] = T
-
             # Perform substitution and evaluate integrals if present
             result_expr = sympy_expr.subs(substitutions)
             if isinstance(result_expr, sp.Integral):
                 result_expr = result_expr.doit()
-
             return result_expr
-
         except CircularDependencyError:
             # Re-raise the circular dependency error directly without wrapping it
             raise
@@ -718,6 +691,7 @@ class PropertyProcessor:
             # Wrap other exceptions with more context
             raise ValueError(f"Failed to parse and process expression: {expression}") from e
 
+
     def _check_circular_dependencies(self, prop_name, current_deps, visited, path=None):
         """Check for circular dependencies in property definitions."""
         logger.debug("""PropertyProcessor: _check_circular_dependencies:
@@ -725,25 +699,19 @@ class PropertyProcessor:
                 current_deps: %r
                 visited: %r
                 path: %r""", prop_name, current_deps, visited, path)
-
         if path is None:
             path = []
-
         # Always filter out 'T' from dependencies to check
         current_deps = [dep for dep in current_deps if dep != 'T']
-
         if prop_name is not None:
             if prop_name in visited:
                 cycle_path = path + [prop_name]
                 raise CircularDependencyError(dependency_path=cycle_path)
-
             visited.add(prop_name)
             path = path + [prop_name]
-
         for dep in current_deps:
             if dep in self.properties:
                 dep_config = self.properties[dep]
-
                 if isinstance(dep_config, str):
                     expr = sp.sympify(dep_config)
                     # Always exclude 'T' from dependencies
@@ -763,9 +731,9 @@ class PropertyProcessor:
                         dep_deps = [str(symbol) for symbol in expr.free_symbols if str(symbol) != 'T']
                 else:
                     dep_deps = []
-
                 if dep_deps:
                     self._check_circular_dependencies(dep, dep_deps, visited.copy(), path)
+
 
     # --- Post-Processing ---
     def _post_process_properties(self, material: Material, T: Union[float, sp.Symbol]) -> None:
@@ -788,18 +756,6 @@ class PropertyProcessor:
                 prop_value = getattr(material, prop_name)
                 if isinstance(prop_value, sp.Integral):
                     raise ValueError(f"Property '{prop_name}' is an integral and cannot be post-processed.")
-                    result = prop_value.doit()
-                    if isinstance(result, sp.Integral):
-                        temp_array = self.temperature_array
-                        values = np.array([float(prop_value.evalf(subs={T: t})) for t in temp_array], dtype=float)
-                        degree = regression_config[DEGREE_KEY]
-                        segments = regression_config[SEGMENTS_KEY]
-                        lower_bound_type, upper_bound_type = prop_config[BOUNDS_KEY]
-                        pw = _process_regression(temp_array, values, T, lower_bound_type, upper_bound_type, degree, segments, seed)
-                        prop_value = pw
-                    else:
-                        prop_value = result
-                    setattr(material, prop_name, prop_value)
                 if not isinstance(prop_value, sp.Expr):
                     logger.debug("""PropertyVisualizer: _post_process_properties:
                     Skipping - not symbolic for property: %r
@@ -830,6 +786,7 @@ class PropertyProcessor:
         if errors:
             error_msg = "\n".join(errors)
             raise ValueError(f"Post-processing errors occurred: \n -> {error_msg}")
+
 
     def _validate_temperature_range(self, prop: str, temp_array: np.ndarray) -> None:
         from pymatlib.core.yaml_parser.common_utils import validate_temperature_range
