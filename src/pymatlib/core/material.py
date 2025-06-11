@@ -1,6 +1,6 @@
 import logging
 from dataclasses import dataclass, field
-from typing import List, Tuple, Union
+from typing import List, Optional, Tuple, Union
 
 import numpy as np
 import sympy as sp
@@ -48,7 +48,7 @@ class Material:
     # Optional properties with default values
     density: sp.Expr = None
     dynamic_viscosity: sp.Expr = None
-    energy_density: sp.Expr = None
+    energy_density: Optional[Union[sp.Piecewise, sp.Expr]] = None
     energy_density_solidus: sp.Float = None
     energy_density_liquidus: sp.Float = None
     heat_capacity: sp.Expr = None

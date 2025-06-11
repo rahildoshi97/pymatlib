@@ -47,7 +47,11 @@ properties:
   energy_density:  # COMPUTE
     temperature: (300, 3000, 5.0)
     equation: density * specific_enthalpy
-    bounds: [ extrapolate, constant ]
+    bounds: [ extrapolate, extrapolate ]
+    regression:
+      simplify: post
+      degree: 1
+      segments: 6
 
   heat_capacity:  # FILE
     file_path: ./304L_Erstarrungsdaten_edited.xlsx

@@ -81,7 +81,7 @@ def is_monotonic(arr: np.ndarray, name: str = "Array",
             else:
                 logger.warning(f"Warning: {error_msg}")
                 return False
-    logger.info(f"{name} is {mode.replace('_', ' ')}")
+    # logger.info(f"{name} is {mode.replace('_', ' ')}")
     return True
 
 def validate_energy_density_monotonicity(prop_name: str, temp_array: np.ndarray,

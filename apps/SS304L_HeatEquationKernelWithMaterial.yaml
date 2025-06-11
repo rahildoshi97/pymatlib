@@ -32,11 +32,11 @@ properties:
   energy_density:  # COMPUTE
     temperature: (300, 3000, 5.0)
     equation: density * specific_enthalpy
-    bounds: [ constant, constant ]
+    bounds: [ extrapolate, extrapolate ]
     regression:
         simplify: post
-        degree: 2
-        segments: 4
+        degree: 1
+        segments: 6
 
   ##################################################
 
