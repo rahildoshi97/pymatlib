@@ -92,7 +92,7 @@ with PyCallGraph(config=config, output=graphviz):
     from pymatlib.core.yaml_parser import create_alloy_from_yaml
 
     u = ps.fields("u: float64[2D]", layout='fzyx')
-    yaml_path = files('pymatlib.data.alloys.SS304L').joinpath('SS304L_comprehensive.yaml')
+    yaml_path = files('pymatlib.data.alloys.SS304L').joinpath('SS304L.yaml')
     mat = create_alloy_from_yaml(yaml_path, u.center())
 
     yaml_path1 = files('pymatlib.data.alloys.SS304L').joinpath('SS304L.yaml')

@@ -2,10 +2,6 @@ import logging
 import sympy as sp
 import pystencils as ps
 from importlib.resources import files
-# from pystencils_walberla import CodeGeneration, generate_sweep
-# script_dir = os.path.dirname(__file__)
-# walberla_dir = os.path.join(script_dir, '..', '..', '..')
-# sys.path.append(walberla_dir)
 from pystencilssfg import SourceFileGenerator
 from walberla.codegen import Sweep
 from pymatlib.core.yaml_parser.api import create_material_from_yaml
@@ -33,14 +29,11 @@ with SourceFileGenerator() as sfg:
     heat_pde_discretized = heat_pde_discretized.args[1] + heat_pde_discretized.args[0].simplify()
 
     from pathlib import Path
-    # Relative path to the package
+    # yaml_path = Path(__file__).parent.parent / "src" / "pymatlib" / "data" / "alloys" / "SS304L" / "Al.yaml"
     # yaml_path = Path(__file__).parent.parent / "src" / "pymatlib" / "data" / "alloys" / "SS304L" / "SS304L.yaml"
-    # yaml_path = Path(__file__).parent / 'SS304L_HeatEquationKernelWithMaterial.yaml'
+    yaml_path = Path(__file__).parent / 'SS304L_HeatEquationKernelWithMaterial.yaml'
 
-    from importlib.resources import files
-    # yaml_path = files('pymatlib.data.alloys.SS304L').joinpath('SS304L_comprehensive.yaml')
-    yaml_path = files('apps').joinpath('SS304L_HeatEquationKernelWithMaterial.yaml')
-    mat = create_material_from_yaml(yaml_path=yaml_path, T=u.center(), enable_plotting=False)
+    mat = create_material_from_yaml(yaml_path=yaml_path, T=u.center(), enable_plotting=True)
     subexp = [ps.Assignment(thermal_diffusivity, mat.thermal_diffusivity)]
 
     ac = ps.AssignmentCollection(
@@ -58,6 +51,5 @@ with SourceFileGenerator() as sfg:
 
     print(f"ac\n{ac}, type = {type(ac)}")
 
-    # generate_sweep(ctx, 'HeatEquationKernelWithMaterial', ac, varying_parameters=((data_type, str(thermal_diffusivity)),))
     sweep = Sweep("HeatEquationKernelWithMaterial", ac)
     sfg.generate(sweep)

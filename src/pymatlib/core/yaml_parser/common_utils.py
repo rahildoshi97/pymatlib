@@ -1,83 +1,31 @@
 import logging
-from typing import List, Literal, Tuple, Union
+from typing import List, Tuple, Union
 
 import numpy as np
-import pwlf
 import sympy as sp
 
-from pymatlib.core.data_handler import check_monotonicity
-from pymatlib.core.yaml_parser.yaml_keys import CONSTANT_KEY, REGRESSION_KEY, SIMPLIFY_KEY, DEGREE_KEY, \
-    SEGMENTS_KEY, EXTRAPOLATE_KEY
+from pymatlib.core.material import Material
+from pymatlib.data.constants import ProcessingConstants
+from pymatlib.core.yaml_parser.yaml_keys import CONSTANT_KEY
 
 logger = logging.getLogger(__name__)
 
-
-# --- Shared/Utility Methods ---
+# --- Core Utility Functions ---
 def ensure_ascending_order(temp_array: np.ndarray, *value_arrays: np.ndarray) -> Tuple[np.ndarray, ...]:
     """Ensure temperature array is in ascending order, flipping all provided arrays if needed."""
-    logger.debug("""ensure_ascending_order:
-            temp_array: %r""",
-                 temp_array.shape if temp_array is not None else None)
     diffs = np.diff(temp_array)
     if np.all(diffs > 0):
         return (temp_array,) + value_arrays
     elif np.all(diffs < 0):
-        logger.debug("ensure_ascending_order: Temperature array is descending, flipping arrays")
         flipped_temp = np.flip(temp_array)
         flipped_values = tuple(np.flip(arr) for arr in value_arrays)
         return (flipped_temp,) + flipped_values
     else:
         raise ValueError(f"Array is not strictly ascending or strictly descending: {temp_array}")
 
-
-def validate_temperature_range(
-        prop: str,
-        temp_array: np.ndarray,
-        global_temp_array: np.ndarray) -> None:
-    """Validate that temperature arrays from properties fall within the global temperature range."""
-    logger.debug("""validate_temperature_range:
-            prop: %r
-            temp_array: %r
-            global_temp_array: %r""",
-                 prop,
-                 temp_array.shape if temp_array is not None else None,
-                 global_temp_array.shape if global_temp_array is not None else None)
-    logger.debug(f"validate_temperature_range: Validating property '{prop}' with temperature array of shape {temp_array.shape} against global temperature array of shape {global_temp_array.shape}")
-    min_temp, max_temp = np.min(global_temp_array), np.max(global_temp_array)
-    if ((temp_array < min_temp) | (temp_array > max_temp)).any():
-        out_of_range = np.where((temp_array < min_temp) | (temp_array > max_temp))[0]
-        out_values = temp_array[out_of_range]
-        if len(out_of_range) > 5:
-            sample_indices = out_of_range[:5]
-            sample_values = temp_array[sample_indices]
-            raise ValueError(
-                f"Property '{prop}' contains temperature values outside global range [{min_temp}, {max_temp}] "
-                f"\n -> Found {len(out_of_range)} out-of-range values, first 5 at indices {sample_indices}: {sample_values}"
-                f"\n -> Min value: {temp_array.min()}, Max value: {temp_array.max()}"
-            )
-        else:
-            raise ValueError(
-                f"Property '{prop}' contains temperature values outside global range [{min_temp}, {max_temp}] "
-                f"\n -> Found {len(out_of_range)} out-of-range values at indices {out_of_range}: {out_values}"
-            )
-
-
-def interpolate_value(
-        T: float,
-        x_array: np.ndarray,
-        y_array: np.ndarray,
-        lower_bound_type: str,
-        upper_bound_type: str) -> float:
+def interpolate_value(T: float, x_array: np.ndarray, y_array: np.ndarray,
+                      lower_bound_type: str, upper_bound_type: str) -> float:
     """Interpolate a value at temperature T using the provided data arrays."""
-    logger.debug("""interpolate_value:
-            T: %r
-            x_array: %r
-            y_array: %r
-            lower_bound_type: %r
-            upper_bound_type: %r""", T,
-                 x_array.shape if x_array is not None else None,
-                 y_array.shape if y_array is not None else None,
-                 lower_bound_type, upper_bound_type)
     if T < x_array[0]:
         if lower_bound_type == CONSTANT_KEY:
             return float(y_array[0])
@@ -99,198 +47,53 @@ def interpolate_value(
     else:
         return float(np.interp(T, x_array, y_array))
 
+def is_monotonic(arr: np.ndarray, name: str = "Array",
+                 mode: str = "strictly_increasing",
+                 threshold: float = ProcessingConstants.MONOTONICITY_THRESHOLD,
+                 raise_error: bool = True) -> bool:
+    """Universal monotonicity checker supporting multiple modes."""
+    for i in range(1, len(arr)):
+        diff = arr[i] - arr[i-1]
+        violation = False
+        if mode == "strictly_increasing" and diff <= threshold:
+            violation = True
+        elif mode == "non_decreasing" and diff < -threshold:
+            violation = True
+        elif mode == "strictly_decreasing" and diff >= -threshold:
+            violation = True
+        elif mode == "non_increasing" and diff > threshold:
+            violation = True
+        if violation:
+            start_idx = max(0, i-2)
+            end_idx = min(len(arr), i+3)
+            context = "\nSurrounding values:\n"
+            for j in range(start_idx, end_idx):
+                context += f"Index {j}: {arr[j]:.10e}\n"
+            error_msg = (
+                f"{name} is not {mode.replace('_', ' ')} at index {i}:\n"
+                f"Previous value ({i-1}): {arr[i-1]:.10e}\n"
+                f"Current value ({i}): {arr[i]:.10e}\n"
+                f"Difference: {diff:.10e}\n"
+                f"{context}"
+            )
+            if raise_error:
+                raise ValueError(error_msg)
+            else:
+                logger.warning(f"Warning: {error_msg}")
+                return False
+    logger.info(f"{name} is {mode.replace('_', ' ')}")
+    return True
 
-def process_regression_params(
-        prop_config: dict,
-        prop_name: str,
-        data_length: int) -> Tuple[bool, Union[str, None], Union[int, None], Union[int, None]]:
-    """Process regression parameters from configuration."""
-    logger.debug("""process_regression_params:
-            prop_config: %r
-            prop_name: %r
-            data_length: %r""", prop_config, prop_name, data_length)
-    has_regression = isinstance(prop_config, dict) and REGRESSION_KEY in prop_config
-    if not has_regression:
-        return False, None, None, None
-    regression_config = prop_config[REGRESSION_KEY]
-    simplify_type = regression_config[SIMPLIFY_KEY]
-    degree = regression_config[DEGREE_KEY]
-    segments = regression_config[SEGMENTS_KEY]
-    if segments >= data_length:
-        raise ValueError(f"Number of segments ({segments}) must be less than number of data points ({data_length})")
-    if segments > 8:
-        raise ValueError(f"Number of segments ({segments}) is too high for {prop_name}. Please reduce it to 8 or less.")
-    elif segments > 6:
-        logger.warning(f"Number of segments ({segments}) for {prop_name} may lead to overfitting.")
-    return has_regression, simplify_type, degree, segments
-
-def _process_regression(temp_array, prop_array, T, lower_bound_type, upper_bound_type, degree, segments, seed=13579):
-    """Centralized regression processing logic."""
-    v_pwlf = pwlf.PiecewiseLinFit(temp_array, prop_array, degree=degree, seed=seed)
-    v_pwlf.fit(n_segments=segments)
-    return sp.Piecewise(*get_symbolic_conditions(v_pwlf, T, lower_bound_type, upper_bound_type))
-
-
-def create_raw_piecewise(
-        temp_array: np.ndarray,
-        prop_array: np.ndarray,
-        T: sp.Symbol,
-        lower: Literal['constant', 'extrapolate'],
-        upper: Literal['constant', 'extrapolate']) -> sp.Piecewise:
-    """Create a basic piecewise linear interpolation function."""
-    # Validation
-    if temp_array is None or len(temp_array) == 0:
-        raise ValueError("Temperature array is empty")
-    if temp_array[0] > temp_array[-1]:
-        raise ValueError("Temperature array is not in ascending order.")
-    conditions = []
-    # Handle lower bound (T < temp_array[0])
-    if lower == CONSTANT_KEY:
-        lower_expr = prop_array[0]
-    else:  # extrapolate
-        if len(temp_array) > 1:
-            slope = (prop_array[1] - prop_array[0]) / (temp_array[1] - temp_array[0])
-            lower_expr = prop_array[0] + slope * (T - temp_array[0])
-        else:
-            lower_expr = prop_array[0]
-    conditions.append((lower_expr, T < temp_array[0]))
-    # Handle main interpolation segments
-    for i in range(len(temp_array) - 1):
-        slope = (prop_array[i+1] - prop_array[i]) / (temp_array[i+1] - temp_array[i])
-        expr = prop_array[i] + slope * (T - temp_array[i])
-        condition = sp.And(T >= temp_array[i], T < temp_array[i+1])
-        conditions.append((expr, condition))
-    # Handle upper bound (T >= temp_array[-1])
-    if upper == CONSTANT_KEY:
-        upper_expr = prop_array[-1]
-    else:  # extrapolate
-        if len(temp_array) > 1:
-            slope = (prop_array[-1] - prop_array[-2]) / (temp_array[-1] - temp_array[-2])
-            upper_expr = prop_array[-1] + slope * (T - temp_array[-1])
-        else:
-            upper_expr = prop_array[-1]
-    conditions.append((upper_expr, T >= temp_array[-1]))
-    return sp.Piecewise(*conditions)
-
-
-def create_piecewise_from_formulas(
-        temp_points: np.ndarray,
-        eqn_exprs: List[Union[str, sp.Expr]],
-        T: sp.Symbol,
-        lower_bound_type: str = CONSTANT_KEY,
-        upper_bound_type: str = CONSTANT_KEY) -> sp.Piecewise:
-    """Create a SymPy Piecewise function from breakpoints and symbolic expressions."""
-    logger.debug("""create_piecewise_from_formulas:
-            temp_points: %r
-            eqn_exprs: %r
-            T: %r
-            lower_bound_type: %r
-            upper_bound_type: %r""", temp_points, eqn_exprs, T, lower_bound_type, upper_bound_type)
-    temp_points = np.asarray(temp_points, dtype=float)
-    # Process expressions using the provided symbol T
-    processed_exprs = []
-    for expr in eqn_exprs:
-        if isinstance(expr, str):
-            # For string expressions, use the provided symbol T
-            processed_exprs.append(sp.sympify(expr, locals={'T': T}))
-        else:
-            # For SymPy expressions, use as is
-            processed_exprs.append(expr)
-    if len(processed_exprs) != len(temp_points) - 1:
-        raise ValueError(
-            f"Number of formulas ({len(processed_exprs)}) must be one less than number of breakpoints ({len(temp_points)})"
-        )
-    # Special case: single expression with extrapolation at both ends
-    if len(processed_exprs) == 1 and lower_bound_type == EXTRAPOLATE_KEY and upper_bound_type == EXTRAPOLATE_KEY:
-        logger.warning(
-            "Using a single expression with extrapolation at both ends. "
-            "Consider simplifying your YAML definition to use a direct equation."
-        )
-        return processed_exprs[0]
-    conditions = []
-    # Handle lower bound
-    if lower_bound_type == CONSTANT_KEY:
-        conditions.append((processed_exprs[0].subs(T, temp_points[0]), T < temp_points[0]))
-    # Handle intervals (including special cases for first and last)
-    for i, expr in enumerate(processed_exprs):
-        if i == 0 and lower_bound_type == EXTRAPOLATE_KEY:
-            # First segment with extrapolation
-            conditions.append((expr, T < temp_points[i+1]))
-        elif i == len(processed_exprs) - 1 and upper_bound_type == EXTRAPOLATE_KEY:
-            # Last segment with extrapolation
-            conditions.append((expr, T >= temp_points[i]))
-        else: # Regular interval
-            conditions.append((expr, sp.And(T >= temp_points[i], T < temp_points[i+1])))
-    # Handle upper bound
-    if upper_bound_type == CONSTANT_KEY:
-        conditions.append((processed_exprs[-1].subs(T, temp_points[-1]), T >= temp_points[-1]))
-    return sp.Piecewise(*conditions)
-
-
-# https://github.com/cjekel/piecewise_linear_fit_py/blob/master/examples/understanding_higher_degrees/polynomials_in_pwlf.ipynb
-def get_symbolic_eqn(pwlf_: pwlf.PiecewiseLinFit, segment_number: int, x: Union[float, sp.Symbol]):
-    if pwlf_.degree < 1:
-        raise ValueError('Degree must be at least 1')
-    if segment_number < 1 or segment_number > pwlf_.n_segments:
-        raise ValueError('segment_number not possible')
-    my_eqn = 0  # Initialize my_eqn before the loop
-    # assemble degree = 1 first
-    for line in range(segment_number):
-        if line == 0:
-            my_eqn = pwlf_.beta[0] + (pwlf_.beta[1])*(x-pwlf_.fit_breaks[0])
-        else:
-            my_eqn += (pwlf_.beta[line+1])*(x-pwlf_.fit_breaks[line])
-    # assemble all other degrees
-    if pwlf_.degree > 1:
-        for k in range(2, pwlf_.degree + 1):
-            for line in range(segment_number):
-                beta_index = pwlf_.n_segments*(k-1) + line + 1
-                my_eqn += (pwlf_.beta[beta_index])*(x-pwlf_.fit_breaks[line])**k
-    # Only call simplify if x is symbolic
-    if isinstance(x, (sp.Symbol, sp.Expr)):
-        return my_eqn.simplify()
-    else:  # For numeric x, just return the equation
-        return my_eqn
-
-
-def get_symbolic_conditions(pwlf_: pwlf.PiecewiseLinFit, x: sp.Symbol, lower_: str, upper_: str):
-    """Create symbolic conditions for a piecewise function from a pwlf fit."""
-    conditions = []
-    # Special case: single segment with extrapolation at both ends
-    if pwlf_.n_segments == 1 and lower_ == EXTRAPOLATE_KEY and upper_ == EXTRAPOLATE_KEY:
-        eqn = get_symbolic_eqn(pwlf_, 1, x)
-        conditions.append((eqn, True))
-        return conditions
-    # Handle lower bound for all cases
-    if lower_ == CONSTANT_KEY:
-        eqn = get_symbolic_eqn(pwlf_, 1, x)
-        conditions.append((eqn.evalf(subs={x: pwlf_.fit_breaks[0]}), x < pwlf_.fit_breaks[0]))
-    # Process all segments
-    for i in range(pwlf_.n_segments):
-        eqn = get_symbolic_eqn(pwlf_, i + 1, x)
-        # First segment with extrapolation
-        if i == 0 and lower_ == EXTRAPOLATE_KEY:
-            conditions.append((eqn, x < pwlf_.fit_breaks[i+1]))
-        # Last segment with extrapolation
-        elif i == pwlf_.n_segments - 1 and upper_ == EXTRAPOLATE_KEY:
-            conditions.append((eqn, x >= pwlf_.fit_breaks[i]))
-        else:  # Regular intervals (including first/last with constant bounds)
-            conditions.append((eqn, sp.And(x >= pwlf_.fit_breaks[i], x < pwlf_.fit_breaks[i+1])))
-    # Handle upper bound
-    if upper_ == CONSTANT_KEY:
-        eqn = get_symbolic_eqn(pwlf_, pwlf_.n_segments, x)
-        conditions.append((eqn.evalf(subs={x: pwlf_.fit_breaks[-1]}), x >= pwlf_.fit_breaks[-1]))
-    return conditions
-
-
-def _validate_energy_density_monotonicity(prop_name: str, temp_array: np.ndarray, prop_array: np.ndarray, tolerance: float = 1e-10) -> None:
+def validate_energy_density_monotonicity(prop_name: str, temp_array: np.ndarray,
+                                         prop_array: np.ndarray,
+                                         tolerance: float = ProcessingConstants.DEFAULT_TOLERANCE) -> None:
     """Validate that energy_density is monotonically non-decreasing with temperature."""
     if prop_name != 'energy_density':
         return
-    if len(temp_array) < 2:
+    if len(temp_array) < ProcessingConstants.MIN_DATA_POINTS:
         return
     try:
-        check_monotonicity(prop_array, "Energy density", "non_decreasing", tolerance, True)
+        is_monotonic(prop_array, "Energy density", "non_decreasing", tolerance, True)
     except ValueError as e:
         # Add domain-specific context
         diffs = np.diff(prop_array)
@@ -311,3 +114,46 @@ def _validate_energy_density_monotonicity(prop_name: str, temp_array: np.ndarray
             if len(decreasing_indices) > 3:
                 enhanced_msg += f"\n... and {len(decreasing_indices) - 3} more violations"
             raise ValueError(enhanced_msg) from e
+
+def evaluate_numeric_temperature(material: Material, prop_name: str,
+                                 T: Union[float, sp.Symbol], processor_instance,
+                                 piecewise_expr: sp.Expr = None,
+                                 interpolation_data: Tuple = None) -> bool:
+    """Handle the case where T is numeric - evaluate and set property."""
+    if not isinstance(T, sp.Symbol):
+        try:
+            if interpolation_data is not None:
+                x_array, y_array, lower_bound_type, upper_bound_type = interpolation_data
+                value = interpolate_value(T, x_array, y_array, lower_bound_type, upper_bound_type)
+            elif piecewise_expr is not None:
+                T_standard = sp.Symbol('T')
+                value = float(piecewise_expr.subs(T_standard, T).evalf())
+            else:
+                raise ValueError("Either piecewise_expr or interpolation_data must be provided")
+            setattr(material, prop_name, sp.Float(value))
+            processor_instance.processed_properties.add(prop_name)
+            return True
+        except Exception as e:
+            raise ValueError(f"Failed to evaluate {prop_name} at T={T}: {str(e)}")
+    return False
+
+def generate_step_plot_data(transition_temp: float, val_array: List[float],
+                            temp_range: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    """Create proper step function visualization data."""
+    margin = (np.max(temp_range) - np.min(temp_range)) * ProcessingConstants.TEMPERATURE_PADDING_FACTOR
+    epsilon = ProcessingConstants.TEMPERATURE_EPSILON
+    x_data = np.array([
+        np.min(temp_range) - margin,
+        transition_temp - epsilon,
+        transition_temp,
+        transition_temp + epsilon,
+        np.max(temp_range) + margin
+    ])
+    y_data = np.array([
+        val_array[0],
+        val_array[0],
+        val_array[0],
+        val_array[1],
+        val_array[1]
+    ])
+    return x_data, y_data

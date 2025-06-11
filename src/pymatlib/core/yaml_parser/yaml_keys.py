@@ -31,7 +31,7 @@ PURE_METAL_KEY = "pure_metal"
 ALLOY_KEY = "alloy"
 
 # Temperature range keys
-TEMPERATURE_RANGE_KEY = "temperature_range"
+# TEMPERATURE_RANGE_KEY = "temperature_range"
 
 # Composition key
 COMPOSITION_KEY = "composition"

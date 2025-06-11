@@ -1,6 +1,6 @@
-name: SS304L_Comprehensive
+name: Stainless Steel 304L
 
-material_type: alloy  # or pure_metal
+material_type: alloy
 
 composition:
   Fe: 0.675
@@ -16,31 +16,27 @@ liquidus_temperature: 1735.
 initial_boiling_temperature: 6520.
 final_boiling_temperature: 6850.
 
-# temperature_range: [300, 3000, 541]  # 541 (int) -> points
-#OR
-temperature_range: [300, 3000, 5.0]  # 5.0 (float) -> increment
-
 properties:
 
   latent_heat_of_fusion:  # KEY_VAL
-    temperature: [solidus_temperature, liquidus_temperature]
+    temperature: [solidus_temperature - 5, liquidus_temperature + 5]
     value: [0, 171401.]
-    bounds: [constant, extrapolate]
+    bounds: [constant, constant]
     regression:
-      simplify: post
+      simplify: pre
       degree: 1
       segments: 1
 
   ##################################################
 
-  latent_heat_of_vaporization: 1.71401E5  # CONSTANT -> KEY_VAL
+  latent_heat_of_vaporization: 1.71401E5  # CONSTANT
 
   ##################################################
 
   heat_conductivity:  # PIECEWISE_EQUATION
     temperature:    [500, 1700, 3000]
     equation:       [0.0124137215440647*T + 13.0532171803243, 0.0124137215440647*T + 13.0532171803243]  # for partially defined equations
-    bounds:         [extrapolate, extrapolate]
+    bounds:         [constant, constant]
     regression:
       simplify: post
       degree: 1
@@ -48,11 +44,10 @@ properties:
 
   ##################################################
 
-  specific_enthalpy: Integral(heat_capacity, T)  # COMPUTE
-  # OR
-  kinematic_viscosity:  # COMPUTE TODO: specific_enthalpy renamed to kinematic_viscosity for testing
+  specific_enthalpy:  # COMPUTE
+    temperature: (300, 3000, 541)
     equation: Integral(heat_capacity, T)
-    bounds: [ constant, extrapolate ]
+    bounds: [ constant, constant ]
     regression:
       simplify: post
       degree: 1
@@ -61,8 +56,9 @@ properties:
   ##################################################
 
   energy_density:  # COMPUTE
+    temperature: (300, 3000, 5.0)
     equation: density * specific_enthalpy
-    bounds: [ constant, constant ]
+    bounds: [ extrapolate, constant ]
 
   ##################################################
 
@@ -70,17 +66,18 @@ properties:
     file_path: ./304L_Erstarrungsdaten_edited.xlsx
     temperature_header: T (K)
     value_header: Specific heat (J/(Kg K))
-    bounds: [extrapolate, extrapolate]
+    bounds: [constant, constant]
     regression:
-      simplify: post  # TODO: 'post' causes errors: <lambdifygenerated-8>:2: RuntimeWarning: divide by zero encountered in reciprocal
+      simplify: pre
       degree: 1
       segments: 4
 
   ##################################################
 
   thermal_diffusivity:  # COMPUTE
+    temperature: (3000, 300, -5.0)
     equation: heat_conductivity /(density * heat_capacity)
-    bounds: [ constant, extrapolate ]
+    bounds: [ constant, constant ]
     regression:
       simplify: post
       degree: 1
@@ -88,32 +85,22 @@ properties:
 
   ##################################################
 
-  density: 6594.65 * ((1 + thermal_expansion_coefficient * (T - 2270)) ** (-3))  # COMPUTE
-  # OR
-  dynamic_viscosity:  # COMPUTE TODO: density renamed to dynamic_viscosity for testing
-    equation: 6594.65 * (1 + thermal_expansion_coefficient * (T - 2270)) ** (-3)
-    bounds: [ constant, extrapolate ]
-    regression:
-      simplify: post
-      degree: 1
-      segments: 3
-  # OR
-  surface_tension:  # TODO: density renamed to surface_tension for testing  # FILE
+  density:  # FILE
     file_path: ./304L_Erstarrungsdaten_edited.xlsx
     temperature_header:  T (K)
     value_header: Density (kg/(m)^3)
-    bounds: [constant, extrapolate]
+    bounds: [constant, constant]
     regression:
       simplify: post
-      degree: 2
-      segments: 4
+      degree: 1
+      segments: 1
 
   ##################################################
 
   thermal_expansion_coefficient:  # KEY_VAL
     temperature: [300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1500, 2000, 2500, 3000]
     value: [1.2632e-5, 1.468e-5, 1.524e-5, 1.581e-5, 1.639e-5, 1.699e-5, 1.759e-5, 1.821e-5, 1.885e-5, 2.1e-5, 2.3e-5, 2.5e-5, 2.7e-5]
-    bounds: [constant, extrapolate]
+    bounds: [constant, constant]
     regression:
       simplify: post
       degree: 1

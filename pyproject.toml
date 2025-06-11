@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pymatlib"
-version = "0.1.0"
+version = "0.2.0"
 description = "Python based material library for thermophysical property calculations"
 readme = "README.md"
 license = {file = "LICENSE"}

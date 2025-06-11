@@ -53,7 +53,7 @@ def create_visualization(target_name, include_patterns, output_filename):
 
     # Create minimal setup for all visualizations
     u = ps.fields("u: float64[2D]", layout='fzyx')
-    yaml_path = files('pymatlib.data.alloys.SS304L').joinpath('SS304L_comprehensive.yaml')
+    yaml_path = files('pymatlib.data.alloys.SS304L').joinpath('SS304L.yaml')
 
     # Run the appropriate code based on the target
     with PyCallGraph(config=config, output=graphviz):

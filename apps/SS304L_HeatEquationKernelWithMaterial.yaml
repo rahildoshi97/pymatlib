@@ -16,13 +16,10 @@ liquidus_temperature: 1735.
 initial_boiling_temperature: 6520.
 final_boiling_temperature: 6850.
 
-# temperature_range: [300, 3000, 541]  # 541 (int) -> points
-#OR
-temperature_range: [300, 3000, 5.0]  # 5.0 (float) -> increment
-
 properties:
 
   thermal_diffusivity: # COMPUTE
+    temperature: (3000, 300, -5.0)
     equation: heat_conductivity /(density * heat_capacity)
     bounds: [ extrapolate, extrapolate ]
     regression:
@@ -33,6 +30,7 @@ properties:
   ##################################################
 
   energy_density:  # COMPUTE
+    temperature: (300, 3000, 5.0)
     equation: density * specific_enthalpy
     bounds: [ constant, constant ]
     regression:
@@ -42,7 +40,14 @@ properties:
 
   ##################################################
 
-  specific_enthalpy: Integral(heat_capacity, T)  # COMPUTE
+  specific_enthalpy:  # COMPUTE
+    temperature: (3000, 300, 541)
+    equation: Integral(heat_capacity, T)
+    bounds: [ constant, constant ]
+    regression:
+      simplify: post
+      degree: 2
+      segments: 4
 
   ##################################################
 

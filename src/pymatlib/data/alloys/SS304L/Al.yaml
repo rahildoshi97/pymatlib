@@ -1,4 +1,4 @@
-name: Pure_Aluminum
+name: Aluminum
 material_type: pure_metal
 composition:
   Al: 1.0
@@ -8,7 +8,7 @@ boiling_temperature: 2743.0
 properties:
 
   latent_heat_of_fusion: # STEP_FUNCTION
-    temperature: melting_temperature
+    temperature: melting_temperature - 10
     value: [0.0, 10790.0]
     bounds: [constant, constant]
 
@@ -21,6 +21,10 @@ properties:
     temperature: (3000, 300, -5.)
     equation: heat_conductivity /(density * heat_capacity)
     bounds: [extrapolate, extrapolate]
+    regression:
+      simplify: post
+      degree: 1
+      segments: 1
 
   density:  # COMPUTE
     temperature: (300, 3000, 5)
