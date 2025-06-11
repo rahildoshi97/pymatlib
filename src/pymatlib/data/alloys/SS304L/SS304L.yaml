@@ -1,14 +1,11 @@
 name: Stainless Steel 304L
-
 material_type: alloy
-
 composition:
   Fe: 0.675
   Cr: 0.170
   Ni: 0.120
   Mo: 0.025
   Mn: 0.010
-
 # interval for melting
 solidus_temperature: 1605.
 liquidus_temperature: 1735.
@@ -27,11 +24,7 @@ properties:
       degree: 1
       segments: 1
 
-  ##################################################
-
   latent_heat_of_vaporization: 1.71401E5  # CONSTANT
-
-  ##################################################
 
   heat_conductivity:  # PIECEWISE_EQUATION
     temperature:    [500, 1700, 3000]
@@ -42,8 +35,6 @@ properties:
       degree: 1
       segments: 2
 
-  ##################################################
-
   specific_enthalpy:  # COMPUTE
     temperature: (300, 3000, 541)
     equation: Integral(heat_capacity, T)
@@ -53,14 +44,10 @@ properties:
       degree: 1
       segments: 2
 
-  ##################################################
-
   energy_density:  # COMPUTE
     temperature: (300, 3000, 5.0)
     equation: density * specific_enthalpy
     bounds: [ extrapolate, constant ]
-
-  ##################################################
 
   heat_capacity:  # FILE
     file_path: ./304L_Erstarrungsdaten_edited.xlsx
@@ -72,8 +59,6 @@ properties:
       degree: 1
       segments: 4
 
-  ##################################################
-
   thermal_diffusivity:  # COMPUTE
     temperature: (3000, 300, -5.0)
     equation: heat_conductivity /(density * heat_capacity)
@@ -82,8 +67,6 @@ properties:
       simplify: post
       degree: 1
       segments: 3
-
-  ##################################################
 
   density:  # FILE
     file_path: ./304L_Erstarrungsdaten_edited.xlsx
@@ -94,8 +77,6 @@ properties:
       simplify: post
       degree: 1
       segments: 1
-
-  ##################################################
 
   thermal_expansion_coefficient:  # KEY_VAL
     temperature: [300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1500, 2000, 2500, 3000]
