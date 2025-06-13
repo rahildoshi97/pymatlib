@@ -20,11 +20,11 @@ with SourceFileGenerator() as sfg:
     data_type = "float64"  # if ctx.double_accuracy else "float32"
 
     u, u_tmp = ps.fields(f"u, u_tmp: {data_type}[2D]", layout='fzyx')
-    thermal_diffusivity = sp.Symbol("thermal_diffusivity")
-    thermal_diffusivity_out = ps.fields(f"thermal_diffusivity_out: {data_type}[2D]", layout='fzyx')
+    thermal_diffusivity_symbol = sp.Symbol("thermal_diffusivity")
+    thermal_diffusivity_field = ps.fields(f"thermal_diffusivity_out: {data_type}[2D]", layout='fzyx')
     dx, dt = sp.Symbol("dx"), sp.Symbol("dt")
 
-    heat_pde = ps.fd.transient(u) - thermal_diffusivity * (ps.fd.diff(u, 0, 0) + ps.fd.diff(u, 1, 1))
+    heat_pde = ps.fd.transient(u) - thermal_diffusivity_symbol * (ps.fd.diff(u, 0, 0) + ps.fd.diff(u, 1, 1))
 
     discretize = ps.fd.Discretization2ndOrder(dx=dx, dt=dt)
     heat_pde_discretized = discretize(heat_pde)
@@ -221,13 +221,15 @@ with SourceFileGenerator() as sfg:
 
     print("\n" + "=" * 80)
 
-    subexp = [ps.Assignment(thermal_diffusivity, mat.thermal_diffusivity)]
+    subexp = [
+        ps.Assignment(thermal_diffusivity_symbol, mat.thermal_diffusivity),
+    ]
 
     ac = ps.AssignmentCollection(
         subexpressions=subexp,
         main_assignments=[
             ps.Assignment(u_tmp.center(), heat_pde_discretized),
-            ps.Assignment(thermal_diffusivity_out.center(), thermal_diffusivity)
+            ps.Assignment(thermal_diffusivity_field.center(), thermal_diffusivity_symbol)
         ])
 
     print(f"ac\n{ac}, type = {type(ac)}")

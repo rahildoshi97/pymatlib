@@ -17,7 +17,7 @@ logging.getLogger('fontTools').setLevel(logging.WARNING)
 T = sp.Symbol('_U_')
 
 current_file = Path(__file__)
-# yaml_path = current_file.parent.parent.parent / "src" / "pymatlib" / "data" / "alloys" / "SS304L" / "Al.yaml"
+# yaml_path = current_file.parent.parent.parent / "src" / "pymatlib" / "data" / "pure_metals" / "Al" / "Al.yaml"
 yaml_path = current_file.parent.parent.parent / "src" / "pymatlib" / "data" / "alloys" / "SS304L" / "SS304L.yaml"
 ss316l = create_material_from_yaml(yaml_path=yaml_path, T=T, enable_plotting=True)
 

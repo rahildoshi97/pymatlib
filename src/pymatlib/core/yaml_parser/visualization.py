@@ -22,7 +22,8 @@ class PropertyVisualizer:
         self.fig = None
         self.gs = None
         self.current_subplot = 0
-        self.plot_directory = "pymatlib_plots"
+        yaml_dir = self.parser.base_dir
+        self.plot_directory = yaml_dir / "pymatlib_plots"
         self.visualized_properties = set()
         self.is_enabled = True
 
@@ -43,7 +44,7 @@ class PropertyVisualizer:
         self.fig = plt.figure(figsize=(12, 4 * property_count))
         self.gs = GridSpec(property_count, 1, figure=self.fig)
         self.current_subplot = 0
-        os.makedirs(self.plot_directory, exist_ok=True)
+        self.plot_directory.mkdir(exist_ok=True)
 
     def reset_visualization_tracking(self) -> None:
         logger.debug("""PropertyVisualizer: reset_visualization_tracking""")
@@ -259,9 +260,10 @@ class PropertyVisualizer:
                         top=0.9,    # Top margin (leave space for subtitle)
                         hspace=0.4  # Height spacing between subplots
                     )
-                filepath = os.path.join(self.plot_directory, f"{self.parser.config[NAME_KEY].replace(' ', '_')}_properties.png")
+                filename = f"{self.parser.config[NAME_KEY].replace(' ', '_')}_properties.png"
+                filepath = self.plot_directory / filename
                 self.fig.savefig(
-                    filepath,
+                    str(filepath),
                     dpi=300,
                     bbox_inches="tight",
                     facecolor='white',

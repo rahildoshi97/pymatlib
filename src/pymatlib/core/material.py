@@ -88,6 +88,8 @@ class Material:
             raise ValueError(f"Number of elements ({len(self.elements)}) must match composition length ({len(self.composition)})")
         if not np.isclose(sum(self.composition), 1.0, atol=1e-10):
             raise MaterialCompositionError(f"The sum of the composition array must be 1.0, got {sum(self.composition)}")
+        if self.material_type == 'pure_metal' and len(self.elements) != 1:
+            raise MaterialCompositionError(f"Pure metals must have exactly 1 element, got {len(self.elements)}")
         if self.material_type == 'alloy' and len(self.elements) < 2:
             raise MaterialCompositionError(f"Alloys must have at least 2 elements, got {len(self.elements)}")
 

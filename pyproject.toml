@@ -1,11 +1,11 @@
 [build-system]
-requires = ["setuptools>=69.0.0", "wheel"]
+requires = ["setuptools>=45", "wheel", "setuptools_scm[toml]>=6.2"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "pymatlib"
-version = "0.2.0"
-description = "Python based material library for thermophysical property calculations"
+dynamic = ["version"]
+description = "A high-performance Python library for material simulation and analysis with temperature-dependent properties"
 readme = "README.md"
 license = {file = "LICENSE"}
 authors = [
@@ -14,9 +14,9 @@ authors = [
 maintainers = [
     {name = "Rahil Doshi", email = "rahil.doshi@fau.de"},
 ]
-keywords = ["materials", "thermophysical", "properties", "yaml", "scientific-computing"]
+keywords = ["materials", "thermophysical", "properties", "yaml", "scientific-computing", "piecewise", "regression", "sympy"]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 4 - Beta",
     "Intended Audience :: Science/Research",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
@@ -27,45 +27,51 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "Topic :: Scientific/Engineering :: Physics",
     "Topic :: Scientific/Engineering :: Chemistry",
+    "Topic :: Scientific/Engineering :: Materials Science",
     "Topic :: Software Development :: Libraries :: Python Modules",
+    "Typing :: Typed",
 ]
 requires-python = ">=3.10"
 dependencies = [
-    "numpy>=1.18.0,<3.0.0",
-    "sympy>=1.7.0,<2.0.0",
-    "scipy>=1.6.0,<2.0.0",
-    "matplotlib>=3.3.0,<4.0.0",
-    "ruamel.yaml>=0.15.70,<1.0.0",
-    "pandas>=1.3.0,<3.0.0",
-    "openpyxl>=3.1.5",
+    "numpy>=1.20.0,<3.0.0",
+    "sympy>=1.9.0,<2.0.0",
+    "scipy>=1.7.0,<2.0.0",
+    "matplotlib>=3.5.0,<4.0.0",
+    "ruamel.yaml>=0.17.0,<1.0.0",
+    "pandas>=1.4.0,<3.0.0",
+    "openpyxl>=3.1.0",
     "pwlf>=2.5.1,<3.0.0",
 ]
 
 [project.optional-dependencies]
 dev = [
-    "pytest>=6.0.0",
-    "pytest-cov>=2.10.0",
-    "black>=22.0.0",
-    "isort>=5.10.0",
-    "flake8>=4.0.0",
-    "mypy>=0.910",
-    "pre-commit>=2.15.0",
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "black>=23.0.0",
+    "isort>=5.12.0",
+    "flake8>=6.0.0",
+    "mypy>=1.0.0",
+    "pre-commit>=3.0.0",
+    "ruff>=0.1.0",
 ]
 test = [
-    "pytest>=6.0.0",
-    "pytest-cov>=2.10.0",
-    "pytest-xdist>=2.4.0",
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "pytest-xdist>=3.0.0",
+    "pytest-mock>=3.10.0",
 ]
 docs = [
-    "sphinx>=4.0.0",
-    "sphinx-rtd-theme>=1.0.0",
-    "myst-parser>=0.15.0",
+    "sphinx>=6.0.0",
+    "sphinx-rtd-theme>=1.2.0",
+    "myst-parser>=1.0.0",
+    "sphinx-autodoc-typehints>=1.20.0",
 ]
 performance = [
-    "pycallgraph2>=1.1.3",
+    "line_profiler>=4.0.0",
+    "memory_profiler>=0.60.0",
 ]
 simulation = [
-    "pystencils>=2.0.dev0",
+    "pystencils>=1.3.0",
 ]
 all = [
     "pymatlib[dev,test,docs,performance,simulation]"
@@ -76,6 +82,7 @@ Homepage = "https://i10git.cs.fau.de/rahil.doshi/pymatlib"
 Repository = "https://i10git.cs.fau.de/rahil.doshi/pymatlib"
 "Bug Tracker" = "https://i10git.cs.fau.de/rahil.doshi/pymatlib/-/issues"
 Documentation = "https://i10git.cs.fau.de/rahil.doshi/pymatlib/-/wikis/home"
+Changelog = "https://i10git.cs.fau.de/rahil.doshi/pymatlib/-/blob/master/CHANGELOG.md"
 
 [project.scripts]
 pymatlib-validate = "pymatlib.core.yaml_parser.api:validate_yaml_file"
@@ -83,7 +90,7 @@ pymatlib-validate = "pymatlib.core.yaml_parser.api:validate_yaml_file"
 [tool.setuptools.packages.find]
 where = ["src"]
 include = ["pymatlib*"]
-exclude = ["tests*", "apps*"]
+exclude = ["tests*", "apps*", "examples*"]
 
 [tool.setuptools.package-data]
 pymatlib = [
@@ -93,15 +100,30 @@ pymatlib = [
     "*.yml",
     "*.json",
     "*.xlsx",
+    "*.csv",
+    "*.txt",
+    "py.typed",
 ]
 
+# Add setuptools_scm configuration for dynamic versioning
+[tool.setuptools_scm]
+write_to = "src/pymatlib/_version.py"
+version_scheme = "python-simplified-semver"
+local_scheme = "node-and-date"
+fallback_version = "0.2.0"
+
 [tool.pytest.ini_options]
-addopts = "-v --cov=pymatlib --cov-report=html --cov-report=term-missing"
+addopts = "-v --cov=pymatlib --cov-report=html --cov-report=term-missing --cov-fail-under=80"
 testpaths = ["tests"]
 pythonpath = ["src"]
 python_files = ["test_*.py", "*_test.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests as integration tests",
+    "unit: marks tests as unit tests",
+]
 
 [tool.coverage.run]
 source = ["src/pymatlib"]
@@ -110,20 +132,26 @@ omit = [
     "*/test_*",
     "*/__pycache__/*",
     "*/apps/*",
+    "*/examples/*",
+    "*/_version.py",
 ]
 
 [tool.coverage.report]
 exclude_lines = [
     "pragma: no cover",
     "def __repr__",
+    "def __str__",
     "raise AssertionError",
     "raise NotImplementedError",
     "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "class .*\\bProtocol\\):",
+    "@(abc\\.)?abstractmethod",
 ]
 
 [tool.black]
 line-length = 120
-target-version = ['py310']
+target-version = ['py310', 'py311', 'py312']
 include = '\.pyi?$'
 extend-exclude = '''
 /(
@@ -139,6 +167,7 @@ extend-exclude = '''
   | apps/cmake-build-.*
   | apps/walberla
   | apps/sfg-walberla
+  | _version\.py
 )/
 '''
 
@@ -151,6 +180,7 @@ force_grid_wrap = 0
 use_parentheses = true
 ensure_newline_before_comments = true
 src_paths = ["src", "tests"]
+skip_glob = ["*/_version.py"]
 
 [tool.mypy]
 python_version = "3.10"
@@ -167,18 +197,41 @@ warn_no_return = true
 warn_unreachable = true
 strict_equality = true
 ignore_missing_imports = true
+show_error_codes = true
 
 [[tool.mypy.overrides]]
 module = [
     "pwlf.*",
     "pystencils.*",
     "ruamel.*",
+    "matplotlib.*",
+    "scipy.*",
+    "pandas.*",
+    "openpyxl.*",
 ]
 ignore_missing_imports = true
 
-[tool.flake8]
-max-line-length = 120
-extend-ignore = ["E203", "W503"]
+[[tool.mypy.overrides]]
+module = "pymatlib._version"
+ignore_errors = true
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+select = [
+    "E",  # pycodestyle errors
+    "W",  # pycodestyle warnings
+    "F",  # pyflakes
+    "I",  # isort
+    "B",  # flake8-bugbear
+    "C4", # flake8-comprehensions
+    "UP", # pyupgrade
+]
+ignore = [
+    "E203", # whitespace before ':'
+    "E501", # line too long, handled by black
+    "B008", # do not perform function calls in argument defaults
+]
 exclude = [
     ".git",
     "__pycache__",
@@ -188,4 +241,9 @@ exclude = [
     "*.egg-info",
     ".venv",
     ".tox",
+    "_version.py",
 ]
+
+[tool.ruff.per-file-ignores]
+"__init__.py" = ["F401"]  # Allow unused imports in __init__.py
+"tests/*" = ["B011"]      # Allow assert False in tests

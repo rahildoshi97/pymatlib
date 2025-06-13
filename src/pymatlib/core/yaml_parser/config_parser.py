@@ -161,6 +161,86 @@ class MaterialConfigParser(YAMLConfigParser):
                 suggestion = f" (did you mean '{matches[0]}'?)" if matches else ""
                 error_msg += f" - '{field}'{suggestion}\n"
             raise ValueError(error_msg)
+        self._validate_composition()
+
+    def _validate_composition(self) -> None:
+        """Validate composition for both pure metals and alloys."""
+        composition = self.config.get(COMPOSITION_KEY, {})
+        material_type = self.config[MATERIAL_TYPE_KEY]
+        if not isinstance(composition, dict):
+            raise ValueError("Composition must be a dictionary")
+        if not composition:
+            raise ValueError("Composition cannot be empty")
+        # Check that all fractions are valid numbers
+        for element, fraction in composition.items():
+            if not isinstance(fraction, (int, float)):
+                raise ValueError(f"Composition fraction for '{element}' must be a number, got {type(fraction).__name__}")
+            if fraction < 0:
+                raise ValueError(f"Composition fraction for '{element}' cannot be negative, got {fraction}")
+            if fraction > 1:
+                raise ValueError(f"Composition fraction for '{element}' cannot exceed 1.0, got {fraction}")
+        # Check that fractions sum to 1.0
+        total = sum(composition.values())
+        if not abs(total - 1.0) < 1e-10:
+            raise ValueError(f"Composition fractions must sum to 1.0, got {total}")
+        # Material-type specific validation
+        if material_type == PURE_METAL_KEY:
+            self._validate_pure_metal_composition_rules(composition)
+        else:  # alloy
+            self._validate_alloy_composition_rules(composition)
+
+    @staticmethod
+    def _validate_pure_metal_composition_rules(composition: dict) -> None:
+        """Validate composition rules specific to pure metals."""
+        # Count non-zero elements
+        non_zero_elements = {element: fraction for element, fraction in composition.items()
+                             if fraction > 1e-10}
+        if len(non_zero_elements) == 0:
+            raise ValueError("Pure metals must have at least one element with non-zero composition")
+
+        if len(non_zero_elements) > 1:
+            element_list = ", ".join(f"{elem}: {frac}" for elem, frac in non_zero_elements.items())
+            raise ValueError(
+                f"Pure metals must contain exactly one element with composition 1.0. "
+                f"Found multiple non-zero elements: {element_list}. "
+                f"Use material_type: 'alloy' for multi-element materials."
+            )
+        # Check that the single element has composition 1.0
+        single_element, single_fraction = list(non_zero_elements.items())[0]
+        if not abs(single_fraction - 1.0) < 1e-10:
+            raise ValueError(
+                f"Pure metal element '{single_element}' must have composition 1.0, "
+                f"got {single_fraction}. Use material_type: 'alloy' for fractional compositions."
+            )
+        # ERROR for zero-valued elements in pure metals
+        zero_elements = [element for element, fraction in composition.items() if fraction == 0.0]
+        if zero_elements:
+            raise ValueError(
+                f"Pure metal composition should not include zero-valued elements: {zero_elements}. "
+                f"Remove these elements from the composition dictionary."
+            )
+
+    @staticmethod
+    def _validate_alloy_composition_rules(composition: dict) -> None:
+        """Validate composition rules specific to alloys."""
+        non_zero_elements = {element: fraction for element, fraction in composition.items()
+                             if fraction > 1e-10}
+        if len(non_zero_elements) < 2:
+            if len(non_zero_elements) == 1:
+                single_element = list(non_zero_elements.keys())[0]
+                raise ValueError(
+                    f"Alloys must have at least 2 elements with non-zero composition. "
+                    f"Found only '{single_element}'. Use material_type: 'pure_metal' for single elements."
+                )
+            else:
+                raise ValueError("Alloys must have at least 2 elements with non-zero composition")
+        # Warning for zero-valued elements in alloys - they might be intentional
+        zero_elements = [element for element, fraction in composition.items() if fraction == 0.0]
+        if zero_elements:
+            logger.warning(
+                f"Alloy composition includes zero-valued elements: {zero_elements}. "
+                f"Consider removing them if they're not needed."
+            )
 
     def _validate_property_names(self, properties: Dict[str, Any]) -> None:
         invalid_props = set(properties.keys()) - self.VALID_YAML_PROPERTIES

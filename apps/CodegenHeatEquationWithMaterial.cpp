@@ -109,7 +109,7 @@ int main(int argc, char** argv)
 
    BlockDataID uFieldId    = field::addToStorage< ScalarField >(blocks, "u", real_c(2000.0), field::fzyx, uint_c(1));
    BlockDataID uTmpFieldId = field::addToStorage< ScalarField >(blocks, "u_tmp", real_c(2000.0), field::fzyx, uint_c(1));
-   BlockDataID thermalDiffusivityFieldId    = field::addToStorage< ScalarField >(blocks, "thermal_diffusivity", real_c(0.0), field::fzyx, uint_c(1));
+   BlockDataID thermalDiffusivityFieldId = field::addToStorage< ScalarField >(blocks, "thermal_diffusivity", real_c(0.0), field::fzyx, uint_c(1));
 
    /////////////////////
    /// COMMUNICATION ///
