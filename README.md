@@ -143,10 +143,12 @@ This project is licensed under the GNU General Public License v3 (GPLv3). See th
 - **Bug Tracker**: [Issues](https://i10git.cs.fau.de/rahil.doshi/pymatlib/-/issues)
 
 ## 🙏 Acknowledgments
-- Built with _SymPy_ for symbolic mathematics
-- Data handling powered by _pandas_
-- Uses _pwlf_ for piecewise linear fitting
-- Visualization powered by _Matplotlib_
-- YAML parsing with _ruamel.yaml_
+- Built with [SymPy](https://www.sympy.org/) for symbolic mathematics
+- Data handling powered by [pandas](https://pandas.pydata.org/)
+- Uses [pwlf](https://github.com/cjekel/piecewise_linear_fit_py) for piecewise linear fitting
+- Visualization powered by [Matplotlib](https://matplotlib.org/)
+- YAML parsing with [ruamel.yaml](https://yaml.readthedocs.io/)
 
-#### PyMatLib v0.2.0 - Empowering material simulation with Python 🚀
+#### PyMatLib - Empowering material simulation with Python 🚀
+
+---
