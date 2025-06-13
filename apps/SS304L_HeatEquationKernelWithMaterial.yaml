@@ -52,7 +52,7 @@ properties:
   ##################################################
 
   heat_capacity:  # FILE
-    file_path: ./304L_Erstarrungsdaten_HeatEquationKernelWithMaterial.xlsx
+    file_path: ./SS304L_HeatEquationKernelWithMaterial.xlsx
     temperature_header: T (K)
     value_header: Specific heat (J/(Kg K))
     bounds: [extrapolate, extrapolate]
@@ -64,7 +64,7 @@ properties:
   ##################################################
 
   heat_conductivity:  # FILE
-    file_path: ./304L_Erstarrungsdaten_HeatEquationKernelWithMaterial.xlsx
+    file_path: ./SS304L_HeatEquationKernelWithMaterial.xlsx
     temperature_header: T (K)
     value_header: Thermal conductivity (W/(m*K))-TOTAL-10000.0(K/s)
     bounds: [extrapolate, extrapolate]
@@ -76,7 +76,7 @@ properties:
   ##################################################
 
   density:  # FILE
-    file_path: ./304L_Erstarrungsdaten_HeatEquationKernelWithMaterial.xlsx
+    file_path: ./SS304L_HeatEquationKernelWithMaterial.xlsx
     temperature_header: T (K)
     value_header: Density (kg/(m)^3)
     bounds: [extrapolate, extrapolate]

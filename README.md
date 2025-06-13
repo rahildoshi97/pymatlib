@@ -3,17 +3,16 @@
 A high-performance Python library for material simulation and analysis with a focus on temperature-dependent properties. PyMatLib enables efficient modeling of pure metals and alloys through YAML configuration files, providing symbolic and numerical property evaluation for various material properties.
 
 [![Python](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![Latest Release](https://i10git.cs.fau.de/rahil.doshi/pymatlib/-/badges/release.svg)](https://i10git.cs.fau.de/rahil.doshi/pymatlib/-/releases)
 [![License](https://img.shields.io/badge/license-GPLv3-blue.svg)](LICENSE)
 [![Pipeline Status](https://i10git.cs.fau.de/rahil.doshi/pymatlib/badges/master/pipeline.svg)](https://i10git.cs.fau.de/rahil.doshi/pymatlib/-/pipelines)
 [![Code Coverage](https://i10git.cs.fau.de/rahil.doshi/pymatlib/badges/master/coverage.svg)](https://i10git.cs.fau.de/rahil.doshi/pymatlib/-/commits/master)
-[![Version](https://img.shields.io/badge/dynamic/toml?url=https%3A%2F%2Fi10git.cs.fau.de%2Frahil.doshi%2Fpymatlib%2F-%2Fraw%2Fmaster%2Fpyproject.toml&query=%24.project.version&label=version&color=orange)](https://i10git.cs.fau.de/rahil.doshi/pymatlib)
-[![Latest Release](https://i10git.cs.fau.de/rahil.doshi/pymatlib/-/badges/release.svg)](https://i10git.cs.fau.de/rahil.doshi/pymatlib/-/releases)
 
 ## Table of Contents
 - [Key Features](#-key-features)
 - [Installation](#-installation)
 - [YAML Configuration Format](#-yaml-configuration-format)
-- [Documentation](#documentation)
+- [Documentation](#-documentation)
 - [Contributing](#-contributing)
 - [Known Limitations](#-known-limitations)
 - [License](#-license)
@@ -114,7 +113,7 @@ Our documentation follows the _Diátaxis_ framework with four distinct types:
 - [Defining Custom Material Properties](docs/how-to/define_materials.md)
 - [Converting Between Energy Density and Temperature](docs/how-to/energy_temperature_conversion.md)
 ### Reference - Information-oriented documentation
-- [API Reference](docs/reference/api/)
+- [API Reference](docs/reference/api)
 - [YAML Configuration Schema](docs/reference/yaml_schema.md)
 ### Explanation - Understanding-oriented discussions
 - [Material Properties Concepts](docs/explanation/material_properties.md)
