@@ -11,7 +11,7 @@ import sympy as sp
 import pystencils as ps
 from importlib.resources import files
 from pystencilssfg import SourceFileGenerator
-from pymatlib.core.yaml_parser import create_alloy_from_yaml
+from pymatlib.parsing import create_alloy_from_yaml
 from pymatlib.core.assignment_converter import assignment_converter
 from pymatlib.core.codegen.interpolation_array_container import InterpolationArrayContainer
 
@@ -77,7 +77,7 @@ def create_visualization(target_name, include_patterns, output_filename):
 # Generate each visualization
 create_visualization(
     "create_alloy_from_yaml",
-    ['pymatlib.core.yaml_parser.*', 'create_alloy_from_yaml'],
+    ['pymatlib.core.parsing.*', 'create_alloy_from_yaml'],
     'create_alloy_callgraph.svg'
 )
 

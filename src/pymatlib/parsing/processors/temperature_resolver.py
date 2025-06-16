@@ -4,8 +4,8 @@ import re
 from typing import List, Union, Optional
 
 from pymatlib.core.material import Material
-from pymatlib.core.yaml_parser.data_handler import read_data_from_file
-from pymatlib.core.yaml_parser.yaml_keys import MELTING_TEMPERATURE_KEY, BOILING_TEMPERATURE_KEY, \
+from pymatlib.parsing.io.data_handler import read_data_from_file
+from pymatlib.parsing.config.yaml_keys import MELTING_TEMPERATURE_KEY, BOILING_TEMPERATURE_KEY, \
     SOLIDUS_TEMPERATURE_KEY, LIQUIDUS_TEMPERATURE_KEY, INITIAL_BOILING_TEMPERATURE_KEY, FINAL_BOILING_TEMPERATURE_KEY, \
     FILE_PATH_KEY, TEMPERATURE_KEY, VALUE_KEY
 from pymatlib.data.constants import ProcessingConstants
@@ -142,7 +142,7 @@ class TemperatureResolver:
     def get_temperature_value(temp_ref: Union[str, float, int], material: Material) -> float:
         """
         Enhanced helper function to get temperature value from material or direct numeric input.
-        Replaces both get_transition_temperature and _get_temperature_value from common_utils.py
+        Replaces both get_transition_temperature and _get_temperature_value from utilities.py
         Args:
             temp_ref: Temperature reference (string, float, or int)
             material: Material object for reference resolution

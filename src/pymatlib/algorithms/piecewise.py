@@ -3,10 +3,10 @@ from typing import Dict, List, Union
 import numpy as np
 import sympy as sp
 
-from pymatlib.core.yaml_parser.common_utils import ensure_ascending_order
-from pymatlib.core.yaml_parser.regression_processor import RegressionManager
-from pymatlib.core.yaml_parser.yaml_keys import CONSTANT_KEY, EXTRAPOLATE_KEY, BOUNDS_KEY, PRE_KEY
+from pymatlib.algorithms.interpolation import ensure_ascending_order
+from pymatlib.algorithms.regression import RegressionManager
 from pymatlib.data import ProcessingConstants
+from pymatlib.parsing.config.yaml_keys import CONSTANT_KEY, EXTRAPOLATE_KEY, BOUNDS_KEY, PRE_KEY
 
 logger = logging.getLogger(__name__)
 

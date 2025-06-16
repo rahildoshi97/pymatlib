@@ -1,11 +1,10 @@
-# Material Properties in pymatlib
+# Material Properties in PyMatLib
 
-This document explains the conceptual framework behind temperature-dependent material properties in pymatlib,
-how they are represented internally, and the mathematical models used for computed properties.
+This document explains the conceptual framework behind temperature-dependent material properties in PyMatLib, how they are represented internally, and the mathematical models used for computed properties.
 
 ## Conceptual Framework
 
-Material properties in pymatlib are designed around these key principles:
+Material properties in PyMatLib are designed around these key principles:
 
 1. **Temperature Dependence**: Most material properties vary with temperature, especially during phase transitions
 2. **Symbolic Representation**: Properties are represented as symbolic expressions for mathematical manipulation
@@ -14,35 +13,37 @@ Material properties in pymatlib are designed around these key principles:
 
 ## Internal Representation
 
-### MaterialProperty Class
+### Material Class
 
-At the core of pymatlib's property system is the `MaterialProperty` class, which contains:
+At the core of PyMatLib's property system is the `Material` class, which contains:
 
-- A symbolic expression (`expr`) representing the property
-- A list of assignments needed to evaluate the expression
-- Methods to evaluate the property at specific temperatures
-
-```python
-@dataclass
-class MaterialProperty:
-    expr: sp.Expr
-    assignments: List[Assignment] = field(default_factory=list)
-    
-    def evalf(self, symbol: sp.Symbol, temperature: Union[float, ArrayTypes]) -> Union[float, np.ndarray]:
-        # Evaluates the property at the given temperature
-```
-
-### Assignment Class
-
-The `Assignment` class represents intermediate calculations needed for property evaluations:
+- Basic material information (name, type, composition)
+- Temperature properties (melting/boiling points, solidus/liquidus temperatures)
+- Optional material properties as SymPy expressions
+- Validation and calculation methods
 
 ```python
 @dataclass
-class Assignment:
-    lhs: sp.Symbol
-    rhs: Union[tuple, sp.Expr]
-    lhs_type: str
+class Material:
+    name: str
+    material_type: str # 'alloy' or 'pure_metal'
+    elements: List[ChemicalElement]
+    composition: Union[np.ndarray, List, Tuple]
+    # Temperature properties vary by material type
+    # Optional properties as SymPy expressions
+    density: sp.Expr = None
+    heat_capacity: sp.Expr = None
+    # ... other properties
 ```
+
+### Property Processing Pipeline
+
+Properties are processed through a sophisticated pipeline:
+
+1. **Type Detection**: `PropertyConfigAnalyzer` automatically determines property definition type
+2. **Validation**: Ensures configuration is valid for the detected type
+3. **Processing**: `PropertyManager` converts configuration to SymPy expressions
+4. **Dependency Resolution**: Handles property interdependencies automatically
 
 ## Property Definition Methods
 
@@ -56,120 +57,184 @@ Properties that don't vary with temperature are defined as simple numeric values
 thermal_expansion_coefficient: 16.3e-6
 ```
 
-Internally, these are converted to constant symbolic expressions.
+Internally converted to `sp.Float(16.3e-6)`.
 
-2. Interpolated Values
+### 2. Step Functions
 
-For properties that vary with temperature, pymatlib supports interpolation between data points:
+Properties with discontinuous changes at phase transitions:
+```python
+latent_heat_of_fusion:
+    temperature: solidus_temperature
+    value: [0.0, 171401.0]
+    bounds: [constant, constant]
+```
 
+Represented as `sp.Piecewise` expressions with temperature-dependent conditions.
+
+### 3. File-Based Properties
+
+Properties loaded from external data files:
+```python
+density:
+    file_path: ./material_data.xlsx
+    temperature_header: T (K)
+    value_header: Density (kg/(m)^3)
+    bounds: [constant, constant]
+```
+
+Data is loaded via `read_data_from_file` and converted to piecewise interpolation functions.
+
+### 4. Key-Value Pairs
+
+Explicit temperature-property relationships:
 ```yaml
 heat_conductivity:
-    key: [1200, 1800, 2200, 2400]  # Temperatures in Kelvin
-    val: [25, 30, 33, 35]          # Property values
+    temperature: [1200, 1800, 2200, 2400]  # Temperatures in Kelvin
+    value: [25, 30, 33, 35]          # Property values
+    bounds: [constant, constant]
 ```
 
-Internally, these are represented as piecewise functions that perform linear interpolation between points.
+Converted to piecewise linear interpolation functions through `PiecewiseBuilder`.
 
-3. File-Based Properties
-   
-Properties can be loaded from external data files:
+### 5. Piecewise Equations
 
-```yaml
-density:
-    file: ./material_data.xlsx
-    temp_col: T (K)
-    prop_col: Density (kg/(m)^3)
+Multiple equations for different temperature ranges:
+```python
+heat_conductivity:
+    temperature: [1700][3000]
+    equation: ["0.012T + 13", "0.015T + 5"]
+    bounds: [constant, constant]
 ```
 
-The data is loaded and converted to an interpolated function similar to key-value pairs.
+Each equation is parsed as a SymPy expression and combined into a piecewise function.
 
-4. Computed Properties
+### 6. Computed Properties
 
-Some properties can be derived from others using physical relationships:
-
-```yaml
-thermal_diffusivity: compute  # k/(ρ*cp)
+Properties calculated from other properties:
+```python
+thermal_diffusivity:
+    temperature: (300, 3000, 5.0)
+    equation: heat_conductivity / (density * heat_capacity)
+    bounds: [extrapolate, extrapolate]
 ```
 
-## Computed Models
+Symbolic expressions that reference other material properties with automatic dependency resolution.
 
-pymatlib implements several physical models for computing properties:
+## Temperature Processing
 
-### Density by Thermal Expansion
+PyMatLib provides sophisticated temperature definition processing through `TemperatureResolver`:
 
-```text
-ρ(T) = ρ₀ / (1 + tec * (T - T₀))³
-```
+### Temperature Definition Formats
 
-Where:
-- ρ₀ is the base density
-- T₀ is the base temperature
-- tec is the thermal expansion coefficient
+1. **Explicit Lists**: `[300, 400, 500, 600]`
+2. **Tuple Formats**:
+    - `(300, 50)` - start and increment
+    - `(300, 1000, 10.0)` - start, stop, step
+    - `(300, 1000, 71)` - start, stop, points
+3. **Temperature References**: `solidus_temperature`, `melting_temperature + 50`
 
-### Thermal Diffusivity
+### Temperature Resolution
 
-```text
-α(T) = k(T) / (ρ(T) * cp(T))
-```
+The `TemperatureResolver` class handles:
+- Reference resolution to material properties
+- Arithmetic expression evaluation
+- Validation of temperature ranges
+- Conversion to numpy arrays
 
-Where:
-- k(T) is the thermal conductivity
-- ρ(T) is the density
-- cp(T) is the specific heat capacity
+## Interpolation and Evaluation
 
-### Energy Density
+### Piecewise Functions
 
-pymatlib supports multiple models for energy density:
+Properties are represented as piecewise functions that:
+- Perform linear interpolation between data points
+- Handle boundary conditions (constant or extrapolation)
+- Support symbolic evaluation with SymPy
+- Can be evaluated at specific temperatures using `.evalf()`
 
-1. **Standard Model**
+### Boundary Handling
 
-```text
-E(T) = ρ(T) * (cp(T) * T + L)
-```
+Two boundary types are supported:
+- **Constant**: Use boundary values outside the defined range
+- **Extrapolate**: Linear extrapolation beyond the data range
 
-2. **Enthalpy-Based Model**
+## Dependency Management
 
-```text
-E(T) = ρ(T) * (h(T) + L)
-```
+### Dependency Detection
 
-3. **Total Enthalpy Model**
-```text
-E(T) = ρ(T) * h(T)
-```
+The system automatically:
+- Extracts symbols from mathematical expressions using SymPy
+- Identifies required properties for computed properties
+- Validates that all dependencies are available
 
-Where:
-- ρ(T) is the density
-- cp(T) is the specific heat capacity
-- h(T) is the specific enthalpy
-- L is the latent heat of fusion
+### Circular Dependency Prevention
 
-## Interpolation Between Data Points
+Sophisticated checking prevents circular dependencies:
+- Tracks dependency chains during processing in `PropertyManager`
+- Detects cycles before they cause infinite loops
+- Provides clear error messages through `CircularDependencyError`
 
-For properties defined through key-value pairs or files, pymatlib performs linear interpolation between data points:
+### Processing Order
 
-1. For a temperature T between two known points T₁ and T₂:
+Properties are processed in dependency order:
+- Independent properties first
+- Dependent properties after their dependencies
+- Automatic topological sorting of the dependency graph
 
-```text
-property(T) = property(T₁) + (property(T₂) - property(T₁)) * (T - T₁) / (T₂ - T₁)
-```
+## Validation and Quality Assurance
 
-2. For temperatures outside the defined range, the property value is clamped to the nearest endpoint.
+### Data Validation
 
-## Temperature Arrays for EnergyDensity
+Comprehensive validation includes:
+- Temperature monotonicity checking through `is_monotonic`
+- Energy density monotonicity validation via `validate_energy_density_monotonicity`
+- Physical reasonableness checks
+- Data quality assessment in file processing
 
-When using computed energy density, you must specify a temperature array:
+### Error Handling
 
-```text
-energy_density_temperature_array: (300, 3000, 541)  # 541 points from 300K to 3000K
-```
+Clear, actionable error messages for:
+- Invalid property configurations through `PropertyConfigAnalyzer`
+- Missing dependencies via `DependencyError`
+- Data quality issues in file processing
+- Physical inconsistencies in material properties
 
-This array is used to pre-compute energy density values for efficient interpolation during simulations.
+## Integration with Simulations
 
-### Best Practices
+### SymPy Integration
 
-1. **Use Consistent Units**: All properties should use SI units (m, s, kg, K, etc.)
-2. **Cover the Full Temperature Range**: Ensure properties are defined across the entire temperature range of your simulation
-3. **Add Extra Points Around Phase Transitions**: For accurate modeling, use more data points around phase transitions
-4. **Validate Against Experimental Data**: When possible, compare property values with experimental measurements
-5. **Document Property Sources**: Keep track of where property data comes from for reproducibility
+Properties as SymPy expressions enable:
+- Symbolic differentiation and integration
+- Algebraic manipulation and simplification
+- Direct evaluation at specific temperatures
+
+### Simulation Framework Integration
+
+Properties can be used in:
+- pystencils-based simulations through symbolic expressions
+- Custom simulation frameworks via `.evalf()` method
+- Scientific computing workflows through NumPy integration
+
+## Best Practices
+
+### Property Definition
+
+1. **Use Consistent Units**: All properties should use SI units
+2. **Cover Full Temperature Range**: Define properties across the entire simulation range
+3. **Add Points Around Transitions**: Use more data points near phase transitions
+4. **Validate Against Experiments**: Compare with experimental data when possible
+
+### Performance Optimization
+
+1. **Use Appropriate Property Types**: Choose the most efficient definition method
+2. **Consider Regression**: Use regression for large datasets via `RegressionManager`
+3. **Optimize Temperature Arrays**: Balance accuracy and performance
+
+### Maintainability
+
+1. **Document Property Sources**: Keep track of data origins
+2. **Use Descriptive Names**: Clear property and file naming
+3. **Validate Configurations**: Use `validate_yaml_file` function
+4. **Version Control**: Track changes to material definitions
+
+This framework provides a robust, flexible foundation for modeling complex material behavior in scientific simulations while maintaining ease of use and extensibility.
+

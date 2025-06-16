@@ -2,7 +2,7 @@ import logging
 from pathlib import Path
 
 import sympy as sp
-from pymatlib.core.yaml_parser.api import create_material_from_yaml, get_supported_properties
+from pymatlib.parsing.api import create_material, get_supported_properties
 
 logging.basicConfig(
     level=logging.INFO,
@@ -14,22 +14,23 @@ logging.getLogger('PIL').setLevel(logging.WARNING)
 logging.getLogger('fontTools').setLevel(logging.WARNING)
 
 # Create symbolic temperature variable
-T = sp.Symbol('_U_')
+T = sp.Symbol('_u_C_')
 
 current_file = Path(__file__)
-# yaml_path = current_file.parent.parent.parent / "src" / "pymatlib" / "data" / "pure_metals" / "Al" / "Al.yaml"
-yaml_path = current_file.parent.parent.parent / "src" / "pymatlib" / "data" / "alloys" / "SS304L" / "SS304L.yaml"
-ss316l = create_material_from_yaml(yaml_path=yaml_path, T=T, enable_plotting=True)
+yaml_path = current_file.parent.parent.parent / "src" / "pymatlib" / "data" / "materials" / "pure_metals" / "Al" / "Al.yaml"
+# yaml_path = current_file.parent.parent.parent / "src" / "pymatlib" / "data" / "materials" / "alloys" / "SS304L" / "SS304L.yaml"
+mat = create_material(yaml_path=yaml_path, T=T, enable_plotting=True)
 
-print(f"Elements: {ss316l.elements}")
-print(f"Composition: {ss316l.composition}")
-for i in range(len(ss316l.composition)):
-    print(f"Element {ss316l.elements[i]}: Composition {ss316l.composition[i]}")
-print(f"\nSolidus Temperature: {ss316l.solidus_temperature}")
-print(f"Liquidus Temperature: {ss316l.liquidus_temperature}")
+print(f"Name: {mat.name}")
+print(f"Elements: {mat.elements}")
+print(f"Composition: {mat.composition}")
+for i in range(len(mat.composition)):
+    print(f"Element {mat.elements[i]}: Composition {mat.composition[i]}")
+print(f"\nSolidus Temperature: {mat.solidus_temperature}")
+print(f"Liquidus Temperature: {mat.liquidus_temperature}")
 print("\nTesting SS304L with symbolic temperature:")
-for field in vars(ss316l):
-    print(f"{field}, {type(field)} = {ss316l.__getattribute__(field)}, type = {type(ss316l.__getattribute__(field))}")
+for field in vars(mat):
+    print(f"{field}, {type(field)} = {mat.__getattribute__(field)}, type = {type(mat.__getattribute__(field))}")
 
 # Test computed properties at specific temperature
 test_temp = 273.15
@@ -47,8 +48,8 @@ print(f"{'='*80}")
 # Test all properties that exist on the material
 for valid_prop_name in sorted(valid_properties):
     try:
-        if hasattr(ss316l, valid_prop_name):
-            valid_prop_value = getattr(ss316l, valid_prop_name)
+        if hasattr(mat, valid_prop_name):
+            valid_prop_value = getattr(mat, valid_prop_name)
             # Check if it's a symbolic expression
             if isinstance(valid_prop_value, sp.Expr):
                 # Substitute the temperature and evaluate

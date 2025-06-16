@@ -4,7 +4,7 @@ from typing import Tuple, Union
 import pwlf
 import sympy as sp
 
-from pymatlib.core.yaml_parser.yaml_keys import REGRESSION_KEY, SIMPLIFY_KEY, DEGREE_KEY, SEGMENTS_KEY, EXTRAPOLATE_KEY, CONSTANT_KEY
+from pymatlib.parsing.config.yaml_keys import REGRESSION_KEY, SIMPLIFY_KEY, DEGREE_KEY, SEGMENTS_KEY, EXTRAPOLATE_KEY, CONSTANT_KEY
 from pymatlib.data.constants import ProcessingConstants
 
 logger = logging.getLogger(__name__)

@@ -7,10 +7,10 @@ import sympy as sp
 from ruamel.yaml import YAML, constructor, scanner
 
 from pymatlib.core.material import Material
-from pymatlib.core.yaml_parser.property_manager import PropertyManager
-from pymatlib.core.yaml_parser.property_type_detector import PropertyType, PropertyConfigAnalyzer
-from pymatlib.core.yaml_parser.visualization import PropertyVisualizer
-from pymatlib.core.yaml_parser.yaml_keys import PROPERTIES_KEY, MATERIAL_TYPE_KEY, \
+from pymatlib.parsing.processors.property_manager import PropertyManager
+from pymatlib.parsing.validation.type_detection import PropertyType, PropertyConfigAnalyzer
+from pymatlib.visualization.property_plots import PropertyVisualizer
+from pymatlib.parsing.config.yaml_keys import PROPERTIES_KEY, MATERIAL_TYPE_KEY, \
     COMPOSITION_KEY, PURE_METAL_KEY, MELTING_TEMPERATURE_KEY, BOILING_TEMPERATURE_KEY, SOLIDUS_TEMPERATURE_KEY, \
     LIQUIDUS_TEMPERATURE_KEY, INITIAL_BOILING_TEMPERATURE_KEY, FINAL_BOILING_TEMPERATURE_KEY, ALLOY_KEY, NAME_KEY
 
@@ -77,12 +77,14 @@ class MaterialConfigParser(YAMLConfigParser):
         Create a Material instance from the parsed configuration and temperature.
         """
         try:
+            name = self.config.get(NAME_KEY, "Unnamed Material")
             material_type = self.config[MATERIAL_TYPE_KEY]
             elements = self._get_elements()
             composition = [val for val in self.config[COMPOSITION_KEY].values()]
             # Create material with different parameters based on material_type
             if material_type == PURE_METAL_KEY:
                 material = Material(
+                    name=name,
                     elements=elements,
                     composition=composition,
                     material_type=material_type,
@@ -91,6 +93,7 @@ class MaterialConfigParser(YAMLConfigParser):
                 )
             else:  # alloy
                 material = Material(
+                    name=name,
                     elements=elements,
                     composition=composition,
                     material_type=material_type,
@@ -257,7 +260,7 @@ class MaterialConfigParser(YAMLConfigParser):
 
     # --- Processing Methods ---
     def _get_elements(self) -> List:
-        from pymatlib.data.element_data import element_map
+        from pymatlib.data.elements.element_data import element_map
         try:
             return [element_map[sym] for sym in self.config[COMPOSITION_KEY].keys()]
         except KeyError as e:

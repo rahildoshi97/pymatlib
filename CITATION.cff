@@ -1,0 +1,9 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+  - family-names: "Doshi"
+    given-names: "Rahil"
+title: "PyMatLib: A Python Library for Temperature-Dependent Materials Property Modeling"
+version: 0.3.0
+date-released: 2025-06-16
+url: "https://i10git.cs.fau.de/rahil.doshi/pymatlib"

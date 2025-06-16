@@ -19,6 +19,7 @@ A high-performance Python library for material simulation and analysis with a fo
 - [Support](#-support)
 
 ## 🚀 Key Features
+- **Modular Architecture**: Clean separation with algorithms, parsing, and visualization modules
 - **Flexible Material Definition**: Support for both pure metals and alloys
 - **YAML-Driven Configuration**: Define materials using intuitive YAML files
 - **Temperature-Dependent Properties**: Support for complex temperature-dependent material properties
@@ -48,16 +49,17 @@ pip install -e .[dev]
 
 ## 🏃 Quick Start
 ### Basic Material Creation
+
 ```python
 import sympy as sp
-from pymatlib.core.yaml_parser.api import create_material_from_yaml
+from pymatlib.parsing.api import create_material
 
 # Create a material with symbolic temperature
 T = sp.Symbol('T')
-material_T = create_material_from_yaml('path/to/material.yaml', T)
+material_T = create_material('path/to/material.yaml', T)
 
 # Create a material at specific temperature
-material_500 = create_material_from_yaml('path/to/material.yaml', 500.0)
+material_500 = create_material('path/to/material.yaml', 500.0)
 
 # Access properties
 print(f"Heat capacity: {material_T.heat_capacity}")
@@ -69,14 +71,15 @@ density_at_temp = float(material_T.density.subs(T, temp_value))
 print(f"Density at {temp_value}K: {density_at_temp:.2f} kg/m³")
 
 # For numerical evaluation (no plots generated)
-material_800 = create_material_from_yaml('aluminum.yaml', 800.0)
+material_800 = create_material('aluminum.yaml', 800.0)
 
 # For symbolic expressions with automatic plotting
-material_with_plot = create_material_from_yaml('steel.yaml', T, enable_plotting=True)
+material_with_plot = create_material('steel.yaml', T, enable_plotting=True)
 ```
 ### Working with Piecewise Inverse Functions
+
 ```python
-from pymatlib.core.piecewise_inverter import create_energy_density_inverse
+from pymatlib.algorithms.inversion import create_energy_density_inverse
 
 # Create inverse energy density function: T = f_inv(E)
 if hasattr(material, 'energy_density'):
@@ -101,8 +104,8 @@ if hasattr(material, 'energy_density'):
 
 See [the YAML schema documentation](docs/reference/yaml_schema.md) for detailed configuration options.
 YAML configuration examples can be found here:
-- [Pure Metals](src/pymatlib/data/pure_metals/Al/Al.yaml)
-- [Alloys](src/pymatlib/data/alloys/SS304L/SS304L.yaml)
+- [Pure Metals](src/pymatlib/data/materials/pure_metals/Al/Al.yaml)
+- [Alloys](src/pymatlib/data/materials/alloys/SS304L/SS304L.yaml)
 
 ## 📚 Documentation
 Our documentation follows the _Diátaxis_ framework with four distinct types:
@@ -130,11 +133,24 @@ Contributions are welcome! Please follow these steps:
 ## 🐛 Known Limitations
 - **Piecewise Inverter**: Currently supports only linear piecewise functions
 - **File Formats**: Limited to CSV, Excel, and text files
-- **Memory Usage**: Large datasets may require optimization
+- **Memory Usage**: Large datasets may require optimization for very high-resolution data
 - **Regression**: Maximum 8 segments recommended for stability
 
 ## 📄 License
 This project is licensed under the GNU General Public License v3 (GPLv3). See the [LICENSE](https://i10git.cs.fau.de/rahil.doshi/pymatlib/-/blob/master/LICENSE?ref_type=heads) file for details.
+
+## 📖 Citation
+If you use PyMatLib in your research, please cite it as:
+```bibtex
+@software{doshi2025pymatlib,
+author = {Doshi, Rahil},
+title = {PyMatLib: A Python Library for Temperature-Dependent Materials Property Modeling},
+version = {0.3.0},
+year = {2025},
+url = {https://i10git.cs.fau.de/rahil.doshi/pymatlib}
+}
+```
+For the latest citation information, see [CITATION.cff](CITATION.cff).
 
 ## 📞 Support
 - **Author**: Rahil Doshi

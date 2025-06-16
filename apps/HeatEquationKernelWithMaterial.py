@@ -5,8 +5,8 @@ from pathlib import Path
 from pystencilssfg import SourceFileGenerator
 from walberla.codegen import Sweep
 
-from pymatlib.core.yaml_parser.api import create_material_from_yaml
-from pymatlib.core.piecewise_inverter import PiecewiseInverter, create_energy_density_inverse
+from pymatlib.parsing.api import create_material
+from pymatlib.algorithms.inversion import PiecewiseInverter, create_energy_density_inverse
 
 logging.basicConfig(
     level=logging.INFO,  # DEBUG/INFO/WARNING
@@ -21,7 +21,7 @@ with SourceFileGenerator() as sfg:
 
     u, u_tmp = ps.fields(f"u, u_tmp: {data_type}[2D]", layout='fzyx')
     thermal_diffusivity_symbol = sp.Symbol("thermal_diffusivity")
-    thermal_diffusivity_field = ps.fields(f"thermal_diffusivity_out: {data_type}[2D]", layout='fzyx')
+    thermal_diffusivity_field = ps.fields(f"thermal_diffusivity_field: {data_type}[2D]", layout='fzyx')
     dx, dt = sp.Symbol("dx"), sp.Symbol("dt")
 
     heat_pde = ps.fd.transient(u) - thermal_diffusivity_symbol * (ps.fd.diff(u, 0, 0) + ps.fd.diff(u, 1, 1))
@@ -30,11 +30,11 @@ with SourceFileGenerator() as sfg:
     heat_pde_discretized = discretize(heat_pde)
     heat_pde_discretized = heat_pde_discretized.args[1] + heat_pde_discretized.args[0].simplify()
 
-    # yaml_path = Path(__file__).parent.parent / "src" / "pymatlib" / "data" / "alloys" / "SS304L" / "Al.yaml"
-    # yaml_path = Path(__file__).parent.parent / "src" / "pymatlib" / "data" / "alloys" / "SS304L" / "SS304L.yaml"
+    # yaml_path = Path(__file__).parent.parent / "src" / "pymatlib" / "data" / "materials" / "pure_metals" / "Al" / "Al.yaml"
+    # yaml_path = Path(__file__).parent.parent / "src" / "pymatlib" / "data" / "materials" / "alloys" / "SS304L" / "SS304L.yaml"
     yaml_path = Path(__file__).parent / 'SS304L_HeatEquationKernelWithMaterial.yaml'
 
-    mat = create_material_from_yaml(yaml_path=yaml_path, T=u.center(), enable_plotting=False)
+    mat = create_material(yaml_path=yaml_path, T=u.center(), enable_plotting=False)
 
     print(f"Energy density function: {mat.energy_density}")
     print(f"Type: {type(mat.energy_density)}")

@@ -68,7 +68,7 @@ with PyCallGraph(config=config, output=graphviz):
     from pystencils import fields
     from importlib.resources import files
     from pystencilssfg import SourceFileGenerator
-    from pymatlib.core.yaml_parser import create_alloy_from_yaml
+    from pymatlib.parsing import create_material
     from pymatlib.core.codegen.interpolation_array_container import InterpolationArrayContainer
     from pymatlib.core.interpolators import prepare_interpolation_arrays
 
@@ -99,6 +99,6 @@ with PyCallGraph(config=config, output=graphviz):
         sfg.generate(custom_container)
 
         yaml_path = files('pymatlib.data.alloys.SS304L').joinpath('SS304L.yaml')
-        mat = create_alloy_from_yaml(yaml_path, u.center())
+        mat = create_material(yaml_path, u.center())
         arr_container = InterpolationArrayContainer.from_material("SS304L", mat)
         sfg.generate(arr_container)

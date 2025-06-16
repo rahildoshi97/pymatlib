@@ -5,7 +5,7 @@ from typing import Any, Dict, Set
 
 import sympy as sp
 
-from pymatlib.core.yaml_parser.yaml_keys import (
+from pymatlib.parsing.config.yaml_keys import (
     FILE_PATH_KEY, TEMPERATURE_HEADER_KEY, VALUE_HEADER_KEY, BOUNDS_KEY,
     REGRESSION_KEY, TEMPERATURE_KEY, EQUATION_KEY, CONSTANT_KEY,
     EXTRAPOLATE_KEY, SIMPLIFY_KEY, DEGREE_KEY, SEGMENTS_KEY, PRE_KEY, POST_KEY,

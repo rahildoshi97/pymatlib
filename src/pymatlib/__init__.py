@@ -28,21 +28,21 @@ except ImportError:
             from importlib_metadata import version
             __version__ = version("pymatlib")
         except ImportError:
-            __version__ = "unknown"  # Fallback version
+            __version__ = "0.3.0+unknown"  # Fallback version
 
 # Core API exports
-from pymatlib.core.yaml_parser.api import (
-    create_material_from_yaml,
+from pymatlib.parsing.api import (
+    create_material,
     get_supported_properties,
     validate_yaml_file,
 )
 
 # Core classes
 from pymatlib.core.material import Material
-from pymatlib.core.yaml_parser.property_type_detector import PropertyType
+from pymatlib.parsing.validation.type_detection import PropertyType
 
 # Piecewise utilities
-from pymatlib.core.piecewise_inverter import (
+from pymatlib.algorithms.inversion import (
     PiecewiseInverter,
     create_energy_density_inverse,
 )
@@ -58,7 +58,7 @@ __all__ = [
     # Version
     "__version__",
     # Main API
-    "create_material_from_yaml",
+    "create_material",
     "get_supported_properties",
     "validate_yaml_file",
     # Core classes

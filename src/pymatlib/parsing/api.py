@@ -4,9 +4,9 @@ from typing import Union
 import sympy as sp
 
 from pymatlib.core.material import Material
-from pymatlib.core.yaml_parser.config_parser import MaterialConfigParser
+from pymatlib.parsing.config.configuration import MaterialConfigParser
 
-def create_material_from_yaml(yaml_path: Union[str, Path], T: Union[float, sp.Symbol], enable_plotting: bool = True) -> Material:
+def create_material(yaml_path: Union[str, Path], T: Union[float, sp.Symbol], enable_plotting: bool = True) -> Material:
     """
     Create material instance from YAML configuration file.
     
@@ -31,16 +31,16 @@ def create_material_from_yaml(yaml_path: Union[str, Path], T: Union[float, sp.Sy
 
     Examples:
         # Create a material at a specific temperature
-        material = create_material_from_yaml('aluminum.yaml', 500.0)
+        material = create_material('aluminum.yaml', 500.0)
 
         # Create a material with symbolic temperature expressions
         import sympy as sp
         T = sp.Symbol('T')
-        material = create_material_from_yaml('steel.yaml', T)
+        material = create_material('steel.yaml', T)
 
         # Create a material with a custom temperature symbol
         u_C = sp.Symbol('u_C')
-        material = create_material_from_yaml('copper.yaml', u_C)
+        material = create_material('copper.yaml', u_C)
     """
     parser = MaterialConfigParser(yaml_path)
     material = parser.create_material(T, enable_plotting=enable_plotting)

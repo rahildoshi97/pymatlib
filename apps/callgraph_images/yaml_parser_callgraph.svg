@@ -28,7 +28,7 @@
 <text text-anchor="middle" x="1011" y="-921.4" font-family="Verdana" font-size="7.00" fill="#000000">calls: 1</text>
 <text text-anchor="middle" x="1011" y="-913.4" font-family="Verdana" font-size="7.00" fill="#000000">time: 0.000000s</text>
 </g>
-<!-- pymatlib.core.yaml_parser.create_alloy_from_yaml -->
+<!-- pymatlib.core.parsing.create_alloy_from_yaml -->
 <g id="node17" class="node">
 <title>pymatlib.core.yaml_parser.create_alloy_from_yaml</title>
 <polygon fill="#e54ce5" stroke="#e54ce5" points="1101,-844 921,-844 921,-808 1101,-808 1101,-844"/>
@@ -36,14 +36,14 @@
 <text text-anchor="middle" x="1011" y="-824.4" font-family="Verdana" font-size="7.00" fill="#000000">calls: 1</text>
 <text text-anchor="middle" x="1011" y="-816.4" font-family="Verdana" font-size="7.00" fill="#000000">time: 219.099043s</text>
 </g>
-<!-- __main__&#45;&gt;pymatlib.core.yaml_parser.create_alloy_from_yaml -->
+<!-- __main__&#45;&gt;pymatlib.core.parsing.create_alloy_from_yaml -->
 <g id="edge9" class="edge">
 <title>__main__&#45;&gt;pymatlib.core.yaml_parser.create_alloy_from_yaml</title>
 <path fill="none" stroke="#b23bb2" d="M1011,-904.58C1011,-890.65 1011,-870.86 1011,-854.76"/>
 <polygon fill="#b23bb2" stroke="#b23bb2" points="1014.5,-854.31 1011,-844.31 1007.5,-854.31 1014.5,-854.31"/>
 <text text-anchor="middle" x="1013" y="-881.4" font-family="Verdana" font-size="7.00" fill="#000000">1</text>
 </g>
-<!-- pymatlib.core.yaml_parser.&lt;module&gt; -->
+<!-- pymatlib.core.parsing.&lt;module&gt; -->
 <g id="node2" class="node">
 <title>pymatlib.core.yaml_parser.&lt;module&gt;</title>
 <polygon fill="#e0e5e5" stroke="#e0e5e5" points="2617,-844 2479,-844 2479,-808 2617,-808 2617,-844"/>
@@ -51,7 +51,7 @@
 <text text-anchor="middle" x="2548" y="-824.4" font-family="Verdana" font-size="7.00" fill="#000000">calls: 1</text>
 <text text-anchor="middle" x="2548" y="-816.4" font-family="Verdana" font-size="7.00" fill="#000000">time: 6.615069s</text>
 </g>
-<!-- pymatlib.core.yaml_parser.PropertyType -->
+<!-- pymatlib.core.parsing.PropertyType -->
 <g id="node15" class="node">
 <title>pymatlib.core.yaml_parser.PropertyType</title>
 <polygon fill="#e5e5e5" stroke="#e5e5e5" points="2714,-764 2564,-764 2564,-728 2714,-728 2714,-764"/>
@@ -59,14 +59,14 @@
 <text text-anchor="middle" x="2639" y="-744.4" font-family="Verdana" font-size="7.00" fill="#000000">calls: 1</text>
 <text text-anchor="middle" x="2639" y="-736.4" font-family="Verdana" font-size="7.00" fill="#000000">time: 0.000334s</text>
 </g>
-<!-- pymatlib.core.yaml_parser.&lt;module&gt;&#45;&gt;pymatlib.core.yaml_parser.PropertyType -->
+<!-- pymatlib.core.parsing.&lt;module&gt;&#45;&gt;pymatlib.core.parsing.PropertyType -->
 <g id="edge7" class="edge">
 <title>pymatlib.core.yaml_parser.&lt;module&gt;&#45;&gt;pymatlib.core.yaml_parser.PropertyType</title>
 <path fill="none" stroke="#b2b2b2" d="M2568.2,-807.69C2580.8,-796.88 2597.21,-782.82 2611.05,-770.95"/>
 <polygon fill="#b2b2b2" stroke="#b2b2b2" points="2613.55,-773.43 2618.86,-764.26 2608.99,-768.11 2613.55,-773.43"/>
 <text text-anchor="middle" x="2598" y="-784.4" font-family="Verdana" font-size="7.00" fill="#000000">1</text>
 </g>
-<!-- pymatlib.core.yaml_parser.MaterialConfigParser -->
+<!-- pymatlib.core.parsing.MaterialConfigParser -->
 <g id="node16" class="node">
 <title>pymatlib.core.yaml_parser.MaterialConfigParser</title>
 <polygon fill="#e5e5e5" stroke="#e5e5e5" points="2546,-764 2372,-764 2372,-728 2546,-728 2546,-764"/>
@@ -74,7 +74,7 @@
 <text text-anchor="middle" x="2459" y="-744.4" font-family="Verdana" font-size="7.00" fill="#000000">calls: 1</text>
 <text text-anchor="middle" x="2459" y="-736.4" font-family="Verdana" font-size="7.00" fill="#000000">time: 0.001887s</text>
 </g>
-<!-- pymatlib.core.yaml_parser.&lt;module&gt;&#45;&gt;pymatlib.core.yaml_parser.MaterialConfigParser -->
+<!-- pymatlib.core.parsing.&lt;module&gt;&#45;&gt;pymatlib.core.parsing.MaterialConfigParser -->
 <g id="edge8" class="edge">
 <title>pymatlib.core.yaml_parser.&lt;module&gt;&#45;&gt;pymatlib.core.yaml_parser.MaterialConfigParser</title>
 <path fill="none" stroke="#b2b2b2" d="M2528.25,-807.69C2515.92,-796.88 2499.87,-782.82 2486.33,-770.95"/>
@@ -219,7 +219,7 @@
 <text text-anchor="middle" x="1199" y="-824.4" font-family="Verdana" font-size="7.00" fill="#000000">calls: 1</text>
 <text text-anchor="middle" x="1199" y="-816.4" font-family="Verdana" font-size="7.00" fill="#000000">time: 6.389329s</text>
 </g>
-<!-- pymatlib.core.yaml_parser.MaterialConfigParser.__init__ -->
+<!-- pymatlib.core.parsing.MaterialConfigParser.__init__ -->
 <g id="node18" class="node">
 <title>pymatlib.core.yaml_parser.MaterialConfigParser.__init__</title>
 <polygon fill="#e5e5e5" stroke="#e5e5e5" points="1408.5,-764 1211.5,-764 1211.5,-728 1408.5,-728 1408.5,-764"/>
@@ -227,14 +227,14 @@
 <text text-anchor="middle" x="1310" y="-744.4" font-family="Verdana" font-size="7.00" fill="#000000">calls: 1</text>
 <text text-anchor="middle" x="1310" y="-736.4" font-family="Verdana" font-size="7.00" fill="#000000">time: 0.026048s</text>
 </g>
-<!-- pymatlib.core.yaml_parser.create_alloy_from_yaml&#45;&gt;pymatlib.core.yaml_parser.MaterialConfigParser.__init__ -->
+<!-- pymatlib.core.parsing.create_alloy_from_yaml&#45;&gt;pymatlib.core.parsing.MaterialConfigParser.__init__ -->
 <g id="edge10" class="edge">
 <title>pymatlib.core.yaml_parser.create_alloy_from_yaml&#45;&gt;pymatlib.core.yaml_parser.MaterialConfigParser.__init__</title>
 <path fill="none" stroke="#b2b2b2" d="M1076.25,-807.98C1122.95,-795.8 1185.93,-779.37 1234.75,-766.63"/>
 <polygon fill="#b2b2b2" stroke="#b2b2b2" points="1235.84,-769.96 1244.63,-764.05 1234.07,-763.19 1235.84,-769.96"/>
 <text text-anchor="middle" x="1171" y="-784.4" font-family="Verdana" font-size="7.00" fill="#000000">1</text>
 </g>
-<!-- pymatlib.core.yaml_parser.MaterialConfigParser.create_alloy -->
+<!-- pymatlib.core.parsing.MaterialConfigParser.create_alloy -->
 <g id="node24" class="node">
 <title>pymatlib.core.yaml_parser.MaterialConfigParser.create_alloy</title>
 <polygon fill="#e54ce5" stroke="#e54ce5" points="1117,-764 905,-764 905,-728 1117,-728 1117,-764"/>
@@ -242,14 +242,14 @@
 <text text-anchor="middle" x="1011" y="-744.4" font-family="Verdana" font-size="7.00" fill="#000000">calls: 1</text>
 <text text-anchor="middle" x="1011" y="-736.4" font-family="Verdana" font-size="7.00" fill="#000000">time: 219.072927s</text>
 </g>
-<!-- pymatlib.core.yaml_parser.create_alloy_from_yaml&#45;&gt;pymatlib.core.yaml_parser.MaterialConfigParser.create_alloy -->
+<!-- pymatlib.core.parsing.create_alloy_from_yaml&#45;&gt;pymatlib.core.parsing.MaterialConfigParser.create_alloy -->
 <g id="edge11" class="edge">
 <title>pymatlib.core.yaml_parser.create_alloy_from_yaml&#45;&gt;pymatlib.core.yaml_parser.MaterialConfigParser.create_alloy</title>
 <path fill="none" stroke="#b23bb2" d="M1011,-807.69C1011,-797.89 1011,-785.42 1011,-774.33"/>
 <polygon fill="#b23bb2" stroke="#b23bb2" points="1014.5,-774.26 1011,-764.26 1007.5,-774.26 1014.5,-774.26"/>
 <text text-anchor="middle" x="1013" y="-784.4" font-family="Verdana" font-size="7.00" fill="#000000">1</text>
 </g>
-<!-- pymatlib.core.yaml_parser.MaterialConfigParser._load_yaml -->
+<!-- pymatlib.core.parsing.MaterialConfigParser._load_yaml -->
 <g id="node19" class="node">
 <title>pymatlib.core.yaml_parser.MaterialConfigParser._load_yaml</title>
 <polygon fill="#e5e5e5" stroke="#e5e5e5" points="2131,-684 1919,-684 1919,-648 2131,-648 2131,-684"/>
@@ -257,14 +257,14 @@
 <text text-anchor="middle" x="2025" y="-664.4" font-family="Verdana" font-size="7.00" fill="#000000">calls: 1</text>
 <text text-anchor="middle" x="2025" y="-656.4" font-family="Verdana" font-size="7.00" fill="#000000">time: 0.025413s</text>
 </g>
-<!-- pymatlib.core.yaml_parser.MaterialConfigParser.__init__&#45;&gt;pymatlib.core.yaml_parser.MaterialConfigParser._load_yaml -->
+<!-- pymatlib.core.parsing.MaterialConfigParser.__init__&#45;&gt;pymatlib.core.parsing.MaterialConfigParser._load_yaml -->
 <g id="edge12" class="edge">
 <title>pymatlib.core.yaml_parser.MaterialConfigParser.__init__&#45;&gt;pymatlib.core.yaml_parser.MaterialConfigParser._load_yaml</title>
 <path fill="none" stroke="#b2b2b2" d="M1408.55,-729.21C1411.74,-728.79 1414.89,-728.38 1418,-728 1632.59,-701.55 1690.25,-709.59 1908.64,-684.12"/>
 <polygon fill="#b2b2b2" stroke="#b2b2b2" points="1909.3,-687.57 1918.82,-682.92 1908.48,-680.62 1909.3,-687.57"/>
 <text text-anchor="middle" x="1715" y="-704.4" font-family="Verdana" font-size="7.00" fill="#000000">1</text>
 </g>
-<!-- pymatlib.core.yaml_parser.MaterialConfigParser._validate_config -->
+<!-- pymatlib.core.parsing.MaterialConfigParser._validate_config -->
 <g id="node20" class="node">
 <title>pymatlib.core.yaml_parser.MaterialConfigParser._validate_config</title>
 <polygon fill="#e5e5e5" stroke="#e5e5e5" points="1900.5,-684 1673.5,-684 1673.5,-648 1900.5,-648 1900.5,-684"/>
@@ -272,14 +272,14 @@
 <text text-anchor="middle" x="1787" y="-664.4" font-family="Verdana" font-size="7.00" fill="#000000">calls: 1</text>
 <text text-anchor="middle" x="1787" y="-656.4" font-family="Verdana" font-size="7.00" fill="#000000">time: 0.000202s</text>
 </g>
-<!-- pymatlib.core.yaml_parser.MaterialConfigParser.__init__&#45;&gt;pymatlib.core.yaml_parser.MaterialConfigParser._validate_config -->
+<!-- pymatlib.core.parsing.MaterialConfigParser.__init__&#45;&gt;pymatlib.core.parsing.MaterialConfigParser._validate_config -->
 <g id="edge13" class="edge">
 <title>pymatlib.core.yaml_parser.MaterialConfigParser.__init__&#45;&gt;pymatlib.core.yaml_parser.MaterialConfigParser._validate_config</title>
 <path fill="none" stroke="#b2b2b2" d="M1408.55,-728.89C1485.33,-716.33 1592.06,-698.88 1672.61,-685.7"/>
 <polygon fill="#b2b2b2" stroke="#b2b2b2" points="1673.5,-689.11 1682.8,-684.04 1672.37,-682.2 1673.5,-689.11"/>
 <text text-anchor="middle" x="1564" y="-704.4" font-family="Verdana" font-size="7.00" fill="#000000">1</text>
 </g>
-<!-- pymatlib.core.yaml_parser.MaterialConfigParser._validate_property_names -->
+<!-- pymatlib.core.parsing.MaterialConfigParser._validate_property_names -->
 <g id="node21" class="node">
 <title>pymatlib.core.yaml_parser.MaterialConfigParser._validate_property_names</title>
 <polygon fill="#e5e5e5" stroke="#e5e5e5" points="1917,-576 1657,-576 1657,-540 1917,-540 1917,-576"/>
@@ -287,14 +287,14 @@
 <text text-anchor="middle" x="1787" y="-556.4" font-family="Verdana" font-size="7.00" fill="#000000">calls: 1</text>
 <text text-anchor="middle" x="1787" y="-548.4" font-family="Verdana" font-size="7.00" fill="#000000">time: 0.000010s</text>
 </g>
-<!-- pymatlib.core.yaml_parser.MaterialConfigParser._validate_config&#45;&gt;pymatlib.core.yaml_parser.MaterialConfigParser._validate_property_names -->
+<!-- pymatlib.core.parsing.MaterialConfigParser._validate_config&#45;&gt;pymatlib.core.parsing.MaterialConfigParser._validate_property_names -->
 <g id="edge14" class="edge">
 <title>pymatlib.core.yaml_parser.MaterialConfigParser._validate_config&#45;&gt;pymatlib.core.yaml_parser.MaterialConfigParser._validate_property_names</title>
 <path fill="none" stroke="#b2b2b2" d="M1787,-647.97C1787,-631.38 1787,-605.88 1787,-586.43"/>
 <polygon fill="#b2b2b2" stroke="#b2b2b2" points="1790.5,-586.34 1787,-576.34 1783.5,-586.34 1790.5,-586.34"/>
 <text text-anchor="middle" x="1789" y="-610.4" font-family="Verdana" font-size="7.00" fill="#000000">1</text>
 </g>
-<!-- pymatlib.core.yaml_parser.MaterialConfigParser._validate_required_fields -->
+<!-- pymatlib.core.parsing.MaterialConfigParser._validate_required_fields -->
 <g id="node22" class="node">
 <title>pymatlib.core.yaml_parser.MaterialConfigParser._validate_required_fields</title>
 <polygon fill="#e5e5e5" stroke="#e5e5e5" points="2190.5,-576 1935.5,-576 1935.5,-540 2190.5,-540 2190.5,-576"/>
@@ -302,14 +302,14 @@
 <text text-anchor="middle" x="2063" y="-556.4" font-family="Verdana" font-size="7.00" fill="#000000">calls: 1</text>
 <text text-anchor="middle" x="2063" y="-548.4" font-family="Verdana" font-size="7.00" fill="#000000">time: 0.000006s</text>
 </g>
-<!-- pymatlib.core.yaml_parser.MaterialConfigParser._validate_config&#45;&gt;pymatlib.core.yaml_parser.MaterialConfigParser._validate_required_fields -->
+<!-- pymatlib.core.parsing.MaterialConfigParser._validate_config&#45;&gt;pymatlib.core.parsing.MaterialConfigParser._validate_required_fields -->
 <g id="edge15" class="edge">
 <title>pymatlib.core.yaml_parser.MaterialConfigParser._validate_config&#45;&gt;pymatlib.core.yaml_parser.MaterialConfigParser._validate_required_fields</title>
 <path fill="none" stroke="#b2b2b2" d="M1831.34,-647.97C1879.69,-629.4 1957.06,-599.69 2008.93,-579.76"/>
 <polygon fill="#b2b2b2" stroke="#b2b2b2" points="2010.23,-583.02 2018.31,-576.16 2007.72,-576.48 2010.23,-583.02"/>
 <text text-anchor="middle" x="1967" y="-610.4" font-family="Verdana" font-size="7.00" fill="#000000">1</text>
 </g>
-<!-- pymatlib.core.yaml_parser._validate_property_values -->
+<!-- pymatlib.core.parsing._validate_property_values -->
 <g id="node23" class="node">
 <title>pymatlib.core.yaml_parser._validate_property_values</title>
 <polygon fill="#e5e5e5" stroke="#e5e5e5" points="2397,-576 2209,-576 2209,-540 2397,-540 2397,-576"/>
@@ -317,14 +317,14 @@
 <text text-anchor="middle" x="2303" y="-556.4" font-family="Verdana" font-size="7.00" fill="#000000">calls: 1</text>
 <text text-anchor="middle" x="2303" y="-548.4" font-family="Verdana" font-size="7.00" fill="#000000">time: 0.000096s</text>
 </g>
-<!-- pymatlib.core.yaml_parser.MaterialConfigParser._validate_config&#45;&gt;pymatlib.core.yaml_parser._validate_property_values -->
+<!-- pymatlib.core.parsing.MaterialConfigParser._validate_config&#45;&gt;pymatlib.core.parsing._validate_property_values -->
 <g id="edge16" class="edge">
 <title>pymatlib.core.yaml_parser.MaterialConfigParser._validate_config&#45;&gt;pymatlib.core.yaml_parser._validate_property_values</title>
 <path fill="none" stroke="#b2b2b2" d="M1880.28,-647.94C1909.95,-642.38 1942.88,-636.07 1973,-630 2055.78,-613.31 2149.93,-592.91 2216.42,-578.27"/>
 <polygon fill="#b2b2b2" stroke="#b2b2b2" points="2217.42,-581.63 2226.44,-576.06 2215.92,-574.8 2217.42,-581.63"/>
 <text text-anchor="middle" x="2146" y="-610.4" font-family="Verdana" font-size="7.00" fill="#000000">1</text>
 </g>
-<!-- pymatlib.core.yaml_parser.MaterialConfigParser._get_elements -->
+<!-- pymatlib.core.parsing.MaterialConfigParser._get_elements -->
 <g id="node25" class="node">
 <title>pymatlib.core.yaml_parser.MaterialConfigParser._get_elements</title>
 <polygon fill="#e5e5e5" stroke="#e5e5e5" points="738.5,-630 517.5,-630 517.5,-594 738.5,-594 738.5,-630"/>
@@ -332,14 +332,14 @@
 <text text-anchor="middle" x="628" y="-610.4" font-family="Verdana" font-size="7.00" fill="#000000">calls: 1</text>
 <text text-anchor="middle" x="628" y="-602.4" font-family="Verdana" font-size="7.00" fill="#000000">time: 0.019694s</text>
 </g>
-<!-- pymatlib.core.yaml_parser.MaterialConfigParser.create_alloy&#45;&gt;pymatlib.core.yaml_parser.MaterialConfigParser._get_elements -->
+<!-- pymatlib.core.parsing.MaterialConfigParser.create_alloy&#45;&gt;pymatlib.core.parsing.MaterialConfigParser._get_elements -->
 <g id="edge17" class="edge">
 <title>pymatlib.core.yaml_parser.MaterialConfigParser.create_alloy&#45;&gt;pymatlib.core.yaml_parser.MaterialConfigParser._get_elements</title>
 <path fill="none" stroke="#b2b2b2" d="M961.32,-727.88C891.01,-703.64 762.65,-659.41 687.4,-633.47"/>
 <polygon fill="#b2b2b2" stroke="#b2b2b2" points="688.18,-630.04 677.59,-630.09 685.9,-636.66 688.18,-630.04"/>
 <text text-anchor="middle" x="908" y="-704.4" font-family="Verdana" font-size="7.00" fill="#000000">1</text>
 </g>
-<!-- pymatlib.core.yaml_parser.MaterialConfigParser._process_properties -->
+<!-- pymatlib.core.parsing.MaterialConfigParser._process_properties -->
 <g id="node37" class="node">
 <title>pymatlib.core.yaml_parser.MaterialConfigParser._process_properties</title>
 <polygon fill="#e54ce5" stroke="#e54ce5" points="1131,-684 891,-684 891,-648 1131,-648 1131,-684"/>
@@ -347,14 +347,14 @@
 <text text-anchor="middle" x="1011" y="-664.4" font-family="Verdana" font-size="7.00" fill="#000000">calls: 1</text>
 <text text-anchor="middle" x="1011" y="-656.4" font-family="Verdana" font-size="7.00" fill="#000000">time: 219.050944s</text>
 </g>
-<!-- pymatlib.core.yaml_parser.MaterialConfigParser.create_alloy&#45;&gt;pymatlib.core.yaml_parser.MaterialConfigParser._process_properties -->
+<!-- pymatlib.core.parsing.MaterialConfigParser.create_alloy&#45;&gt;pymatlib.core.parsing.MaterialConfigParser._process_properties -->
 <g id="edge18" class="edge">
 <title>pymatlib.core.yaml_parser.MaterialConfigParser.create_alloy&#45;&gt;pymatlib.core.yaml_parser.MaterialConfigParser._process_properties</title>
 <path fill="none" stroke="#b23bb2" d="M1011,-727.69C1011,-717.89 1011,-705.42 1011,-694.33"/>
 <polygon fill="#b23bb2" stroke="#b23bb2" points="1014.5,-694.26 1011,-684.26 1007.5,-694.26 1014.5,-694.26"/>
 <text text-anchor="middle" x="1013" y="-704.4" font-family="Verdana" font-size="7.00" fill="#000000">1</text>
 </g>
-<!-- pymatlib.core.yaml_parser.&lt;listcomp&gt; -->
+<!-- pymatlib.core.parsing.&lt;listcomp&gt; -->
 <g id="node26" class="node">
 <title>pymatlib.core.yaml_parser.&lt;listcomp&gt;</title>
 <polygon fill="#e5e5e5" stroke="#e5e5e5" points="905,-308 765,-308 765,-272 905,-272 905,-308"/>
@@ -362,7 +362,7 @@
 <text text-anchor="middle" x="835" y="-288.4" font-family="Verdana" font-size="7.00" fill="#000000">calls: 9</text>
 <text text-anchor="middle" x="835" y="-280.4" font-family="Verdana" font-size="7.00" fill="#000000">time: 0.000055s</text>
 </g>
-<!-- pymatlib.core.yaml_parser.MaterialConfigParser._get_elements&#45;&gt;pymatlib.core.yaml_parser.&lt;listcomp&gt; -->
+<!-- pymatlib.core.parsing.MaterialConfigParser._get_elements&#45;&gt;pymatlib.core.parsing.&lt;listcomp&gt; -->
 <g id="edge19" class="edge">
 <title>pymatlib.core.yaml_parser.MaterialConfigParser._get_elements&#45;&gt;pymatlib.core.yaml_parser.&lt;listcomp&gt;</title>
 <path fill="none" stroke="#b2b2b2" d="M517.29,-602.79C439.83,-596.22 347.53,-586.41 332,-576 316.8,-565.81 325.05,-552.83 312,-540 203.79,-433.62 -75.53,-463.86 27,-352 75.5,-299.08 560.25,-291.77 754.81,-290.98"/>
@@ -533,7 +533,7 @@
 <polygon fill="#b2b2b2" stroke="#b2b2b2" points="165.08,-572.93 154.52,-573.82 163.32,-579.71 165.08,-572.93"/>
 <text text-anchor="middle" x="254" y="-610.4" font-family="Verdana" font-size="7.00" fill="#000000">1</text>
 </g>
-<!-- pymatlib.core.yaml_parser.MaterialConfigParser._categorize_properties -->
+<!-- pymatlib.core.parsing.MaterialConfigParser._categorize_properties -->
 <g id="node38" class="node">
 <title>pymatlib.core.yaml_parser.MaterialConfigParser._categorize_properties</title>
 <polygon fill="#e5e5e5" stroke="#e5e5e5" points="589,-576 341,-576 341,-540 589,-540 589,-576"/>
@@ -541,14 +541,14 @@
 <text text-anchor="middle" x="465" y="-556.4" font-family="Verdana" font-size="7.00" fill="#000000">calls: 1</text>
 <text text-anchor="middle" x="465" y="-548.4" font-family="Verdana" font-size="7.00" fill="#000000">time: 0.000823s</text>
 </g>
-<!-- pymatlib.core.yaml_parser.MaterialConfigParser._process_properties&#45;&gt;pymatlib.core.yaml_parser.MaterialConfigParser._categorize_properties -->
+<!-- pymatlib.core.parsing.MaterialConfigParser._process_properties&#45;&gt;pymatlib.core.parsing.MaterialConfigParser._categorize_properties -->
 <g id="edge32" class="edge">
 <title>pymatlib.core.yaml_parser.MaterialConfigParser._process_properties&#45;&gt;pymatlib.core.yaml_parser.MaterialConfigParser._categorize_properties</title>
 <path fill="none" stroke="#b2b2b2" d="M896.9,-647.96C873.2,-643.16 848.57,-637.22 826,-630 789.64,-618.36 784.74,-604.4 748,-594 686.42,-576.57 666.49,-583.51 599.48,-576.11"/>
 <polygon fill="#b2b2b2" stroke="#b2b2b2" points="599.58,-572.6 589.24,-574.91 598.77,-579.55 599.58,-572.6"/>
 <text text-anchor="middle" x="828" y="-610.4" font-family="Verdana" font-size="7.00" fill="#000000">1</text>
 </g>
-<!-- pymatlib.core.yaml_parser._process_constant_property -->
+<!-- pymatlib.core.parsing._process_constant_property -->
 <g id="node44" class="node">
 <title>pymatlib.core.yaml_parser._process_constant_property</title>
 <polygon fill="#e5e5e5" stroke="#e5e5e5" points="1349,-576 1153,-576 1153,-540 1349,-540 1349,-576"/>
@@ -556,14 +556,14 @@
 <text text-anchor="middle" x="1251" y="-556.4" font-family="Verdana" font-size="7.00" fill="#000000">calls: 3</text>
 <text text-anchor="middle" x="1251" y="-548.4" font-family="Verdana" font-size="7.00" fill="#000000">time: 0.000016s</text>
 </g>
-<!-- pymatlib.core.yaml_parser.MaterialConfigParser._process_properties&#45;&gt;pymatlib.core.yaml_parser._process_constant_property -->
+<!-- pymatlib.core.parsing.MaterialConfigParser._process_properties&#45;&gt;pymatlib.core.parsing._process_constant_property -->
 <g id="edge33" class="edge">
 <title>pymatlib.core.yaml_parser.MaterialConfigParser._process_properties&#45;&gt;pymatlib.core.yaml_parser._process_constant_property</title>
 <path fill="none" stroke="#b2b2b2" d="M1049.56,-647.97C1091.25,-629.56 1157.77,-600.18 1202.86,-580.26"/>
 <polygon fill="#b2b2b2" stroke="#b2b2b2" points="1204.4,-583.41 1212.14,-576.16 1201.58,-577 1204.4,-583.41"/>
 <text text-anchor="middle" x="1168" y="-610.4" font-family="Verdana" font-size="7.00" fill="#000000">3</text>
 </g>
-<!-- pymatlib.core.yaml_parser.MaterialConfigParser._process_file_property -->
+<!-- pymatlib.core.parsing.MaterialConfigParser._process_file_property -->
 <g id="node45" class="node">
 <title>pymatlib.core.yaml_parser.MaterialConfigParser._process_file_property</title>
 <polygon fill="#dce4e5" stroke="#dce4e5" points="1135,-576 887,-576 887,-540 1135,-540 1135,-576"/>
@@ -571,14 +571,14 @@
 <text text-anchor="middle" x="1011" y="-556.4" font-family="Verdana" font-size="7.00" fill="#000000">calls: 2</text>
 <text text-anchor="middle" x="1011" y="-548.4" font-family="Verdana" font-size="7.00" fill="#000000">time: 13.209312s</text>
 </g>
-<!-- pymatlib.core.yaml_parser.MaterialConfigParser._process_properties&#45;&gt;pymatlib.core.yaml_parser.MaterialConfigParser._process_file_property -->
+<!-- pymatlib.core.parsing.MaterialConfigParser._process_properties&#45;&gt;pymatlib.core.parsing.MaterialConfigParser._process_file_property -->
 <g id="edge34" class="edge">
 <title>pymatlib.core.yaml_parser.MaterialConfigParser._process_properties&#45;&gt;pymatlib.core.yaml_parser.MaterialConfigParser._process_file_property</title>
 <path fill="none" stroke="#abb1b2" d="M1011,-647.97C1011,-631.38 1011,-605.88 1011,-586.43"/>
 <polygon fill="#abb1b2" stroke="#abb1b2" points="1014.5,-586.34 1011,-576.34 1007.5,-586.34 1014.5,-586.34"/>
 <text text-anchor="middle" x="1013" y="-610.4" font-family="Verdana" font-size="7.00" fill="#000000">2</text>
 </g>
-<!-- pymatlib.core.yaml_parser.MaterialConfigParser._process_key_val_property -->
+<!-- pymatlib.core.parsing.MaterialConfigParser._process_key_val_property -->
 <g id="node57" class="node">
 <title>pymatlib.core.yaml_parser.MaterialConfigParser._process_key_val_property</title>
 <polygon fill="#e5e5e5" stroke="#e5e5e5" points="869,-576 607,-576 607,-540 869,-540 869,-576"/>
@@ -586,14 +586,14 @@
 <text text-anchor="middle" x="738" y="-556.4" font-family="Verdana" font-size="7.00" fill="#000000">calls: 4</text>
 <text text-anchor="middle" x="738" y="-548.4" font-family="Verdana" font-size="7.00" fill="#000000">time: 0.357805s</text>
 </g>
-<!-- pymatlib.core.yaml_parser.MaterialConfigParser._process_properties&#45;&gt;pymatlib.core.yaml_parser.MaterialConfigParser._process_key_val_property -->
+<!-- pymatlib.core.parsing.MaterialConfigParser._process_properties&#45;&gt;pymatlib.core.parsing.MaterialConfigParser._process_key_val_property -->
 <g id="edge35" class="edge">
 <title>pymatlib.core.yaml_parser.MaterialConfigParser._process_properties&#45;&gt;pymatlib.core.yaml_parser.MaterialConfigParser._process_key_val_property</title>
 <path fill="none" stroke="#b2b2b2" d="M967.14,-647.97C919.42,-629.44 843.1,-599.81 791.8,-579.89"/>
 <polygon fill="#b2b2b2" stroke="#b2b2b2" points="792.79,-576.52 782.21,-576.16 790.26,-583.05 792.79,-576.52"/>
 <text text-anchor="middle" x="916" y="-610.4" font-family="Verdana" font-size="7.00" fill="#000000">4</text>
 </g>
-<!-- pymatlib.core.yaml_parser.MaterialConfigParser._process_computed_property -->
+<!-- pymatlib.core.parsing.MaterialConfigParser._process_computed_property -->
 <g id="node61" class="node">
 <title>pymatlib.core.yaml_parser.MaterialConfigParser._process_computed_property</title>
 <polygon fill="#d355e5" stroke="#d355e5" points="1639,-576 1367,-576 1367,-540 1639,-540 1639,-576"/>
@@ -601,14 +601,14 @@
 <text text-anchor="middle" x="1503" y="-556.4" font-family="Verdana" font-size="7.00" fill="#000000">calls: 2</text>
 <text text-anchor="middle" x="1503" y="-548.4" font-family="Verdana" font-size="7.00" fill="#000000">time: 205.482486s</text>
 </g>
-<!-- pymatlib.core.yaml_parser.MaterialConfigParser._process_properties&#45;&gt;pymatlib.core.yaml_parser.MaterialConfigParser._process_computed_property -->
+<!-- pymatlib.core.parsing.MaterialConfigParser._process_properties&#45;&gt;pymatlib.core.parsing.MaterialConfigParser._process_computed_property -->
 <g id="edge36" class="edge">
 <title>pymatlib.core.yaml_parser.MaterialConfigParser._process_properties&#45;&gt;pymatlib.core.yaml_parser.MaterialConfigParser._process_computed_property</title>
 <path fill="none" stroke="#a442b2" d="M1090.59,-647.93C1117.12,-642.23 1146.84,-635.85 1174,-630 1255.37,-612.48 1348.04,-592.48 1414.25,-578.18"/>
 <polygon fill="#a442b2" stroke="#a442b2" points="1415.2,-581.56 1424.23,-576.02 1413.72,-574.71 1415.2,-581.56"/>
 <text text-anchor="middle" x="1337" y="-610.4" font-family="Verdana" font-size="7.00" fill="#000000">2</text>
 </g>
-<!-- pymatlib.core.yaml_parser.MaterialConfigParser._determine_property_type -->
+<!-- pymatlib.core.parsing.MaterialConfigParser._determine_property_type -->
 <g id="node39" class="node">
 <title>pymatlib.core.yaml_parser.MaterialConfigParser._determine_property_type</title>
 <polygon fill="#e4e5e5" stroke="#e4e5e5" points="589,-496 327,-496 327,-460 589,-460 589,-496"/>
@@ -616,14 +616,14 @@
 <text text-anchor="middle" x="458" y="-476.4" font-family="Verdana" font-size="7.00" fill="#000000">calls: 12</text>
 <text text-anchor="middle" x="458" y="-468.4" font-family="Verdana" font-size="7.00" fill="#000000">time: 0.000488s</text>
 </g>
-<!-- pymatlib.core.yaml_parser.MaterialConfigParser._categorize_properties&#45;&gt;pymatlib.core.yaml_parser.MaterialConfigParser._determine_property_type -->
+<!-- pymatlib.core.parsing.MaterialConfigParser._categorize_properties&#45;&gt;pymatlib.core.parsing.MaterialConfigParser._determine_property_type -->
 <g id="edge37" class="edge">
 <title>pymatlib.core.yaml_parser.MaterialConfigParser._categorize_properties&#45;&gt;pymatlib.core.yaml_parser.MaterialConfigParser._determine_property_type</title>
 <path fill="none" stroke="#b2b2b2" d="M463.45,-539.69C462.57,-529.89 461.45,-517.42 460.45,-506.33"/>
 <polygon fill="#b2b2b2" stroke="#b2b2b2" points="463.93,-505.91 459.55,-496.26 456.96,-506.54 463.93,-505.91"/>
 <text text-anchor="middle" x="465" y="-516.4" font-family="Verdana" font-size="7.00" fill="#000000">12</text>
 </g>
-<!-- pymatlib.core.yaml_parser._is_numeric -->
+<!-- pymatlib.core.parsing._is_numeric -->
 <g id="node40" class="node">
 <title>pymatlib.core.yaml_parser._is_numeric</title>
 <polygon fill="#e5e5e5" stroke="#e5e5e5" points="529.5,-388 386.5,-388 386.5,-352 529.5,-352 529.5,-388"/>
@@ -631,14 +631,14 @@
 <text text-anchor="middle" x="458" y="-368.4" font-family="Verdana" font-size="7.00" fill="#000000">calls: 3</text>
 <text text-anchor="middle" x="458" y="-360.4" font-family="Verdana" font-size="7.00" fill="#000000">time: 0.000020s</text>
 </g>
-<!-- pymatlib.core.yaml_parser.MaterialConfigParser._determine_property_type&#45;&gt;pymatlib.core.yaml_parser._is_numeric -->
+<!-- pymatlib.core.parsing.MaterialConfigParser._determine_property_type&#45;&gt;pymatlib.core.parsing._is_numeric -->
 <g id="edge38" class="edge">
 <title>pymatlib.core.yaml_parser.MaterialConfigParser._determine_property_type&#45;&gt;pymatlib.core.yaml_parser._is_numeric</title>
 <path fill="none" stroke="#b2b2b2" d="M458,-459.97C458,-443.38 458,-417.88 458,-398.43"/>
 <polygon fill="#b2b2b2" stroke="#b2b2b2" points="461.5,-398.34 458,-388.34 454.5,-398.34 461.5,-398.34"/>
 <text text-anchor="middle" x="460" y="-422.4" font-family="Verdana" font-size="7.00" fill="#000000">3</text>
 </g>
-<!-- pymatlib.core.yaml_parser._is_data_file -->
+<!-- pymatlib.core.parsing._is_data_file -->
 <g id="node41" class="node">
 <title>pymatlib.core.yaml_parser._is_data_file</title>
 <polygon fill="#e5e5e5" stroke="#e5e5e5" points="179.5,-388 36.5,-388 36.5,-352 179.5,-352 179.5,-388"/>
@@ -646,14 +646,14 @@
 <text text-anchor="middle" x="108" y="-368.4" font-family="Verdana" font-size="7.00" fill="#000000">calls: 9</text>
 <text text-anchor="middle" x="108" y="-360.4" font-family="Verdana" font-size="7.00" fill="#000000">time: 0.000065s</text>
 </g>
-<!-- pymatlib.core.yaml_parser.MaterialConfigParser._determine_property_type&#45;&gt;pymatlib.core.yaml_parser._is_data_file -->
+<!-- pymatlib.core.parsing.MaterialConfigParser._determine_property_type&#45;&gt;pymatlib.core.parsing._is_data_file -->
 <g id="edge39" class="edge">
 <title>pymatlib.core.yaml_parser.MaterialConfigParser._determine_property_type&#45;&gt;pymatlib.core.yaml_parser._is_data_file</title>
 <path fill="none" stroke="#b2b2b2" d="M397.42,-459.91C377.8,-454.3 355.95,-447.97 336,-442 280.31,-425.34 217.23,-405.63 171.56,-391.21"/>
 <polygon fill="#b2b2b2" stroke="#b2b2b2" points="172.38,-387.8 161.79,-388.13 170.27,-394.48 172.38,-387.8"/>
 <text text-anchor="middle" x="338" y="-422.4" font-family="Verdana" font-size="7.00" fill="#000000">9</text>
 </g>
-<!-- pymatlib.core.yaml_parser._is_key_val_property -->
+<!-- pymatlib.core.parsing._is_key_val_property -->
 <g id="node42" class="node">
 <title>pymatlib.core.yaml_parser._is_key_val_property</title>
 <polygon fill="#e5e5e5" stroke="#e5e5e5" points="368.5,-388 197.5,-388 197.5,-352 368.5,-352 368.5,-388"/>
@@ -661,14 +661,14 @@
 <text text-anchor="middle" x="283" y="-368.4" font-family="Verdana" font-size="7.00" fill="#000000">calls: 7</text>
 <text text-anchor="middle" x="283" y="-360.4" font-family="Verdana" font-size="7.00" fill="#000000">time: 0.000012s</text>
 </g>
-<!-- pymatlib.core.yaml_parser.MaterialConfigParser._determine_property_type&#45;&gt;pymatlib.core.yaml_parser._is_key_val_property -->
+<!-- pymatlib.core.parsing.MaterialConfigParser._determine_property_type&#45;&gt;pymatlib.core.parsing._is_key_val_property -->
 <g id="edge40" class="edge">
 <title>pymatlib.core.yaml_parser.MaterialConfigParser._determine_property_type&#45;&gt;pymatlib.core.yaml_parser._is_key_val_property</title>
 <path fill="none" stroke="#b2b2b2" d="M429.88,-459.97C400.12,-441.94 353,-413.4 320.19,-393.53"/>
 <polygon fill="#b2b2b2" stroke="#b2b2b2" points="321.7,-390.35 311.34,-388.16 318.08,-396.34 321.7,-390.35"/>
 <text text-anchor="middle" x="398" y="-422.4" font-family="Verdana" font-size="7.00" fill="#000000">7</text>
 </g>
-<!-- pymatlib.core.yaml_parser._is_compute_property -->
+<!-- pymatlib.core.parsing._is_compute_property -->
 <g id="node43" class="node">
 <title>pymatlib.core.yaml_parser._is_compute_property</title>
 <polygon fill="#e5e5e5" stroke="#e5e5e5" points="724.5,-388 547.5,-388 547.5,-352 724.5,-352 724.5,-388"/>
@@ -676,21 +676,21 @@
 <text text-anchor="middle" x="636" y="-368.4" font-family="Verdana" font-size="7.00" fill="#000000">calls: 3</text>
 <text text-anchor="middle" x="636" y="-360.4" font-family="Verdana" font-size="7.00" fill="#000000">time: 0.000040s</text>
 </g>
-<!-- pymatlib.core.yaml_parser.MaterialConfigParser._determine_property_type&#45;&gt;pymatlib.core.yaml_parser._is_compute_property -->
+<!-- pymatlib.core.parsing.MaterialConfigParser._determine_property_type&#45;&gt;pymatlib.core.parsing._is_compute_property -->
 <g id="edge41" class="edge">
 <title>pymatlib.core.yaml_parser.MaterialConfigParser._determine_property_type&#45;&gt;pymatlib.core.yaml_parser._is_compute_property</title>
 <path fill="none" stroke="#b2b2b2" d="M486.6,-459.97C516.87,-441.94 564.8,-413.4 598.17,-393.53"/>
 <polygon fill="#b2b2b2" stroke="#b2b2b2" points="600.38,-396.29 607.18,-388.16 596.79,-390.27 600.38,-396.29"/>
 <text text-anchor="middle" x="575" y="-422.4" font-family="Verdana" font-size="7.00" fill="#000000">3</text>
 </g>
-<!-- pymatlib.core.yaml_parser._is_data_file&#45;&gt;pymatlib.core.yaml_parser.&lt;listcomp&gt; -->
+<!-- pymatlib.core.parsing._is_data_file&#45;&gt;pymatlib.core.parsing.&lt;listcomp&gt; -->
 <g id="edge42" class="edge">
 <title>pymatlib.core.yaml_parser._is_data_file&#45;&gt;pymatlib.core.yaml_parser.&lt;listcomp&gt;</title>
 <path fill="none" stroke="#b2b2b2" d="M179.91,-353.47C182.98,-352.95 186.02,-352.45 189,-352 391.58,-321.28 632.4,-303.42 754.86,-295.65"/>
 <polygon fill="#b2b2b2" stroke="#b2b2b2" points="755.14,-299.14 764.9,-295.02 754.7,-292.16 755.14,-299.14"/>
 <text text-anchor="middle" x="385" y="-328.4" font-family="Verdana" font-size="7.00" fill="#000000">1</text>
 </g>
-<!-- pymatlib.core.yaml_parser._is_compute_property&#45;&gt;pymatlib.core.yaml_parser.&lt;listcomp&gt; -->
+<!-- pymatlib.core.parsing._is_compute_property&#45;&gt;pymatlib.core.parsing.&lt;listcomp&gt; -->
 <g id="edge43" class="edge">
 <title>pymatlib.core.yaml_parser._is_compute_property&#45;&gt;pymatlib.core.yaml_parser.&lt;listcomp&gt;</title>
 <path fill="none" stroke="#b2b2b2" d="M679.67,-351.88C709.74,-340.1 749.87,-324.37 781.8,-311.85"/>
@@ -705,14 +705,14 @@
 <text text-anchor="middle" x="1240" y="-476.4" font-family="Verdana" font-size="7.00" fill="#000000">calls: 2</text>
 <text text-anchor="middle" x="1240" y="-468.4" font-family="Verdana" font-size="7.00" fill="#000000">time: 2.769717s</text>
 </g>
-<!-- pymatlib.core.yaml_parser.MaterialConfigParser._process_file_property&#45;&gt;pymatlib.core.data_handler.read_data_from_file -->
+<!-- pymatlib.core.parsing.MaterialConfigParser._process_file_property&#45;&gt;pymatlib.core.data_handler.read_data_from_file -->
 <g id="edge44" class="edge">
 <title>pymatlib.core.yaml_parser.MaterialConfigParser._process_file_property&#45;&gt;pymatlib.core.data_handler.read_data_from_file</title>
 <path fill="none" stroke="#b0b2b2" d="M1060.97,-539.98C1096.01,-528.05 1143.01,-512.04 1180.06,-499.42"/>
 <polygon fill="#b0b2b2" stroke="#b0b2b2" points="1181.4,-502.66 1189.74,-496.12 1179.14,-496.03 1181.4,-502.66"/>
 <text text-anchor="middle" x="1134" y="-516.4" font-family="Verdana" font-size="7.00" fill="#000000">2</text>
 </g>
-<!-- pymatlib.core.yaml_parser.MaterialConfigParser._process_property_data -->
+<!-- pymatlib.core.parsing.MaterialConfigParser._process_property_data -->
 <g id="node47" class="node">
 <title>pymatlib.core.yaml_parser.MaterialConfigParser._process_property_data</title>
 <polygon fill="#dde4e5" stroke="#dde4e5" points="1135.5,-496 882.5,-496 882.5,-460 1135.5,-460 1135.5,-496"/>
@@ -720,14 +720,14 @@
 <text text-anchor="middle" x="1009" y="-476.4" font-family="Verdana" font-size="7.00" fill="#000000">calls: 6</text>
 <text text-anchor="middle" x="1009" y="-468.4" font-family="Verdana" font-size="7.00" fill="#000000">time: 10.796411s</text>
 </g>
-<!-- pymatlib.core.yaml_parser.MaterialConfigParser._process_file_property&#45;&gt;pymatlib.core.yaml_parser.MaterialConfigParser._process_property_data -->
+<!-- pymatlib.core.parsing.MaterialConfigParser._process_file_property&#45;&gt;pymatlib.core.parsing.MaterialConfigParser._process_property_data -->
 <g id="edge45" class="edge">
 <title>pymatlib.core.yaml_parser.MaterialConfigParser._process_file_property&#45;&gt;pymatlib.core.yaml_parser.MaterialConfigParser._process_property_data</title>
 <path fill="none" stroke="#acb1b2" d="M1010.56,-539.69C1010.3,-529.89 1009.99,-517.42 1009.7,-506.33"/>
 <polygon fill="#acb1b2" stroke="#acb1b2" points="1013.2,-506.17 1009.44,-496.26 1006.2,-506.35 1013.2,-506.17"/>
 <text text-anchor="middle" x="1012" y="-516.4" font-family="Verdana" font-size="7.00" fill="#000000">2</text>
 </g>
-<!-- pymatlib.core.yaml_parser.MaterialConfigParser._process_symbolic_temperature -->
+<!-- pymatlib.core.parsing.MaterialConfigParser._process_symbolic_temperature -->
 <g id="node48" class="node">
 <title>pymatlib.core.yaml_parser.MaterialConfigParser._process_symbolic_temperature</title>
 <polygon fill="#dde4e5" stroke="#dde4e5" points="1401.5,-388 1122.5,-388 1122.5,-352 1401.5,-352 1401.5,-388"/>
@@ -735,7 +735,7 @@
 <text text-anchor="middle" x="1262" y="-368.4" font-family="Verdana" font-size="7.00" fill="#000000">calls: 6</text>
 <text text-anchor="middle" x="1262" y="-360.4" font-family="Verdana" font-size="7.00" fill="#000000">time: 10.796293s</text>
 </g>
-<!-- pymatlib.core.yaml_parser.MaterialConfigParser._process_property_data&#45;&gt;pymatlib.core.yaml_parser.MaterialConfigParser._process_symbolic_temperature -->
+<!-- pymatlib.core.parsing.MaterialConfigParser._process_property_data&#45;&gt;pymatlib.core.parsing.MaterialConfigParser._process_symbolic_temperature -->
 <g id="edge46" class="edge">
 <title>pymatlib.core.yaml_parser.MaterialConfigParser._process_property_data&#45;&gt;pymatlib.core.yaml_parser.MaterialConfigParser._process_symbolic_temperature</title>
 <path fill="none" stroke="#acb1b2" d="M1049.65,-459.97C1093.69,-441.52 1164.01,-412.05 1211.55,-392.14"/>
@@ -750,7 +750,7 @@
 <text text-anchor="middle" x="1524" y="-288.4" font-family="Verdana" font-size="7.00" fill="#000000">calls: 6</text>
 <text text-anchor="middle" x="1524" y="-280.4" font-family="Verdana" font-size="7.00" fill="#000000">time: 10.796088s</text>
 </g>
-<!-- pymatlib.core.yaml_parser.MaterialConfigParser._process_symbolic_temperature&#45;&gt;pymatlib.core.interpolators.interpolate_property -->
+<!-- pymatlib.core.parsing.MaterialConfigParser._process_symbolic_temperature&#45;&gt;pymatlib.core.interpolators.interpolate_property -->
 <g id="edge47" class="edge">
 <title>pymatlib.core.yaml_parser.MaterialConfigParser._process_symbolic_temperature&#45;&gt;pymatlib.core.interpolators.interpolate_property</title>
 <path fill="none" stroke="#acb1b2" d="M1319.17,-351.98C1359.68,-339.92 1414.18,-323.7 1456.77,-311.01"/>
@@ -862,14 +862,14 @@
 <polygon fill="#b2b2b2" stroke="#b2b2b2" points="1644.5,-158.26 1641,-148.26 1637.5,-158.26 1644.5,-158.26"/>
 <text text-anchor="middle" x="1645" y="-168.4" font-family="Verdana" font-size="7.00" fill="#000000">10</text>
 </g>
-<!-- pymatlib.core.yaml_parser.MaterialConfigParser._process_key_val_property&#45;&gt;pymatlib.core.yaml_parser.MaterialConfigParser._process_property_data -->
+<!-- pymatlib.core.parsing.MaterialConfigParser._process_key_val_property&#45;&gt;pymatlib.core.parsing.MaterialConfigParser._process_property_data -->
 <g id="edge56" class="edge">
 <title>pymatlib.core.yaml_parser.MaterialConfigParser._process_key_val_property&#45;&gt;pymatlib.core.yaml_parser.MaterialConfigParser._process_property_data</title>
 <path fill="none" stroke="#acb1b2" d="M797.14,-539.98C839.13,-527.89 895.64,-511.63 939.74,-498.93"/>
 <polygon fill="#acb1b2" stroke="#acb1b2" points="940.88,-502.25 949.52,-496.12 938.94,-495.52 940.88,-502.25"/>
 <text text-anchor="middle" x="883" y="-516.4" font-family="Verdana" font-size="7.00" fill="#000000">4</text>
 </g>
-<!-- pymatlib.core.yaml_parser.MaterialConfigParser._process_key_definition -->
+<!-- pymatlib.core.parsing.MaterialConfigParser._process_key_definition -->
 <g id="node58" class="node">
 <title>pymatlib.core.yaml_parser.MaterialConfigParser._process_key_definition</title>
 <polygon fill="#e5e5e5" stroke="#e5e5e5" points="864,-496 612,-496 612,-460 864,-460 864,-496"/>
@@ -877,14 +877,14 @@
 <text text-anchor="middle" x="738" y="-476.4" font-family="Verdana" font-size="7.00" fill="#000000">calls: 4</text>
 <text text-anchor="middle" x="738" y="-468.4" font-family="Verdana" font-size="7.00" fill="#000000">time: 0.000304s</text>
 </g>
-<!-- pymatlib.core.yaml_parser.MaterialConfigParser._process_key_val_property&#45;&gt;pymatlib.core.yaml_parser.MaterialConfigParser._process_key_definition -->
+<!-- pymatlib.core.parsing.MaterialConfigParser._process_key_val_property&#45;&gt;pymatlib.core.parsing.MaterialConfigParser._process_key_definition -->
 <g id="edge55" class="edge">
 <title>pymatlib.core.yaml_parser.MaterialConfigParser._process_key_val_property&#45;&gt;pymatlib.core.yaml_parser.MaterialConfigParser._process_key_definition</title>
 <path fill="none" stroke="#b2b2b2" d="M738,-539.69C738,-529.89 738,-517.42 738,-506.33"/>
 <polygon fill="#b2b2b2" stroke="#b2b2b2" points="741.5,-506.26 738,-496.26 734.5,-506.26 741.5,-506.26"/>
 <text text-anchor="middle" x="740" y="-516.4" font-family="Verdana" font-size="7.00" fill="#000000">4</text>
 </g>
-<!-- pymatlib.core.yaml_parser._process_list_key -->
+<!-- pymatlib.core.parsing._process_list_key -->
 <g id="node59" class="node">
 <title>pymatlib.core.yaml_parser._process_list_key</title>
 <polygon fill="#e5e5e5" stroke="#e5e5e5" points="1104,-388 946,-388 946,-352 1104,-352 1104,-388"/>
@@ -892,14 +892,14 @@
 <text text-anchor="middle" x="1025" y="-368.4" font-family="Verdana" font-size="7.00" fill="#000000">calls: 2</text>
 <text text-anchor="middle" x="1025" y="-360.4" font-family="Verdana" font-size="7.00" fill="#000000">time: 0.000081s</text>
 </g>
-<!-- pymatlib.core.yaml_parser.MaterialConfigParser._process_key_definition&#45;&gt;pymatlib.core.yaml_parser._process_list_key -->
+<!-- pymatlib.core.parsing.MaterialConfigParser._process_key_definition&#45;&gt;pymatlib.core.parsing._process_list_key -->
 <g id="edge57" class="edge">
 <title>pymatlib.core.yaml_parser.MaterialConfigParser._process_key_definition&#45;&gt;pymatlib.core.yaml_parser._process_list_key</title>
 <path fill="none" stroke="#b2b2b2" d="M784.11,-459.97C834.49,-441.36 915.18,-411.56 969.11,-391.64"/>
 <polygon fill="#b2b2b2" stroke="#b2b2b2" points="970.36,-394.91 978.53,-388.16 967.93,-388.35 970.36,-394.91"/>
 <text text-anchor="middle" x="925" y="-422.4" font-family="Verdana" font-size="7.00" fill="#000000">2</text>
 </g>
-<!-- pymatlib.core.yaml_parser._process_equidistant_key -->
+<!-- pymatlib.core.parsing._process_equidistant_key -->
 <g id="node60" class="node">
 <title>pymatlib.core.yaml_parser._process_equidistant_key</title>
 <polygon fill="#e5e5e5" stroke="#e5e5e5" points="928,-388 742,-388 742,-352 928,-352 928,-388"/>
@@ -907,21 +907,21 @@
 <text text-anchor="middle" x="835" y="-368.4" font-family="Verdana" font-size="7.00" fill="#000000">calls: 2</text>
 <text text-anchor="middle" x="835" y="-360.4" font-family="Verdana" font-size="7.00" fill="#000000">time: 0.000085s</text>
 </g>
-<!-- pymatlib.core.yaml_parser.MaterialConfigParser._process_key_definition&#45;&gt;pymatlib.core.yaml_parser._process_equidistant_key -->
+<!-- pymatlib.core.parsing.MaterialConfigParser._process_key_definition&#45;&gt;pymatlib.core.parsing._process_equidistant_key -->
 <g id="edge58" class="edge">
 <title>pymatlib.core.yaml_parser.MaterialConfigParser._process_key_definition&#45;&gt;pymatlib.core.yaml_parser._process_equidistant_key</title>
 <path fill="none" stroke="#b2b2b2" d="M753.58,-459.97C769.47,-442.61 794.28,-415.5 812.33,-395.77"/>
 <polygon fill="#b2b2b2" stroke="#b2b2b2" points="814.96,-398.08 819.13,-388.34 809.8,-393.36 814.96,-398.08"/>
 <text text-anchor="middle" x="802" y="-422.4" font-family="Verdana" font-size="7.00" fill="#000000">2</text>
 </g>
-<!-- pymatlib.core.yaml_parser._process_equidistant_key&#45;&gt;pymatlib.core.yaml_parser.&lt;listcomp&gt; -->
+<!-- pymatlib.core.parsing._process_equidistant_key&#45;&gt;pymatlib.core.parsing.&lt;listcomp&gt; -->
 <g id="edge59" class="edge">
 <title>pymatlib.core.yaml_parser._process_equidistant_key&#45;&gt;pymatlib.core.yaml_parser.&lt;listcomp&gt;</title>
 <path fill="none" stroke="#b2b2b2" d="M835,-351.69C835,-341.89 835,-329.42 835,-318.33"/>
 <polygon fill="#b2b2b2" stroke="#b2b2b2" points="838.5,-318.26 835,-308.26 831.5,-318.26 838.5,-318.26"/>
 <text text-anchor="middle" x="837" y="-328.4" font-family="Verdana" font-size="7.00" fill="#000000">2</text>
 </g>
-<!-- pymatlib.core.yaml_parser._get_computation_methods -->
+<!-- pymatlib.core.parsing._get_computation_methods -->
 <g id="node62" class="node">
 <title>pymatlib.core.yaml_parser._get_computation_methods</title>
 <polygon fill="#e5e5e5" stroke="#e5e5e5" points="1561,-496 1365,-496 1365,-460 1561,-460 1561,-496"/>
@@ -929,14 +929,14 @@
 <text text-anchor="middle" x="1463" y="-476.4" font-family="Verdana" font-size="7.00" fill="#000000">calls: 2</text>
 <text text-anchor="middle" x="1463" y="-468.4" font-family="Verdana" font-size="7.00" fill="#000000">time: 0.000029s</text>
 </g>
-<!-- pymatlib.core.yaml_parser.MaterialConfigParser._process_computed_property&#45;&gt;pymatlib.core.yaml_parser._get_computation_methods -->
+<!-- pymatlib.core.parsing.MaterialConfigParser._process_computed_property&#45;&gt;pymatlib.core.parsing._get_computation_methods -->
 <g id="edge60" class="edge">
 <title>pymatlib.core.yaml_parser.MaterialConfigParser._process_computed_property&#45;&gt;pymatlib.core.yaml_parser._get_computation_methods</title>
 <path fill="none" stroke="#b2b2b2" d="M1494.12,-539.69C1488.94,-529.59 1482.31,-516.65 1476.49,-505.31"/>
 <polygon fill="#b2b2b2" stroke="#b2b2b2" points="1479.53,-503.56 1471.85,-496.26 1473.3,-506.76 1479.53,-503.56"/>
 <text text-anchor="middle" x="1486" y="-516.4" font-family="Verdana" font-size="7.00" fill="#000000">2</text>
 </g>
-<!-- pymatlib.core.yaml_parser._get_dependencies -->
+<!-- pymatlib.core.parsing._get_dependencies -->
 <g id="node63" class="node">
 <title>pymatlib.core.yaml_parser._get_dependencies</title>
 <polygon fill="#e5e5e5" stroke="#e5e5e5" points="1745.5,-496 1578.5,-496 1578.5,-460 1745.5,-460 1745.5,-496"/>
@@ -944,14 +944,14 @@
 <text text-anchor="middle" x="1662" y="-476.4" font-family="Verdana" font-size="7.00" fill="#000000">calls: 2</text>
 <text text-anchor="middle" x="1662" y="-468.4" font-family="Verdana" font-size="7.00" fill="#000000">time: 0.000011s</text>
 </g>
-<!-- pymatlib.core.yaml_parser.MaterialConfigParser._process_computed_property&#45;&gt;pymatlib.core.yaml_parser._get_dependencies -->
+<!-- pymatlib.core.parsing.MaterialConfigParser._process_computed_property&#45;&gt;pymatlib.core.parsing._get_dependencies -->
 <g id="edge61" class="edge">
 <title>pymatlib.core.yaml_parser.MaterialConfigParser._process_computed_property&#45;&gt;pymatlib.core.yaml_parser._get_dependencies</title>
 <path fill="none" stroke="#b2b2b2" d="M1537.89,-539.88C1561.5,-528.3 1592.88,-512.91 1618.17,-500.5"/>
 <polygon fill="#b2b2b2" stroke="#b2b2b2" points="1619.75,-503.62 1627.19,-496.08 1616.67,-497.34 1619.75,-503.62"/>
 <text text-anchor="middle" x="1589" y="-516.4" font-family="Verdana" font-size="7.00" fill="#000000">2</text>
 </g>
-<!-- pymatlib.core.yaml_parser.MaterialConfigParser._process_dependencies -->
+<!-- pymatlib.core.parsing.MaterialConfigParser._process_dependencies -->
 <g id="node64" class="node">
 <title>pymatlib.core.yaml_parser.MaterialConfigParser._process_dependencies</title>
 <polygon fill="#e5e5e5" stroke="#e5e5e5" points="1471.5,-442 1220.5,-442 1220.5,-406 1471.5,-406 1471.5,-442"/>
@@ -959,14 +959,14 @@
 <text text-anchor="middle" x="1346" y="-422.4" font-family="Verdana" font-size="7.00" fill="#000000">calls: 2</text>
 <text text-anchor="middle" x="1346" y="-414.4" font-family="Verdana" font-size="7.00" fill="#000000">time: 0.000066s</text>
 </g>
-<!-- pymatlib.core.yaml_parser.MaterialConfigParser._process_computed_property&#45;&gt;pymatlib.core.yaml_parser.MaterialConfigParser._process_dependencies -->
+<!-- pymatlib.core.parsing.MaterialConfigParser._process_computed_property&#45;&gt;pymatlib.core.parsing.MaterialConfigParser._process_dependencies -->
 <g id="edge62" class="edge">
 <title>pymatlib.core.yaml_parser.MaterialConfigParser._process_computed_property&#45;&gt;pymatlib.core.yaml_parser.MaterialConfigParser._process_dependencies</title>
 <path fill="none" stroke="#b2b2b2" d="M1421.54,-539.88C1396.97,-530.8 1372.24,-516.98 1356,-496 1346.53,-483.76 1343.9,-466.67 1343.7,-452.32"/>
 <polygon fill="#b2b2b2" stroke="#b2b2b2" points="1347.2,-452.09 1343.94,-442.01 1340.21,-451.92 1347.2,-452.09"/>
 <text text-anchor="middle" x="1384" y="-516.4" font-family="Verdana" font-size="7.00" fill="#000000">2</text>
 </g>
-<!-- pymatlib.core.yaml_parser.&lt;lambda&gt; -->
+<!-- pymatlib.core.parsing.&lt;lambda&gt; -->
 <g id="node65" class="node">
 <title>pymatlib.core.yaml_parser.&lt;lambda&gt;</title>
 <polygon fill="#e53dc4" stroke="#e53dc4" points="2360.5,-496 2223.5,-496 2223.5,-460 2360.5,-460 2360.5,-496"/>
@@ -974,14 +974,14 @@
 <text text-anchor="middle" x="2292" y="-476.4" font-family="Verdana" font-size="7.00" fill="#000000">calls: 544</text>
 <text text-anchor="middle" x="2292" y="-468.4" font-family="Verdana" font-size="7.00" fill="#000000">time: 204.723571s</text>
 </g>
-<!-- pymatlib.core.yaml_parser.MaterialConfigParser._process_computed_property&#45;&gt;pymatlib.core.yaml_parser.&lt;lambda&gt; -->
+<!-- pymatlib.core.parsing.MaterialConfigParser._process_computed_property&#45;&gt;pymatlib.core.parsing.&lt;lambda&gt; -->
 <g id="edge63" class="edge">
 <title>pymatlib.core.yaml_parser.MaterialConfigParser._process_computed_property&#45;&gt;pymatlib.core.yaml_parser.&lt;lambda&gt;</title>
 <path fill="none" stroke="#a443b2" d="M1639.22,-540.94C1642.17,-540.62 1645.1,-540.31 1648,-540 1851.47,-518.44 2091.51,-496.67 2213.01,-485.91"/>
 <polygon fill="#a443b2" stroke="#a443b2" points="2213.67,-489.37 2223.33,-485 2213.06,-482.39 2213.67,-489.37"/>
 <text text-anchor="middle" x="1897" y="-516.4" font-family="Verdana" font-size="7.00" fill="#000000">2</text>
 </g>
-<!-- pymatlib.core.yaml_parser.MaterialConfigParser._handle_energy_density -->
+<!-- pymatlib.core.parsing.MaterialConfigParser._handle_energy_density -->
 <g id="node70" class="node">
 <title>pymatlib.core.yaml_parser.MaterialConfigParser._handle_energy_density</title>
 <polygon fill="#d356e5" stroke="#d356e5" points="2018,-496 1764,-496 1764,-460 2018,-460 2018,-496"/>
@@ -989,14 +989,14 @@
 <text text-anchor="middle" x="1891" y="-476.4" font-family="Verdana" font-size="7.00" fill="#000000">calls: 1</text>
 <text text-anchor="middle" x="1891" y="-468.4" font-family="Verdana" font-size="7.00" fill="#000000">time: 205.294672s</text>
 </g>
-<!-- pymatlib.core.yaml_parser.MaterialConfigParser._process_computed_property&#45;&gt;pymatlib.core.yaml_parser.MaterialConfigParser._handle_energy_density -->
+<!-- pymatlib.core.parsing.MaterialConfigParser._process_computed_property&#45;&gt;pymatlib.core.parsing.MaterialConfigParser._handle_energy_density -->
 <g id="edge64" class="edge">
 <title>pymatlib.core.yaml_parser.MaterialConfigParser._process_computed_property&#45;&gt;pymatlib.core.yaml_parser.MaterialConfigParser._handle_energy_density</title>
 <path fill="none" stroke="#a442b2" d="M1587.67,-539.98C1649.15,-527.62 1732.4,-510.88 1796.12,-498.07"/>
 <polygon fill="#a442b2" stroke="#a442b2" points="1797.06,-501.45 1806.18,-496.05 1795.68,-494.59 1797.06,-501.45"/>
 <text text-anchor="middle" x="1710" y="-516.4" font-family="Verdana" font-size="7.00" fill="#000000">1</text>
 </g>
-<!-- pymatlib.core.yaml_parser.MaterialConfigParser._process_dependencies&#45;&gt;pymatlib.core.yaml_parser.&lt;listcomp&gt; -->
+<!-- pymatlib.core.parsing.MaterialConfigParser._process_dependencies&#45;&gt;pymatlib.core.parsing.&lt;listcomp&gt; -->
 <g id="edge65" class="edge">
 <title>pymatlib.core.yaml_parser.MaterialConfigParser._process_dependencies&#45;&gt;pymatlib.core.yaml_parser.&lt;listcomp&gt;</title>
 <path fill="none" stroke="#b2b2b2" d="M1392.77,-405.99C1400.05,-401.28 1406.6,-395.37 1411,-388 1419.2,-374.26 1421.7,-363.89 1411,-352 1378.46,-315.83 1065.86,-299.48 915.29,-293.66"/>
@@ -1011,7 +1011,7 @@
 <text text-anchor="middle" x="2398" y="-368.4" font-family="Verdana" font-size="7.00" fill="#000000">calls: 1</text>
 <text text-anchor="middle" x="2398" y="-360.4" font-family="Verdana" font-size="7.00" fill="#000000">time: 0.183061s</text>
 </g>
-<!-- pymatlib.core.yaml_parser.&lt;lambda&gt;&#45;&gt;pymatlib.core.models.thermal_diffusivity_by_heat_conductivity -->
+<!-- pymatlib.core.parsing.&lt;lambda&gt;&#45;&gt;pymatlib.core.models.thermal_diffusivity_by_heat_conductivity -->
 <g id="edge66" class="edge">
 <title>pymatlib.core.yaml_parser.&lt;lambda&gt;&#45;&gt;pymatlib.core.models.thermal_diffusivity_by_heat_conductivity</title>
 <path fill="none" stroke="#b2b2b2" d="M2309.03,-459.97C2326.47,-442.53 2353.74,-415.26 2373.49,-395.51"/>
@@ -1026,7 +1026,7 @@
 <text text-anchor="middle" x="2620" y="-368.4" font-family="Verdana" font-size="7.00" fill="#000000">calls: 1</text>
 <text text-anchor="middle" x="2620" y="-360.4" font-family="Verdana" font-size="7.00" fill="#000000">time: 0.004076s</text>
 </g>
-<!-- pymatlib.core.yaml_parser.&lt;lambda&gt;&#45;&gt;pymatlib.core.models.energy_density_total_enthalpy -->
+<!-- pymatlib.core.parsing.&lt;lambda&gt;&#45;&gt;pymatlib.core.models.energy_density_total_enthalpy -->
 <g id="edge67" class="edge">
 <title>pymatlib.core.yaml_parser.&lt;lambda&gt;&#45;&gt;pymatlib.core.models.energy_density_total_enthalpy</title>
 <path fill="none" stroke="#b2b2b2" d="M2344.7,-459.97C2402.71,-441.22 2495.91,-411.1 2557.55,-391.18"/>
@@ -1041,7 +1041,7 @@
 <text text-anchor="middle" x="2187" y="-368.4" font-family="Verdana" font-size="7.00" fill="#000000">calls: 544</text>
 <text text-anchor="middle" x="2187" y="-360.4" font-family="Verdana" font-size="7.00" fill="#000000">time: 205.269585s</text>
 </g>
-<!-- pymatlib.core.yaml_parser.&lt;lambda&gt;&#45;&gt;pymatlib.core.typedefs.MaterialProperty.evalf -->
+<!-- pymatlib.core.parsing.&lt;lambda&gt;&#45;&gt;pymatlib.core.typedefs.MaterialProperty.evalf -->
 <g id="edge68" class="edge">
 <title>pymatlib.core.yaml_parser.&lt;lambda&gt;&#45;&gt;pymatlib.core.typedefs.MaterialProperty.evalf</title>
 <path fill="none" stroke="#b22f98" d="M2275.13,-459.97C2257.86,-442.53 2230.85,-415.26 2211.28,-395.51"/>
@@ -1099,14 +1099,14 @@
 <polygon fill="#b2b2b2" stroke="#b2b2b2" points="2599.34,-315.88 2591.97,-308.26 2592.98,-318.81 2599.34,-315.88"/>
 <text text-anchor="middle" x="2605" y="-328.4" font-family="Verdana" font-size="7.00" fill="#000000">1</text>
 </g>
-<!-- pymatlib.core.yaml_parser.MaterialConfigParser._handle_energy_density&#45;&gt;pymatlib.core.yaml_parser.&lt;listcomp&gt; -->
+<!-- pymatlib.core.parsing.MaterialConfigParser._handle_energy_density&#45;&gt;pymatlib.core.parsing.&lt;listcomp&gt; -->
 <g id="edge74" class="edge">
 <title>pymatlib.core.yaml_parser.MaterialConfigParser._handle_energy_density&#45;&gt;pymatlib.core.yaml_parser.&lt;listcomp&gt;</title>
 <path fill="none" stroke="#b2b2b2" d="M1772.52,-459.96C1741.62,-454.86 1708.45,-448.78 1678,-442 1591.89,-422.82 1565.63,-427.99 1487,-388 1447.22,-367.77 1449.72,-341.86 1408,-326 1363.22,-308.98 1062.51,-297.78 915.55,-293.26"/>
 <polygon fill="#b2b2b2" stroke="#b2b2b2" points="915.34,-289.76 905.24,-292.95 915.13,-296.75 915.34,-289.76"/>
 <text text-anchor="middle" x="1489" y="-368.4" font-family="Verdana" font-size="7.00" fill="#000000">1</text>
 </g>
-<!-- pymatlib.core.yaml_parser.&lt;genexpr&gt; -->
+<!-- pymatlib.core.parsing.&lt;genexpr&gt; -->
 <g id="node71" class="node">
 <title>pymatlib.core.yaml_parser.&lt;genexpr&gt;</title>
 <polygon fill="#e5e5e5" stroke="#e5e5e5" points="1640,-388 1500,-388 1500,-352 1640,-352 1640,-388"/>
@@ -1114,14 +1114,14 @@
 <text text-anchor="middle" x="1570" y="-368.4" font-family="Verdana" font-size="7.00" fill="#000000">calls: 3</text>
 <text text-anchor="middle" x="1570" y="-360.4" font-family="Verdana" font-size="7.00" fill="#000000">time: 0.000005s</text>
 </g>
-<!-- pymatlib.core.yaml_parser.MaterialConfigParser._handle_energy_density&#45;&gt;pymatlib.core.yaml_parser.&lt;genexpr&gt; -->
+<!-- pymatlib.core.parsing.MaterialConfigParser._handle_energy_density&#45;&gt;pymatlib.core.parsing.&lt;genexpr&gt; -->
 <g id="edge75" class="edge">
 <title>pymatlib.core.yaml_parser.MaterialConfigParser._handle_energy_density&#45;&gt;pymatlib.core.yaml_parser.&lt;genexpr&gt;</title>
 <path fill="none" stroke="#b2b2b2" d="M1839.43,-459.97C1782.77,-441.26 1691.82,-411.23 1631.49,-391.31"/>
 <polygon fill="#b2b2b2" stroke="#b2b2b2" points="1632.31,-387.89 1621.71,-388.08 1630.11,-394.54 1632.31,-387.89"/>
 <text text-anchor="middle" x="1780" y="-422.4" font-family="Verdana" font-size="7.00" fill="#000000">3</text>
 </g>
-<!-- pymatlib.core.yaml_parser.MaterialConfigParser._process_edta -->
+<!-- pymatlib.core.parsing.MaterialConfigParser._process_edta -->
 <g id="node72" class="node">
 <title>pymatlib.core.yaml_parser.MaterialConfigParser._process_edta</title>
 <polygon fill="#e5e5e5" stroke="#e5e5e5" points="1879.5,-388 1658.5,-388 1658.5,-352 1879.5,-352 1879.5,-388"/>
@@ -1129,28 +1129,28 @@
 <text text-anchor="middle" x="1769" y="-368.4" font-family="Verdana" font-size="7.00" fill="#000000">calls: 1</text>
 <text text-anchor="middle" x="1769" y="-360.4" font-family="Verdana" font-size="7.00" fill="#000000">time: 0.000182s</text>
 </g>
-<!-- pymatlib.core.yaml_parser.MaterialConfigParser._handle_energy_density&#45;&gt;pymatlib.core.yaml_parser.MaterialConfigParser._process_edta -->
+<!-- pymatlib.core.parsing.MaterialConfigParser._handle_energy_density&#45;&gt;pymatlib.core.parsing.MaterialConfigParser._process_edta -->
 <g id="edge76" class="edge">
 <title>pymatlib.core.yaml_parser.MaterialConfigParser._handle_energy_density&#45;&gt;pymatlib.core.yaml_parser.MaterialConfigParser._process_edta</title>
 <path fill="none" stroke="#b2b2b2" d="M1871.4,-459.97C1851.15,-442.38 1819.39,-414.78 1796.61,-394.99"/>
 <polygon fill="#b2b2b2" stroke="#b2b2b2" points="1798.8,-392.26 1788.96,-388.34 1794.21,-397.54 1798.8,-392.26"/>
 <text text-anchor="middle" x="1850" y="-422.4" font-family="Verdana" font-size="7.00" fill="#000000">1</text>
 </g>
-<!-- pymatlib.core.yaml_parser.MaterialConfigParser._handle_energy_density&#45;&gt;pymatlib.core.typedefs.MaterialProperty.evalf -->
+<!-- pymatlib.core.parsing.MaterialConfigParser._handle_energy_density&#45;&gt;pymatlib.core.typedefs.MaterialProperty.evalf -->
 <g id="edge77" class="edge">
 <title>pymatlib.core.yaml_parser.MaterialConfigParser._handle_energy_density&#45;&gt;pymatlib.core.typedefs.MaterialProperty.evalf</title>
 <path fill="none" stroke="#a442b2" d="M1938.56,-459.97C1990.51,-441.36 2073.73,-411.56 2129.36,-391.64"/>
 <polygon fill="#a442b2" stroke="#a442b2" points="2130.84,-394.83 2139.07,-388.16 2128.48,-388.24 2130.84,-394.83"/>
 <text text-anchor="middle" x="2084" y="-422.4" font-family="Verdana" font-size="7.00" fill="#000000">2</text>
 </g>
-<!-- pymatlib.core.yaml_parser.MaterialConfigParser._process_edta&#45;&gt;pymatlib.core.yaml_parser.&lt;listcomp&gt; -->
+<!-- pymatlib.core.parsing.MaterialConfigParser._process_edta&#45;&gt;pymatlib.core.parsing.&lt;listcomp&gt; -->
 <g id="edge78" class="edge">
 <title>pymatlib.core.yaml_parser.MaterialConfigParser._process_edta&#45;&gt;pymatlib.core.yaml_parser.&lt;listcomp&gt;</title>
 <path fill="none" stroke="#b2b2b2" d="M1671.34,-351.96C1616.21,-342.93 1545.94,-332.42 1483,-326 1279.14,-305.22 1037.85,-296.3 915.23,-292.88"/>
 <polygon fill="#b2b2b2" stroke="#b2b2b2" points="915.26,-289.38 905.17,-292.6 915.07,-296.37 915.26,-289.38"/>
 <text text-anchor="middle" x="1547" y="-328.4" font-family="Verdana" font-size="7.00" fill="#000000">1</text>
 </g>
-<!-- pymatlib.core.yaml_parser._process_float_step -->
+<!-- pymatlib.core.parsing._process_float_step -->
 <g id="node73" class="node">
 <title>pymatlib.core.yaml_parser._process_float_step</title>
 <polygon fill="#e5e5e5" stroke="#e5e5e5" points="1852.5,-308 1685.5,-308 1685.5,-272 1852.5,-272 1852.5,-308"/>
@@ -1158,7 +1158,7 @@
 <text text-anchor="middle" x="1769" y="-288.4" font-family="Verdana" font-size="7.00" fill="#000000">calls: 1</text>
 <text text-anchor="middle" x="1769" y="-280.4" font-family="Verdana" font-size="7.00" fill="#000000">time: 0.000028s</text>
 </g>
-<!-- pymatlib.core.yaml_parser.MaterialConfigParser._process_edta&#45;&gt;pymatlib.core.yaml_parser._process_float_step -->
+<!-- pymatlib.core.parsing.MaterialConfigParser._process_edta&#45;&gt;pymatlib.core.parsing._process_float_step -->
 <g id="edge79" class="edge">
 <title>pymatlib.core.yaml_parser.MaterialConfigParser._process_edta&#45;&gt;pymatlib.core.yaml_parser._process_float_step</title>
 <path fill="none" stroke="#b2b2b2" d="M1769,-351.69C1769,-341.89 1769,-329.42 1769,-318.33"/>

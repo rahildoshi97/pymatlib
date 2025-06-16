@@ -24,6 +24,7 @@ class MaterialTemperatureError(ValueError):
 @dataclass
 class Material:
     """Represents a material (alloy or pure metal) composed of various elements with given fractions."""
+    name: str
     material_type: str  # 'alloy' or 'pure_metal'
     elements: List[ChemicalElement]
     composition: Union[np.ndarray, List, Tuple]  # List of fractions summing to 1.0

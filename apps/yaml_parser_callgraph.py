@@ -17,7 +17,7 @@ config.trace_filter = GlobbingFilter(
     include=[
         # 'pymatlib.core.alloy.*',
         # 'pymatlib.core.elements.*',
-        'pymatlib.core.yaml_parser.*',
+        'pymatlib.core.parsing.*',
         # 'pymatlib.core.assignment_converter.*',
         'pymatlib.core.interpolators.*',
         'pymatlib.core.interpolators.interpolate_property.*',
@@ -47,7 +47,7 @@ config.trace_filter = GlobbingFilter(
         # 'interpolate_atomic_number',
         # 'interpolate_temperature_boil',
         'evalf',
-        'pymatlib.core.yaml_parser.<lambda>',  # Specifically include yaml_parser lambda
+        'pymatlib.core.parsing.<lambda>',  # Specifically include parsing lambda
         '*.<lambda>',
     ],
     exclude=[
@@ -83,13 +83,12 @@ graphviz = GraphvizOutput(
 # Run the specific part of your code with call graph tracking
 with PyCallGraph(config=config, output=graphviz):
     # Import necessary modules
-    import sympy as sp
     import pystencils as ps
     from importlib.resources import files
     # from pystencilssfg import SourceFileGenerator
     # from pymatlib.core.assignment_converter import assignment_converter
     # from pymatlib.core.codegen.interpolation_array_container import InterpolationArrayContainer
-    from pymatlib.core.yaml_parser import create_alloy_from_yaml
+    from pymatlib.parsing import create_alloy_from_yaml
 
     u = ps.fields("u: float64[2D]", layout='fzyx')
     yaml_path = files('pymatlib.data.alloys.SS304L').joinpath('SS304L.yaml')

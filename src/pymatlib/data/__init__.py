@@ -1,8 +1,10 @@
-from pymatlib.data.constants import Constants, ProcessingConstants, ErrorMessages, FileConstants
+"""Material data, constants, and element definitions."""
+
+from .constants import Constants, ProcessingConstants, ErrorMessages, FileConstants
 
 __all__ = [
-    'Constants',
-    'ProcessingConstants',
-    'ErrorMessages',
-    'FileConstants'
+    "Constants",
+    "ProcessingConstants",
+    "ErrorMessages",
+    "FileConstants"
 ]

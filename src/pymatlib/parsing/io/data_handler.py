@@ -4,7 +4,7 @@ import numpy as np
 from typing import Union, Tuple, Dict
 import pandas as pd
 
-from pymatlib.core.yaml_parser.yaml_keys import FILE_PATH_KEY, TEMPERATURE_HEADER_KEY, VALUE_HEADER_KEY
+from pymatlib.parsing.config.yaml_keys import FILE_PATH_KEY, TEMPERATURE_HEADER_KEY, VALUE_HEADER_KEY
 from pymatlib.data.constants import ProcessingConstants, FileConstants
 
 logger = logging.getLogger(__name__)

@@ -1,5 +1,4 @@
 import logging
-import os
 from typing import Optional, Union
 
 import matplotlib.pyplot as plt
@@ -8,8 +7,8 @@ import sympy as sp
 from matplotlib.gridspec import GridSpec
 
 from pymatlib.core.material import Material
-from pymatlib.core.yaml_parser.regression_processor import RegressionManager
-from pymatlib.core.yaml_parser.yaml_keys import CONSTANT_KEY, PRE_KEY, POST_KEY, NAME_KEY, MATERIAL_TYPE_KEY
+from pymatlib.algorithms.regression import RegressionManager
+from pymatlib.parsing.config.yaml_keys import CONSTANT_KEY, PRE_KEY, POST_KEY, NAME_KEY, MATERIAL_TYPE_KEY
 from pymatlib.data import ProcessingConstants
 
 logger = logging.getLogger(__name__)
@@ -47,7 +46,7 @@ class PropertyVisualizer:
         self.plot_directory.mkdir(exist_ok=True)
 
     def reset_visualization_tracking(self) -> None:
-        logger.debug("""PropertyVisualizer: reset_visualization_tracking""")
+        logger.debug("PropertyVisualizer: reset_visualization_tracking")
         self.visualized_properties = set()
 
     def visualize_property(

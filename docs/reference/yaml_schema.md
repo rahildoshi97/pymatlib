@@ -1,5 +1,5 @@
 # YAML Schema for Material Definition
-This document defines the schema for material definition YAML files in pymatlib.
+This document defines the schema for material definition YAML files in pymatlib v0.3.0.
 
 ## Schema Overview
 
@@ -119,7 +119,8 @@ bounds: [constant, extrapolate]
 - `extrapolate`: Linear extrapolation outside range
 ### Dependency Resolution
 Properties are automatically processed in correct order:
-```yaml# These will be processed in dependency order automatically
+```yaml
+# These will be processed in dependency order automatically
 specific_enthalpy:
   equation: Integral(heat_capacity, T)
 
@@ -132,25 +133,28 @@ thermal_diffusivity:
 
 ## 📈 Visualization
 Automatic plot generation when using symbolic temperature:
+
 ```python
 import sympy as sp
-from pymatlib.core.yaml_parser.api import create_material_from_yaml
+from pymatlib.parsing.api import create_material
+
 T = sp.Symbol('T')
-material = create_material_from_yaml('steel.yaml', T, enable_plotting=True)
+material = create_material('steel.yaml', T, enable_plotting=True)
 # Plots automatically saved to 'pymatlib_plots/' directory
 ```
 
 ## 🧪 Energy-Temperature Inversion
 For applications requiring temperature from energy density:
+
 ```python
 import sympy as sp
-from pymatlib.core.yaml_parser.api import create_material_from_yaml
-from pymatlib.core.piecewise_inverter import create_energy_density_inverse
+from pymatlib.parsing.api import create_material
+from pymatlib.algorithms.inversion import create_energy_density_inverse
 
 # Create inverse function T = f_inv(E)
 T = sp.Symbol('T')
 E = sp.Symbol('E')
-material = create_material_from_yaml('steel.yaml', T)
+material = create_material('steel.yaml', T)
 
 # Create inverse (only for linear piecewise functions)
 inverse_func = create_energy_density_inverse(material, 'E')
@@ -161,27 +165,33 @@ temperature = float(inverse_func.subs(E, energy_value))
 ```
 
 ## 🔍 Supported Properties
+
 ```python
-from pymatlib.core.yaml_parser.api import get_supported_properties
+from pymatlib.parsing.api import get_supported_properties
+
 print(get_supported_properties())
 ```
 
 ## Validation Rules
 
 1. All required top-level fields must be present
-2. Composition fractions must sum to approximately 1.0
-3. Liquidus temperature must be greater than or equal to solidus temperature
-4. Properties cannot be defined in multiple ways or multiple times
-5. Required dependencies for computed properties must be present
-6. Temperature arrays must be monotonic
-7. Energy density arrays must be monotonic with respect to temperature
-8. File paths must be valid and files must exist
-9. For key-value pairs, key and value must have the same length
-10. When using tuple notation for temperature arrays, the increment must be non-zero
+2. Material type must be "pure_metal" or "alloy"
+3. Composition fractions must sum to approximately 1.0
+4. Pure metals must have exactly one element with composition 1.0
+5. Alloys must have at least 2 elements with non-zero composition
+6. Liquidus temperature must be greater than or equal to solidus temperature
+7. Properties cannot be defined in multiple ways or multiple times
+8. Required dependencies for computed properties must be present
+9. Temperature arrays must be monotonic
+10. Energy density arrays must be monotonic with respect to temperature
+11. File paths must be valid and files must exist
+12. For key-value pairs, temperature and value arrays must have the same length
+13. When using tuple notation for temperature arrays, the increment must be non-zero
 
 ## Important Notes
 
 1. All numerical values must use period (.) as decimal separator, not comma
-2. Interpolation between data points is performed automatically for file-based and key-val properties
+2. Interpolation between data points is performed automatically for file-based and key-value properties
 3. Properties will be computed in the correct order regardless of their position in the file
-4. To retrieve temperature from energy_density, use the default "interpolate" method from within the generated class
+4. To retrieve temperature from energy_density, use the interpolation methods from the generated InterpolationArrayContainer class
+5. The new architecture provides enhanced error messages and validation compared to previous versions

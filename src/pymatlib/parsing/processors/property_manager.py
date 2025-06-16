@@ -5,21 +5,21 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 import numpy as np
 import sympy as sp
 
+from pymatlib.algorithms.interpolation import ensure_ascending_order
 from pymatlib.core.material import Material
-from pymatlib.core.yaml_parser.data_handler import read_data_from_file
 from pymatlib.core.symbol_registry import SymbolRegistry
-from pymatlib.core.yaml_parser.common_utils import (
-    ensure_ascending_order,
+from pymatlib.parsing.io.data_handler import read_data_from_file
+from pymatlib.parsing.utils.utilities import (
     validate_energy_density_monotonicity,
     generate_step_plot_data,
     evaluate_numeric_temperature
 )
-from pymatlib.core.yaml_parser.custom_error import DependencyError, CircularDependencyError
-from pymatlib.core.yaml_parser.piecewise_builder import PiecewiseBuilder
-from pymatlib.core.yaml_parser.property_type_detector import PropertyType
-from pymatlib.core.yaml_parser.regression_processor import RegressionManager
-from pymatlib.core.yaml_parser.temperature_resolver import TemperatureResolver
-from pymatlib.core.yaml_parser.yaml_keys import MELTING_TEMPERATURE_KEY, BOILING_TEMPERATURE_KEY, \
+from pymatlib.parsing.validation.custom_error import DependencyError, CircularDependencyError
+from pymatlib.algorithms.piecewise import PiecewiseBuilder
+from pymatlib.parsing.validation.type_detection import PropertyType
+from pymatlib.algorithms.regression import RegressionManager
+from pymatlib.parsing.processors.temperature_resolver import TemperatureResolver
+from pymatlib.parsing.config.yaml_keys import MELTING_TEMPERATURE_KEY, BOILING_TEMPERATURE_KEY, \
     SOLIDUS_TEMPERATURE_KEY, LIQUIDUS_TEMPERATURE_KEY, INITIAL_BOILING_TEMPERATURE_KEY, FINAL_BOILING_TEMPERATURE_KEY, \
     TEMPERATURE_KEY, VALUE_KEY, BOUNDS_KEY, CONSTANT_KEY, REGRESSION_KEY, SIMPLIFY_KEY, \
     PRE_KEY, FILE_PATH_KEY, EQUATION_KEY, POST_KEY
@@ -399,7 +399,6 @@ class PropertyManager:
                 self._apply_post_regression(material, prop_name, prop_config, T)
             except Exception as e:
                 error_msg = f"Failed to post-process {prop_name}: {str(e)}"
-                logger.error(error_msg)
                 errors.append(error_msg)
         if errors:
             error_summary = "\n".join(errors)

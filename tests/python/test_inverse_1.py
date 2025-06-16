@@ -2,7 +2,7 @@ import sympy as sp
 from typing import List, Tuple
 import logging
 from pathlib import Path
-from pymatlib.core.yaml_parser.api import create_material_from_yaml
+from pymatlib.parsing.api import create_material
 
 logger = logging.getLogger(__name__)
 
@@ -10,8 +10,8 @@ T = sp.Symbol('T')
 E = sp.Symbol('E')
 
 current_file = Path(__file__)
-yaml_path = current_file.parent.parent.parent / "src" / "pymatlib" / "data" / "alloys" / "SS304L" / "SS304L.yaml"
-ss316l = create_material_from_yaml(yaml_path=yaml_path, T=T, enable_plotting=True)
+yaml_path = current_file.parent.parent.parent / "src" / "pymatlib" / "data" / "materials" / "alloys" / "SS304L" / "SS304L.yaml"
+ss316l = create_material(yaml_path=yaml_path, T=T, enable_plotting=True)
 
 # Display the energy density function
 print(f"Energy Density Function: {ss316l.energy_density}")
@@ -269,8 +269,9 @@ def test_with_real_material():
     T = sp.Symbol('T')
     E = sp.Symbol('E')
 
-    yaml_path = Path(__file__).parent.parent.parent / "src" / "pymatlib" / "data" / "alloys" / "SS304L" / "SS304L.yaml"
-    ss316l = create_material_from_yaml(yaml_path=yaml_path, T=T, enable_plotting=True)
+    current_file = Path(__file__)
+    yaml_path = current_file.parent.parent.parent / "src" / "pymatlib" / "data" / "materials" / "alloys" / "SS304L" / "SS304L.yaml"
+    ss316l = create_material(yaml_path=yaml_path, T=T, enable_plotting=True)
 
     print(f"Energy Density Function: {ss316l.energy_density}")
 
