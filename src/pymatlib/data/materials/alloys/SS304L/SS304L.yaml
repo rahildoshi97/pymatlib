@@ -21,8 +21,8 @@ composition:
 # Required temperature properties for alloys
 solidus_temperature: 1605.          # Temperature where melting begins (K)
 liquidus_temperature: 1735.         # Temperature where material is completely melted (K)
-initial_boiling_temperature: 6520.  # Temperature where boiling begins (K)
-final_boiling_temperature: 6850.    # Temperature where material is completely vaporized (K)
+initial_boiling_temperature: 3090.  # Temperature where boiling begins (K)
+final_boiling_temperature: 3200.    # Temperature where material is completely vaporized (K)
 
 properties:
 

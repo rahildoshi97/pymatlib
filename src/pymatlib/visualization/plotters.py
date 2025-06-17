@@ -9,7 +9,7 @@ from matplotlib.gridspec import GridSpec
 from pymatlib.core.material import Material
 from pymatlib.algorithms.regression import RegressionManager
 from pymatlib.parsing.config.yaml_keys import CONSTANT_KEY, PRE_KEY, POST_KEY, NAME_KEY, MATERIAL_TYPE_KEY
-from pymatlib.data import ProcessingConstants
+from pymatlib.data.constants import ProcessingConstants
 
 logger = logging.getLogger(__name__)
 

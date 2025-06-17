@@ -28,13 +28,10 @@ class PiecewiseInverter:
             ValueError: If any piece has degree > 1
         """
         logger.info(f"Creating inverse for linear piecewise function with {len(piecewise_func.args)} pieces")
-
         # Validate that all pieces are linear
         self._validate_linear_only(piecewise_func, input_symbol)
-
         # Process each piece
         inverse_conditions = []
-
         for i, (expr, condition) in enumerate(piecewise_func.args):
             if condition == True:  # Final piece
                 inverse_expr = self._invert_linear_expression(expr, input_symbol, output_symbol)
@@ -43,11 +40,9 @@ class PiecewiseInverter:
                 # Extract boundary and create inverse
                 boundary = self._extract_boundary(condition, input_symbol)
                 inverse_expr = self._invert_linear_expression(expr, input_symbol, output_symbol)
-
                 # Calculate energy at boundary for domain condition
                 boundary_energy = float(expr.subs(input_symbol, boundary))
                 inverse_conditions.append((inverse_expr, output_symbol < boundary_energy))
-
         return sp.Piecewise(*inverse_conditions)
 
     @staticmethod
@@ -89,10 +84,8 @@ class PiecewiseInverter:
             # Linear function: ax + b = y → x = (y - b) / a
             coeffs = sp.Poly(expr, input_symbol).all_coeffs()
             a, b = float(coeffs[0]), float(coeffs[1])
-
             if abs(a) < self.tolerance:
                 raise ValueError("Linear coefficient is too small for stable inversion")
-
             return (output_symbol - b) / a
         else:
             raise ValueError(f"Expression has degree {degree}, only linear expressions are supported")
@@ -110,24 +103,18 @@ def create_energy_density_inverse(material, output_symbol_name: str = 'E') -> sp
     """
     if not hasattr(material, 'energy_density'):
         raise ValueError("Material does not have energy_density property")
-
     energy_density_func = material.energy_density
-
     if not isinstance(energy_density_func, sp.Piecewise):
         raise ValueError("Energy density must be a piecewise function")
-
     # Extract the temperature symbol
     symbols = energy_density_func.free_symbols
     if len(symbols) != 1:
         raise ValueError(f"Energy density function must have exactly one symbol, found: {symbols}")
-
     temp_symbol = list(symbols)[0]
     print(f"Using temperature symbol: {temp_symbol}, type: {type(temp_symbol)}")
     energy_symbol = sp.Symbol(output_symbol_name)
-
     # Create the inverter and generate inverse
     inverter = PiecewiseInverter()
     inverse_func = inverter.create_inverse(energy_density_func, temp_symbol, energy_symbol)
-
     logger.info(f"Created inverse function: T = f_inv({output_symbol_name})")
     return inverse_func

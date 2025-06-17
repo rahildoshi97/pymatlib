@@ -12,7 +12,7 @@ from pymatlib.parsing.config.yaml_keys import (
     MELTING_TEMPERATURE_KEY, BOILING_TEMPERATURE_KEY, SOLIDUS_TEMPERATURE_KEY,
     LIQUIDUS_TEMPERATURE_KEY, INITIAL_BOILING_TEMPERATURE_KEY, FINAL_BOILING_TEMPERATURE_KEY, VALUE_KEY
 )
-from pymatlib.data import ProcessingConstants
+from pymatlib.data.constants import ProcessingConstants
 
 logger = logging.getLogger(__name__)
 

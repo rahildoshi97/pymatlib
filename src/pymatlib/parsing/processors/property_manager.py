@@ -14,15 +14,19 @@ from pymatlib.parsing.utils.utilities import (
     generate_step_plot_data,
     evaluate_numeric_temperature
 )
-from pymatlib.parsing.validation.custom_error import DependencyError, CircularDependencyError
+from pymatlib.parsing.validation.errors import DependencyError, CircularDependencyError
 from pymatlib.algorithms.piecewise import PiecewiseBuilder
 from pymatlib.parsing.validation.type_detection import PropertyType
 from pymatlib.algorithms.regression import RegressionManager
-from pymatlib.parsing.processors.temperature_resolver import TemperatureResolver
-from pymatlib.parsing.config.yaml_keys import MELTING_TEMPERATURE_KEY, BOILING_TEMPERATURE_KEY, \
-    SOLIDUS_TEMPERATURE_KEY, LIQUIDUS_TEMPERATURE_KEY, INITIAL_BOILING_TEMPERATURE_KEY, FINAL_BOILING_TEMPERATURE_KEY, \
-    TEMPERATURE_KEY, VALUE_KEY, BOUNDS_KEY, CONSTANT_KEY, REGRESSION_KEY, SIMPLIFY_KEY, \
-    PRE_KEY, FILE_PATH_KEY, EQUATION_KEY, POST_KEY
+from pymatlib.parsing.processors.temperature_resolver import TemperatureDefinitionProcessor
+from pymatlib.parsing.config.yaml_keys import (
+    MELTING_TEMPERATURE_KEY, BOILING_TEMPERATURE_KEY,
+    SOLIDUS_TEMPERATURE_KEY, LIQUIDUS_TEMPERATURE_KEY,
+    INITIAL_BOILING_TEMPERATURE_KEY, FINAL_BOILING_TEMPERATURE_KEY,
+    TEMPERATURE_KEY, VALUE_KEY, BOUNDS_KEY, CONSTANT_KEY,
+    REGRESSION_KEY, SIMPLIFY_KEY, PRE_KEY, FILE_PATH_KEY,
+    EQUATION_KEY, POST_KEY
+)
 from pymatlib.data.constants import ProcessingConstants
 
 logger = logging.getLogger(__name__)
@@ -40,6 +44,7 @@ class PropertyManager:
         self.base_dir: Optional[Path] = None
         self.visualizer = None
         self.processed_properties: set = set()
+        logger.debug("PropertyManager initialized")
 
     def _finalize_property_processing(self, material: Material, prop_name: str,
                                       temp_array: np.ndarray, prop_array: np.ndarray,
@@ -51,6 +56,7 @@ class PropertyManager:
             skip_numeric_check: If True, skips the numeric temperature handling
                                (useful for piecewise and computed properties that handle this separately)
         """
+        logger.debug(f"Finalizing processing for property '{prop_name}' of type {prop_type}")
         lower_bound_type, upper_bound_type = config[BOUNDS_KEY]
         if not skip_numeric_check:
             if evaluate_numeric_temperature(material, prop_name, T, self,
@@ -62,6 +68,7 @@ class PropertyManager:
         self._visualize_if_enabled(material, prop_name, T, prop_type, temp_array, prop_array,
                                    config, (np.min(temp_array), np.max(temp_array)))
         self.processed_properties.add(prop_name)
+        logger.debug(f"Successfully finalized property '{prop_name}'")
         return False
 
     # --- Public API ---
@@ -70,19 +77,26 @@ class PropertyManager:
                            categorized_properties: Dict[PropertyType, List[Tuple[str, Any]]],
                            base_dir: Path, visualizer) -> None:
         """Process all properties for the material."""
+        logger.info(f"Starting property processing for material: {material.name}")
         self.properties = properties
         self.categorized_properties = categorized_properties
         self.base_dir = base_dir
         self.visualizer = visualizer
         self.processed_properties = set()
         try:
+            total_properties = sum(len(prop_list) for prop_list in categorized_properties.values())
+            logger.info(f"Processing {total_properties} properties across {len(categorized_properties)} categories")
             for prop_type, prop_list in self.categorized_properties.items():
+                if not prop_list:
+                    continue
+                logger.debug(f"Processing {len(prop_list)} properties of type: {prop_type.name}")
                 sorted_props = sorted(prop_list,
                                       key=lambda x: 0 if x[0] in [MELTING_TEMPERATURE_KEY, BOILING_TEMPERATURE_KEY,
                                                                   SOLIDUS_TEMPERATURE_KEY, LIQUIDUS_TEMPERATURE_KEY,
                                                                   INITIAL_BOILING_TEMPERATURE_KEY,
                                                                   FINAL_BOILING_TEMPERATURE_KEY] else 1)
                 for prop_name, config in sorted_props:
+                    logger.debug(f"Processing property: {prop_name}")
                     if prop_type == PropertyType.CONSTANT:
                         self._process_constant_property(material, prop_name, config, T)
                     elif prop_type == PropertyType.STEP_FUNCTION:
@@ -95,8 +109,11 @@ class PropertyManager:
                         self._process_piecewise_equation_property(material, prop_name, config, T)
                     elif prop_type == PropertyType.COMPUTE:
                         self._process_computed_property(material, prop_name, T)
+                    logger.debug(f"Successfully processed property: {prop_name}")
             self._post_process_properties(material, T)
+            logger.info(f"Successfully processed all properties for material: {material.name}")
         except Exception as e:
+            logger.error(f"Property processing failed for material '{material.name}': {e}", exc_info=True)
             raise ValueError(f"Failed to process properties \n -> {str(e)}") from e
 
     # --- Property-Type Processing Methods ---
@@ -106,9 +123,11 @@ class PropertyManager:
         try:
             value = float(prop_config)
             setattr(material, prop_name, sp.Float(value))
+            logger.debug(f"Set constant property {prop_name} = {value}")
             self._visualize_if_enabled(material=material, prop_name=prop_name, T=T, prop_type='CONSTANT')
             self.processed_properties.add(prop_name)
         except (ValueError, TypeError) as e:
+            logger.error(f"Failed to process constant property '{prop_name}': {e}", exc_info=True)
             raise ValueError(f"Failed to process constant property \n -> {str(e)}") from e
 
     def _process_step_function_property(self, material: Material, prop_name: str,
@@ -117,7 +136,7 @@ class PropertyManager:
         try:
             temp_key = prop_config[TEMPERATURE_KEY]
             val_array = prop_config[VALUE_KEY]
-            transition_temp = TemperatureResolver.resolve_temperature_reference(temp_key, material)
+            transition_temp = TemperatureDefinitionProcessor.resolve_temperature_reference(temp_key, material)
             T_standard = sp.Symbol('T')
             step_function = sp.Piecewise((val_array[0], T_standard < transition_temp), (val_array[1], True))
             if evaluate_numeric_temperature(material, prop_name, T, self, piecewise_expr=step_function):
@@ -143,12 +162,20 @@ class PropertyManager:
         """Process property data from a file configuration."""
         try:
             yaml_dir = self.base_dir
-            file_config[FILE_PATH_KEY] = str(yaml_dir / file_config[FILE_PATH_KEY])
+            file_path = yaml_dir / file_config[FILE_PATH_KEY]
+            file_config[FILE_PATH_KEY] = str(file_path)
+            logger.debug(f"Loading property '{prop_name}' from file: {file_path}")
             temp_array, prop_array = read_data_from_file(file_config)
+            logger.debug(f"Loaded {len(temp_array)} data points for property '{prop_name}' "
+                         f"(T range: {np.min(temp_array):.1f}K - {np.max(temp_array):.1f}K)")
             validate_energy_density_monotonicity(prop_name, temp_array, prop_array)
             self._finalize_property_processing(material, prop_name, temp_array, prop_array,
                                                T, file_config, 'FILE')
+        except FileNotFoundError as e:
+            logger.error(f"File not found for property '{prop_name}': {file_path}", exc_info=True)
+            raise ValueError(f"File not found for property '{prop_name}': {file_path}") from e
         except Exception as e:
+            logger.error(f"Failed to process file property '{prop_name}': {e}", exc_info=True)
             raise ValueError(f"Failed to process file property {prop_name} \n -> {str(e)}") from e
 
     def _process_key_val_property(self, material: Material, prop_name: str, prop_config: Dict[str, Any],
@@ -157,7 +184,7 @@ class PropertyManager:
         try:
             temp_def = prop_config[TEMPERATURE_KEY]
             val_array = prop_config[VALUE_KEY]
-            key_array = TemperatureResolver.process_temperature_definition(temp_def, len(val_array), material)
+            key_array = TemperatureDefinitionProcessor.process_temperature_definition(temp_def, len(val_array), material)
             if len(key_array) != len(val_array):
                 raise ValueError(f"Length mismatch in {prop_name}: key and val arrays must have same length")
             key_array, val_array = ensure_ascending_order(key_array, val_array)
@@ -173,7 +200,7 @@ class PropertyManager:
         try:
             eqn_strings = prop_config[EQUATION_KEY]
             temp_def = prop_config[TEMPERATURE_KEY]
-            temp_points = TemperatureResolver.process_temperature_definition(temp_def, len(eqn_strings) + 1)
+            temp_points = TemperatureDefinitionProcessor.process_temperature_definition(temp_def, len(eqn_strings) + 1)
             for eqn in eqn_strings:
                 expr = sp.sympify(eqn)
                 # invalid_symbols = [str(symbol) for symbol in expr.free_symbols if str(symbol) != 'T']
@@ -200,19 +227,25 @@ class PropertyManager:
     def _process_computed_property(self, material: Material, prop_name: str, T: Union[float, sp.Symbol]) -> None:
         """Process computed properties using predefined models with dependency checking."""
         if prop_name in self.processed_properties:
+            logger.debug(f"Property '{prop_name}' already processed, skipping")
             return
         try: # Get property configuration
+            logger.debug(f"Processing computed property: {prop_name}")
             prop_config = self.properties[prop_name]
             if not isinstance(prop_config, dict) or EQUATION_KEY not in prop_config:
                 raise ValueError(f"Invalid COMPUTE property configuration for {prop_name}")
             temp_def = prop_config[TEMPERATURE_KEY]
-            temp_array = TemperatureResolver.process_temperature_definition(temp_def, material=material)
+            temp_array = TemperatureDefinitionProcessor.process_temperature_definition(temp_def, material=material)
             expression = prop_config[EQUATION_KEY]
+            logger.debug(f"Computing property '{prop_name}' with expression: {expression}")
             try:
                 material_property = self._parse_and_process_expression(expression, material, T, prop_name)
-            except CircularDependencyError:
+                logger.debug(f"Successfully parsed expression for property '{prop_name}'")
+            except CircularDependencyError as e:
+                logger.error(f"Circular dependency detected for property '{prop_name}': {e}", exc_info=True)
                 raise # Re-raise CircularDependencyError without wrapping it
             except Exception as e: # Wrap other exceptions with more context
+                logger.error(f"Failed to parse expression for property '{prop_name}': {e}", exc_info=True)
                 raise ValueError(f"Failed to process computed property '{prop_name}' \n -> {str(e)}") from e
             if evaluate_numeric_temperature(material, prop_name, T, self, piecewise_expr=material_property):
                 return
@@ -232,23 +265,29 @@ class PropertyManager:
                 validate_energy_density_monotonicity(prop_name, temp_array, y_dense)
                 self._finalize_property_processing(material, prop_name, temp_array, y_dense,
                                                    T, prop_config, 'COMPUTE', skip_numeric_check=True)
+                logger.debug(f"Successfully computed property '{prop_name}' over {len(temp_array)} temperature points")
             except Exception as e:
+                logger.error(f"Error evaluating expression for property '{prop_name}': {e}", exc_info=True)
                 raise ValueError(f"Error evaluating expression for '{prop_name}' \n -> {str(e)}") from e
         except CircularDependencyError:
             raise # Re-raise CircularDependencyError without wrapping it
         except Exception as e:
+            logger.error(f"Failed to process computed property '{prop_name}': {e}", exc_info=True)
             raise ValueError(f"Failed to process computed property '{prop_name}' \n -> {str(e)}") from e
 
     # --- Expression/Dependency Helpers ---
     def _parse_and_process_expression(self, expression: str, material: Material, T: Union[float, sp.Symbol], prop_name: str) -> sp.Expr:
         """Parse and process a mathematical expression string into a SymPy expression."""
         try:
+            logger.debug(f"Parsing expression for '{prop_name}': {expression}")
             # Create a standard symbol 'T' for parsing the expression
             T_standard = sp.Symbol('T')
             # Parse the expression with the standard symbol
             sympy_expr = sp.sympify(expression, evaluate=False)
             # Extract dependencies (always excluding 'T' as it's handled separately)
             dependencies = [str(symbol) for symbol in sympy_expr.free_symbols if str(symbol) != 'T']
+            if dependencies:
+                logger.debug(f"Property '{prop_name}' depends on: {dependencies}")
             # Check for missing dependencies before processing
             missing_deps = []
             for dep in dependencies:
@@ -256,6 +295,8 @@ class PropertyManager:
                     missing_deps.append(dep)
             if missing_deps:
                 available_props = sorted(list(self.properties.keys()))
+                logger.error(f"Missing dependencies for '{prop_name}': {missing_deps}. "
+                             f"Available: {available_props}")
                 raise DependencyError(expression=expression, missing_deps=missing_deps, available_props=available_props)
             # Check for circular dependencies
             self._check_circular_dependencies(prop_name=prop_name, current_deps=dependencies, visited=set())
@@ -263,6 +304,7 @@ class PropertyManager:
             for dep in dependencies:
                 if not hasattr(material, dep) or getattr(material, dep) is None:
                     if dep in self.properties:
+                        logger.debug(f"Processing dependency '{dep}' for property '{prop_name}'")
                         self._process_computed_property(material, dep, T)
                     else: # This should not happen due to the check above, but just in case
                         available_props = sorted(list(self.properties.keys()))
@@ -277,6 +319,7 @@ class PropertyManager:
                 dep_value = getattr(material, dep, None)
                 if dep_value is None:
                     # This is a safety check - if we get here, something went wrong during dependency processing
+                    logger.error(f"Dependency '{dep}' was processed but is still not available")
                     raise ValueError(f"Dependency '{dep}' was processed but is still not available on the material")
                 dep_symbol = SymbolRegistry.get(dep)
                 if dep_symbol is None:
@@ -290,13 +333,17 @@ class PropertyManager:
             # Perform substitution and evaluate integrals if present
             result_expr = sympy_expr.subs(substitutions)
             if isinstance(result_expr, sp.Integral):
+                logger.debug(f"Evaluating integral in expression for '{prop_name}'")
                 result_expr = result_expr.doit()
+            logger.debug(f"Successfully processed expression for '{prop_name}'")
             return result_expr
         except CircularDependencyError: # Re-raise the circular dependency error directly without wrapping it
             raise
         except DependencyError as e: # Re-raise with the original exception as the cause
             raise e
         except Exception as e: # Wrap other exceptions with more context
+            logger.error(f"Failed to parse expression '{expression}' for property '{prop_name}': {e}",
+                         exc_info=True)
             raise ValueError(f"Failed to parse and process expression: {expression}") from e
 
     def _check_circular_dependencies(self, prop_name, current_deps, visited, path=None):
@@ -308,6 +355,7 @@ class PropertyManager:
         if prop_name is not None:
             if prop_name in visited:
                 cycle_path = path + [prop_name]
+                logger.error(f"Circular dependency detected: {' -> '.join(cycle_path)}")
                 raise CircularDependencyError(dependency_path=cycle_path)
             visited.add(prop_name)
             path = path + [prop_name]
@@ -343,44 +391,78 @@ class PropertyManager:
                               bounds: Optional[Tuple[float, float]] = None) -> None:
         """Visualize property only if visualizer is available and T is symbolic."""
         if self.visualizer is None or not isinstance(T, sp.Symbol):
+            logger.debug(f"Visualizer not available for property: {prop_name}")
             return
-        lower_bound_type, upper_bound_type = CONSTANT_KEY, CONSTANT_KEY
-        has_regression, simplify_type, degree, segments = False, None, None, None
-        if config is not None and isinstance(config, dict):
-            if BOUNDS_KEY in config:
-                bounds_config = config[BOUNDS_KEY]
-                if isinstance(bounds_config, list) and len(bounds_config) == 2:
-                    lower_bound_type, upper_bound_type = bounds_config
-            data_length = len(x_data) if x_data is not None else 100 # fallback
-            has_regression, simplify_type, degree, segments = RegressionManager.process_regression_params(
-                config, prop_name, data_length
+        if not isinstance(T, sp.Symbol):
+            logger.debug(f"Skipping visualization for numeric temperature property: {prop_name}")
+            return
+        try:
+            logger.debug(f"Generating visualization for property: {prop_name}")
+            # Set default boundary conditions
+            lower_bound_type, upper_bound_type = CONSTANT_KEY, CONSTANT_KEY
+            has_regression, simplify_type, degree, segments = False, None, None, None
+            # Extract configuration parameters if available
+            if config is not None and isinstance(config, dict):
+                if BOUNDS_KEY in config:
+                    bounds_config = config[BOUNDS_KEY]
+                    if isinstance(bounds_config, list) and len(bounds_config) == 2:
+                        lower_bound_type, upper_bound_type = bounds_config
+                # Extract regression parameters
+                data_length = len(x_data) if x_data is not None else 100  # fallback
+                has_regression, simplify_type, degree, segments = RegressionManager.process_regression_params(
+                    config, prop_name, data_length
+                )
+            # Set default bounds if not provided
+            if bounds is None:
+                if x_data is not None:
+                    bounds = (np.min(x_data), np.max(x_data))
+                else:
+                    bounds = (ProcessingConstants.DEFAULT_TEMP_LOWER, ProcessingConstants.DEFAULT_TEMP_UPPER)
+            # Call visualizer with all parameters
+            self.visualizer.visualize_property(
+                material=material,
+                prop_name=prop_name,
+                T=T,
+                prop_type=prop_type,
+                x_data=x_data,
+                y_data=y_data,
+                has_regression=has_regression,
+                simplify_type=simplify_type,
+                degree=degree,
+                segments=segments,
+                lower_bound=bounds[0],
+                upper_bound=bounds[1],
+                lower_bound_type=lower_bound_type,
+                upper_bound_type=upper_bound_type
             )
-        if bounds is None:
-            if x_data is not None:
-                bounds = (np.min(x_data), np.max(x_data))
-            else:
-                bounds = (ProcessingConstants.DEFAULT_TEMP_LOWER, ProcessingConstants.DEFAULT_TEMP_UPPER)
-        self.visualizer.visualize_property(
-            material=material, prop_name=prop_name, T=T, prop_type=prop_type,
-            x_data=x_data, y_data=y_data,
-            has_regression=has_regression, simplify_type=simplify_type,
-            degree=degree, segments=segments,
-            lower_bound=bounds[0], upper_bound=bounds[1],
-            lower_bound_type=lower_bound_type, upper_bound_type=upper_bound_type
-        )
+            logger.debug(f"Successfully generated visualization for property: {prop_name}")
+        except Exception as e:
+            logger.warning(f"Failed to generate visualization for property '{prop_name}': {e}")
+            # Don't raise exception - visualization failure shouldn't stop processing
 
     # --- Post-Processing ---
     def _post_process_properties(self, material: Material, T: Union[float, sp.Symbol]) -> None:
         """Perform post-processing regression on properties after all have been initially processed."""
+        logger.debug("Starting post-processing of properties")
         if not isinstance(T, sp.Symbol):
             logger.debug("Skipping post-processing for numeric temperature")
             return
         errors = []
+        processed_count = len(self.processed_properties)
+        total_count = sum(len(prop_list) for prop_list in self.categorized_properties.values())
+        logger.info(f"Post-processing complete: {processed_count}/{total_count} properties processed")
+        if processed_count < total_count:
+            unprocessed = []
+            for prop_list in self.categorized_properties.values():
+                for prop_name, _ in prop_list:
+                    if prop_name not in self.processed_properties:
+                        unprocessed.append(prop_name)
+            logger.warning(f"Some properties were not processed: {unprocessed}")
         for prop_name, prop_config in self.properties.items():
             try:
                 if not isinstance(prop_config, dict) or REGRESSION_KEY not in prop_config:
                     continue
-                temp_array = TemperatureResolver.extract_from_config(prop_config, material)
+                temp_array = TemperatureDefinitionProcessor.extract_from_config(prop_config, material)
                 has_regression, simplify_type, degree, segments = RegressionManager.process_regression_params(
                     prop_config, prop_name, len(temp_array)
                 )
@@ -396,21 +478,28 @@ class PropertyManager:
                 if not isinstance(prop_value, sp.Expr):
                     logger.debug(f"Skipping non-symbolic property: {prop_name}")
                     continue
+                logger.debug(f"Applying post-processing regression to property: {prop_name}")
                 self._apply_post_regression(material, prop_name, prop_config, T)
+                logger.debug(f"Successfully post-processed property: {prop_name}")
             except Exception as e:
                 error_msg = f"Failed to post-process {prop_name}: {str(e)}"
+                logger.error(error_msg, exc_info=True)
                 errors.append(error_msg)
         if errors:
             error_summary = "\n".join(errors)
+            logger.error(f"Post-processing errors occurred: {error_summary}")
             raise ValueError(f"Post-processing errors occurred:\n{error_summary}")
+        logger.debug("Post-processing completed successfully")
 
     @staticmethod
     def _apply_post_regression(material: Material, prop_name: str, prop_config: Dict, T: sp.Symbol) -> None:
         """Apply post-processing regression with proper type validation."""
+        logger.debug(f"Applying post-regression to property: {prop_name}")
         prop_value = getattr(material, prop_name)
         try:
-            temp_array = TemperatureResolver.extract_from_config(prop_config, material)
+            temp_array = TemperatureDefinitionProcessor.extract_from_config(prop_config, material)
         except Exception as e:
+            logger.error(f"Failed to extract temperature array for {prop_name}: {e}", exc_info=True)
             raise ValueError(f"Failed to extract temperature array for {prop_name}: {str(e)}") from e
         # Validate temp_array type and convert if necessary
         if isinstance(temp_array, str):
@@ -442,6 +531,8 @@ class PropertyManager:
         prop_config[REGRESSION_KEY][SIMPLIFY_KEY] = PRE_KEY
         try:
             piecewise_func = PiecewiseBuilder.create_from_data(temp_array, prop_array, T, prop_config, prop_name)
+            logger.debug(f"Successfully created piecewise function for {prop_name} with post-regression")
         finally: # Restore original config
             prop_config[REGRESSION_KEY][SIMPLIFY_KEY] = original_simplify_type
         setattr(material, prop_name, piecewise_func)
+        logger.debug(f"Successfully applied post-regression to property: {prop_name}")

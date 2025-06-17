@@ -12,7 +12,7 @@ from pymatlib.data.constants import ProcessingConstants
 
 logger = logging.getLogger(__name__)
 
-class TemperatureResolver:
+class TemperatureDefinitionProcessor:
     """Handles processing of different temperature definition formats in YAML configurations."""
 
     # --- Class Constants ---
@@ -60,13 +60,13 @@ class TemperatureResolver:
             process_temperature_definition("melting_temperature", material=material)
         """
         if isinstance(temp_def, list):
-            return TemperatureResolver._process_temperature_list(temp_def, material)
+            return TemperatureDefinitionProcessor._process_temperature_list(temp_def, material)
         elif isinstance(temp_def, str):
-            return TemperatureResolver._process_temperature_string(temp_def, n_values, material)
+            return TemperatureDefinitionProcessor._process_temperature_string(temp_def, n_values, material)
         elif isinstance(temp_def, (int, float)):
             temp_val = float(temp_def)
-            if temp_val <= TemperatureResolver.ABSOLUTE_ZERO:
-                raise ValueError(f"Temperature must be above absolute zero ({TemperatureResolver.ABSOLUTE_ZERO}K), got {temp_val}K")
+            if temp_val <= TemperatureDefinitionProcessor.ABSOLUTE_ZERO:
+                raise ValueError(f"Temperature must be above absolute zero ({TemperatureDefinitionProcessor.ABSOLUTE_ZERO}K), got {temp_val}K")
             return np.array([temp_val], dtype=float)
         else:
             raise ValueError(f"Unsupported temperature definition format: {type(temp_def)}")
@@ -92,7 +92,7 @@ class TemperatureResolver:
         if TEMPERATURE_KEY in prop_config:
             temp_def = prop_config[TEMPERATURE_KEY]
             n_values = len(prop_config[VALUE_KEY]) if VALUE_KEY in prop_config else None
-            return TemperatureResolver.process_temperature_definition(temp_def, n_values, material)
+            return TemperatureDefinitionProcessor.process_temperature_definition(temp_def, n_values, material)
         raise ValueError(f"Cannot extract temperature array: no temperature information in config")
 
     # --- Temperature Reference Resolution ---
@@ -110,7 +110,7 @@ class TemperatureResolver:
         # Handle direct numeric values (int/float)
         if isinstance(temp_ref, (int, float)):
             result = float(temp_ref)
-            if result <= TemperatureResolver.ABSOLUTE_ZERO:
+            if result <= TemperatureDefinitionProcessor.ABSOLUTE_ZERO:
                 raise ValueError(f"Temperature must be above absolute zero, got {result}K")
             return result
         # Handle string-based definitions
@@ -118,7 +118,7 @@ class TemperatureResolver:
             # Try direct numeric conversion first
             try:
                 result = float(temp_ref)
-                if result <= TemperatureResolver.ABSOLUTE_ZERO:
+                if result <= TemperatureDefinitionProcessor.ABSOLUTE_ZERO:
                     raise ValueError(f"Temperature must be above absolute zero, got {result}K")
                 return result
             except ValueError:
@@ -129,12 +129,12 @@ class TemperatureResolver:
                 match = re.match(ProcessingConstants.TEMP_ARITHMETIC_REGEX, temp_ref.strip())
                 if match:
                     base_temp_name, operator, offset = match.groups()
-                    base_temp = TemperatureResolver.get_temperature_value(base_temp_name, material)
+                    base_temp = TemperatureDefinitionProcessor.get_temperature_value(base_temp_name, material)
                     offset_val = float(offset)
                     result = base_temp + offset_val if operator == '+' else base_temp - offset_val
                     return result
             # Direct temperature reference
-            result = TemperatureResolver.get_temperature_value(temp_ref, material)
+            result = TemperatureDefinitionProcessor.get_temperature_value(temp_ref, material)
             return result
         raise ValueError(f"Unsupported temperature reference type: {type(temp_ref)} for value {temp_ref}")
 
@@ -152,7 +152,7 @@ class TemperatureResolver:
         # Handle direct numeric values
         if isinstance(temp_ref, (int, float)):
             result = float(temp_ref)
-            if result <= TemperatureResolver.ABSOLUTE_ZERO:
+            if result <= TemperatureDefinitionProcessor.ABSOLUTE_ZERO:
                 raise ValueError(f"Temperature must be above absolute zero, got {result}K")
             return result
         # Handle string references
@@ -160,14 +160,14 @@ class TemperatureResolver:
             # Try numeric conversion first
             try:
                 result = float(temp_ref)
-                if result <= TemperatureResolver.ABSOLUTE_ZERO:
+                if result <= TemperatureDefinitionProcessor.ABSOLUTE_ZERO:
                     raise ValueError(f"Temperature must be above absolute zero, got {result}K")
                 return result
             except ValueError:
                 pass # Not numeric, try material reference
             # Material reference lookup
-            if temp_ref in TemperatureResolver.TEMPERATURE_REFERENCE_MAP:
-                attr_name = TemperatureResolver.TEMPERATURE_REFERENCE_MAP[temp_ref]
+            if temp_ref in TemperatureDefinitionProcessor.TEMPERATURE_REFERENCE_MAP:
+                attr_name = TemperatureDefinitionProcessor.TEMPERATURE_REFERENCE_MAP[temp_ref]
                 if hasattr(material, attr_name):
                     return float(getattr(material, attr_name))
                 else:
@@ -193,14 +193,14 @@ class TemperatureResolver:
             for temp_item in temp_list:
                 if isinstance(temp_item, str) and material is not None:
                     # Handle temperature references like "solidus_temperature", "melting_temperature + 50"
-                    temp_array.append(TemperatureResolver.resolve_temperature_reference(temp_item, material))
+                    temp_array.append(TemperatureDefinitionProcessor.resolve_temperature_reference(temp_item, material))
                 else:
                     temp_array.append(float(temp_item))
             temp_array = np.array(temp_array)
             # Validate all temperatures are above absolute zero
-            if np.any(temp_array <= TemperatureResolver.ABSOLUTE_ZERO):
-                invalid_temps = temp_array[temp_array <= TemperatureResolver.ABSOLUTE_ZERO]
-                raise ValueError(f"Temperature must be above absolute zero ({TemperatureResolver.ABSOLUTE_ZERO}K), "
+            if np.any(temp_array <= TemperatureDefinitionProcessor.ABSOLUTE_ZERO):
+                invalid_temps = temp_array[temp_array <= TemperatureDefinitionProcessor.ABSOLUTE_ZERO]
+                raise ValueError(f"Temperature must be above absolute zero ({TemperatureDefinitionProcessor.ABSOLUTE_ZERO}K), "
                                  f"got {invalid_temps}")
             return temp_array
         except (ValueError, TypeError) as e:
@@ -223,7 +223,7 @@ class TemperatureResolver:
         if not (temp_str.startswith('(') and temp_str.endswith(')')):
             if material is not None:
                 # Single temperature reference like "melting_temperature"
-                return np.array([TemperatureResolver.resolve_temperature_reference(temp_str, material)])
+                return np.array([TemperatureDefinitionProcessor.resolve_temperature_reference(temp_str, material)])
             else:
                 raise ValueError(f"String temperature definition must be enclosed in parentheses or require material for reference: {temp_str}")
         try:
@@ -231,10 +231,10 @@ class TemperatureResolver:
             values = [x.strip() for x in content.split(',')]
             if len(values) == 2:
                 # Format: (start, increment/decrement) - requires n_values
-                return TemperatureResolver._process_equidistant_temperature(values, n_values)
+                return TemperatureDefinitionProcessor._process_equidistant_temperature(values, n_values)
             elif len(values) == 3:
                 # Format: (start, stop, difference/points)
-                return TemperatureResolver._process_range_temperature(values)
+                return TemperatureDefinitionProcessor._process_range_temperature(values)
             else:
                 raise ValueError(f"Temperature string must have 2 or 3 comma-separated values, got {len(values)}")
         except Exception as e:
@@ -252,19 +252,19 @@ class TemperatureResolver:
         """
         if n_values is None:
             raise ValueError("Number of values required for equidistant temperature format (start, increment/decrement)")
-        if n_values < TemperatureResolver.MIN_POINTS:
-            raise ValueError(f"Number of values must be at least {TemperatureResolver.MIN_POINTS}, got {n_values}")
+        if n_values < TemperatureDefinitionProcessor.MIN_POINTS:
+            raise ValueError(f"Number of values must be at least {TemperatureDefinitionProcessor.MIN_POINTS}, got {n_values}")
         try:
             start, increment = float(values[0]), float(values[1])
-            if abs(increment) <= TemperatureResolver.EPSILON:
+            if abs(increment) <= TemperatureDefinitionProcessor.EPSILON:
                 raise ValueError("Temperature increment/decrement cannot be zero")
-            if start <= TemperatureResolver.ABSOLUTE_ZERO:
-                raise ValueError(f"Start temperature must be above absolute zero ({TemperatureResolver.ABSOLUTE_ZERO}K), got {start}K")
+            if start <= TemperatureDefinitionProcessor.ABSOLUTE_ZERO:
+                raise ValueError(f"Start temperature must be above absolute zero ({TemperatureDefinitionProcessor.ABSOLUTE_ZERO}K), got {start}K")
             # Generate temperature array
             temp_array = np.array([start + i * increment for i in range(n_values)])
             # Validate all temperatures are above absolute zero
-            if np.any(temp_array <= TemperatureResolver.ABSOLUTE_ZERO):
-                invalid_temps = temp_array[temp_array <= TemperatureResolver.ABSOLUTE_ZERO]
+            if np.any(temp_array <= TemperatureDefinitionProcessor.ABSOLUTE_ZERO):
+                invalid_temps = temp_array[temp_array <= TemperatureDefinitionProcessor.ABSOLUTE_ZERO]
                 raise ValueError(f"Generated temperatures must be above absolute zero, got {invalid_temps}")
             return temp_array
         except (ValueError, TypeError) as e:
@@ -282,8 +282,8 @@ class TemperatureResolver:
         try:
             start, stop = float(values[0]), float(values[1])
             # Validate temperatures
-            if start <= TemperatureResolver.ABSOLUTE_ZERO or stop <= TemperatureResolver.ABSOLUTE_ZERO:
-                raise ValueError(f"Temperatures must be above absolute zero ({TemperatureResolver.ABSOLUTE_ZERO}K), got start={start}K, stop={stop}K")
+            if start <= TemperatureDefinitionProcessor.ABSOLUTE_ZERO or stop <= TemperatureDefinitionProcessor.ABSOLUTE_ZERO:
+                raise ValueError(f"Temperatures must be above absolute zero ({TemperatureDefinitionProcessor.ABSOLUTE_ZERO}K), got start={start}K, stop={stop}K")
             # Parse third parameter (could be step size or number of points)
             third_param_str = values[2].strip()
             third_param = float(third_param_str)
@@ -298,12 +298,12 @@ class TemperatureResolver:
             if is_integer_format:
                 # Likely number of points (reasonable upper limit)
                 n_points = int(third_param)
-                if n_points < TemperatureResolver.MIN_POINTS:
-                    raise ValueError(f"Number of points must be at least {TemperatureResolver.MIN_POINTS}, got {n_points}")
+                if n_points < TemperatureDefinitionProcessor.MIN_POINTS:
+                    raise ValueError(f"Number of points must be at least {TemperatureDefinitionProcessor.MIN_POINTS}, got {n_points}")
                 temp_array = np.linspace(start, stop, n_points)
             else:
                 # Step size
-                if abs(third_param) <= TemperatureResolver.EPSILON:
+                if abs(third_param) <= TemperatureDefinitionProcessor.EPSILON:
                     raise ValueError("Temperature step cannot be zero")
                 if (start < stop and third_param <= 0) or (start > stop and third_param >= 0):
                     raise ValueError("Step sign must match range direction")
@@ -325,10 +325,10 @@ class TemperatureResolver:
         """
         if len(temp_array) == 0:
             raise ValueError(f"Temperature array is empty{' for ' + context if context else ''}")
-        if len(temp_array) < TemperatureResolver.MIN_POINTS:
-            raise ValueError(f"Temperature array must have at least {TemperatureResolver.MIN_POINTS} points, got {len(temp_array)}{' for ' + context if context else ''}")
-        if np.any(temp_array <= TemperatureResolver.ABSOLUTE_ZERO):
-            invalid_temps = temp_array[temp_array <= TemperatureResolver.ABSOLUTE_ZERO]
-            raise ValueError(f"All temperatures must be above absolute zero ({TemperatureResolver.ABSOLUTE_ZERO}K), got {invalid_temps}{' for ' + context if context else ''}")
+        if len(temp_array) < TemperatureDefinitionProcessor.MIN_POINTS:
+            raise ValueError(f"Temperature array must have at least {TemperatureDefinitionProcessor.MIN_POINTS} points, got {len(temp_array)}{' for ' + context if context else ''}")
+        if np.any(temp_array <= TemperatureDefinitionProcessor.ABSOLUTE_ZERO):
+            invalid_temps = temp_array[temp_array <= TemperatureDefinitionProcessor.ABSOLUTE_ZERO]
+            raise ValueError(f"All temperatures must be above absolute zero ({TemperatureDefinitionProcessor.ABSOLUTE_ZERO}K), got {invalid_temps}{' for ' + context if context else ''}")
         if not np.all(np.isfinite(temp_array)):
             raise ValueError(f"Temperature array contains non-finite values{' for ' + context if context else ''}")

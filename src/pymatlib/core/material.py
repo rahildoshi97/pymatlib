@@ -65,7 +65,6 @@ class Material:
     def __post_init__(self) -> None:
         """
         Initialize and validate the material properties.
-
         Called automatically after the dataclass initialization.
         Validates composition and temperatures, then calculates derived properties.
         """
@@ -95,51 +94,15 @@ class Material:
             raise MaterialCompositionError(f"Alloys must have at least 2 elements, got {len(self.elements)}")
 
     def _validate_temperatures(self) -> None:
-        """Validate the temperature properties based on material type."""
-        if self.material_type == 'pure_metal':
-            self._validate_pure_metal_temperatures()
-        else:  # alloy
-            self._validate_alloy_temperatures()
-
-    def _validate_pure_metal_temperatures(self) -> None:
-        """Validate temperatures for pure metal materials."""
-        if self.melting_temperature is None:
-            raise MaterialTemperatureError("Pure metals must specify melting_temperature")
-        if not isinstance(self.melting_temperature, sp.Float):
-            raise MaterialTemperatureError(f"Melting temperature must be a Float, got {type(self.melting_temperature).__name__}.")
-        if self.boiling_temperature is None:
-            raise MaterialTemperatureError("Pure metals must specify boiling_temperature")
-        if not isinstance(self.boiling_temperature, sp.Float):
-            raise MaterialTemperatureError(f"Boiling temperature must be a Float, got {type(self.boiling_temperature).__name__}.")
-
-    def _validate_alloy_temperatures(self) -> None:
-        """Validate temperatures for alloy materials."""
-        if self.solidus_temperature is None or self.liquidus_temperature is None:
-            raise MaterialTemperatureError("Alloys must specify both solidus_temperature and liquidus_temperature")
-        if not isinstance(self.solidus_temperature, sp.Float):
-            raise MaterialTemperatureError(f"Solidus temperature must be a Float, got {type(self.solidus_temperature).__name__}.")
-        if not isinstance(self.liquidus_temperature, sp.Float):
-            raise MaterialTemperatureError(f"Liquidus temperature must be a Float, got {type(self.liquidus_temperature).__name__}.")
-        if self.solidus_temperature >= self.liquidus_temperature:
-            raise MaterialTemperatureError("The solidus temperature must be less than or equal to the liquidus temperature.")
-        if self.initial_boiling_temperature is not None and self.final_boiling_temperature is not None:
-            if self.initial_boiling_temperature >= self.final_boiling_temperature:
-                raise MaterialTemperatureError("The liquidus boiling temperature must be less than or equal to the vapor boiling temperature.")
-        if not (450 <= self.solidus_temperature <= 1900):
-            raise MaterialTemperatureError(f"Solidus temperature {self.solidus_temperature} K is out of range (450 K - 1900 K).")
-        if not (600 <= self.liquidus_temperature <= 2000):
-            raise MaterialTemperatureError(f"Liquidus temperature {self.liquidus_temperature} K is out of range (600 K - 2000 K).")
+        """Validate the temperature properties based on material type using centralized validator."""
+        from pymatlib.parsing.validation.temperature_validator import TemperatureValidator
+        TemperatureValidator.validate_material_temperatures(self)
 
     def _calculate_properties(self) -> None:
         """Calculate derived properties based on composition."""
         # Always calculate these fundamental properties
         self.atomic_number = interpolate_atomic_number(self.elements, self.composition)
         self.atomic_mass = interpolate_atomic_mass(self.elements, self.composition)
-
-        # Calculate interpolated temperature values but store them separately
-        # self._calculated_melting_temperature = interpolate_melting_temperature(self.elements, self.composition)
-        # self._calculated_boiling_temperature = interpolate_boiling_temperature(self.elements, self.composition)
-
         # For pure metals, use interpolated values only if not provided in config
         if self.material_type == 'pure_metal':
             if self.melting_temperature is None:
@@ -147,7 +110,6 @@ class Material:
                 # Calculate interpolated temperature values but store them separately
                 self._calculated_melting_temperature = interpolate_melting_temperature(self.elements, self.composition)
                 self.melting_temperature = sp.Float(self._calculated_melting_temperature)
-
             if self.boiling_temperature is None:
                 logger.warning("Boiling temperature not provided, using interpolated value as fallback")
                 # Calculate interpolated temperature values but store them separately

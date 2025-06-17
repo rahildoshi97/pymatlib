@@ -9,7 +9,7 @@ from ruamel.yaml import YAML, constructor, scanner
 from pymatlib.core.material import Material
 from pymatlib.parsing.processors.property_manager import PropertyManager
 from pymatlib.parsing.validation.type_detection import PropertyType, PropertyConfigAnalyzer
-from pymatlib.visualization.property_plots import PropertyVisualizer
+from pymatlib.visualization.plotters import PropertyVisualizer
 from pymatlib.parsing.config.yaml_keys import PROPERTIES_KEY, MATERIAL_TYPE_KEY, \
     COMPOSITION_KEY, PURE_METAL_KEY, MELTING_TEMPERATURE_KEY, BOILING_TEMPERATURE_KEY, SOLIDUS_TEMPERATURE_KEY, \
     LIQUIDUS_TEMPERATURE_KEY, INITIAL_BOILING_TEMPERATURE_KEY, FINAL_BOILING_TEMPERATURE_KEY, ALLOY_KEY, NAME_KEY
@@ -73,12 +73,12 @@ class MaterialConfigParser(YAMLConfigParser):
 
     # --- Public API ---
     def create_material(self, T: Union[float, sp.Symbol], enable_plotting: bool = True) -> Material:
-        """
-        Create a Material instance from the parsed configuration and temperature.
-        """
+        """Create a Material instance from the parsed configuration and temperature."""
+        logger.info(f"Creating material from configuration: {self.config_path}")
         try:
             name = self.config.get(NAME_KEY, "Unnamed Material")
             material_type = self.config[MATERIAL_TYPE_KEY]
+            logger.debug(f"Material name: {name}, type: {material_type}")
             elements = self._get_elements()
             composition = [val for val in self.config[COMPOSITION_KEY].values()]
             # Create material with different parameters based on material_type
@@ -119,10 +119,13 @@ class MaterialConfigParser(YAMLConfigParser):
             # Save plots only if plotting was enabled
             if enable_plotting:
                 self.visualizer.save_property_plots()
+            logger.info(f"Successfully created material: {name}")
             return material
         except KeyError as e:
+            logger.error(f"Configuration error for material creation: Missing {str(e)}", exc_info=True)
             raise ValueError(f"Configuration error: Missing {str(e)}") from e
         except Exception as e:
+            logger.error(f"Failed to create material from {self.config_path}: {e}", exc_info=True)
             raise ValueError(f"Failed to create material \n -> {str(e)}") from e
 
     # --- Validation Methods ---

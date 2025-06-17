@@ -1,11 +1,14 @@
-"""Validation and error handling for parsing operations."""
+"""Validation utilities for PyMatLib."""
 
+from .errors import PropertyError, DependencyError, CircularDependencyError
 from .type_detection import PropertyType, PropertyConfigAnalyzer
-from .custom_error import DependencyError, CircularDependencyError
+from .temperature_validator import TemperatureValidator
 
 __all__ = [
+    "PropertyError",
+    "DependencyError",
+    "CircularDependencyError",
     "PropertyType",
     "PropertyConfigAnalyzer",
-    "DependencyError",
-    "CircularDependencyError"
+    "TemperatureValidator"
 ]
