@@ -6,7 +6,7 @@ from pystencilssfg import SourceFileGenerator
 from walberla.codegen import Sweep
 
 from pymatlib.parsing.api import create_material
-from pymatlib.algorithms.inversion import PiecewiseInverter, create_energy_density_inverse
+from pymatlib.algorithms.inversion import PiecewiseInverter
 
 logging.basicConfig(
     level=logging.INFO,  # DEBUG/INFO/WARNING
@@ -30,11 +30,13 @@ with SourceFileGenerator() as sfg:
     heat_pde_discretized = discretize(heat_pde)
     heat_pde_discretized = heat_pde_discretized.args[1] + heat_pde_discretized.args[0].simplify()
 
-    # yaml_path = Path(__file__).parent.parent / "src" / "pymatlib" / "data" / "materials" / "pure_metals" / "Al" / "Al.yaml"
-    # yaml_path = Path(__file__).parent.parent / "src" / "pymatlib" / "data" / "materials" / "alloys" / "SS304L" / "SS304L.yaml"
     yaml_path = Path(__file__).parent / 'SS304L_HeatEquationKernelWithMaterial.yaml'
+    yaml_path_Al = Path(__file__).parent.parent / "src" / "pymatlib" / "data" / "materials" / "pure_metals" / "Al" / "Al.yaml"
+    yaml_path_SS304L = Path(__file__).parent.parent / "src" / "pymatlib" / "data" / "materials" / "alloys" / "SS304L" / "SS304L.yaml"
 
-    mat = create_material(yaml_path=yaml_path, T=u.center(), enable_plotting=False)
+    mat = create_material(yaml_path=yaml_path, T=u.center(), enable_plotting=True)
+    mat_Al = create_material(yaml_path=yaml_path_Al, T=u.center(), enable_plotting=True)
+    mat_SS304L = create_material(yaml_path=yaml_path_SS304L, T=u.center(), enable_plotting=True)
 
     print(f"Energy density function: {mat.energy_density}")
     print(f"Type: {type(mat.energy_density)}")
@@ -73,7 +75,7 @@ with SourceFileGenerator() as sfg:
     if hasattr(mat, 'energy_density'):
         try:
             E = sp.Symbol('E')
-            inverse_energy_density = create_energy_density_inverse(mat, 'E')
+            inverse_energy_density = PiecewiseInverter.create_energy_density_inverse(mat, 'E')
             print(f"✓ Inverse energy density created successfully")
             print(f"Inverse function: {inverse_energy_density}")
 
@@ -136,8 +138,7 @@ with SourceFileGenerator() as sfg:
             E_symbol = sp.Symbol('E')
 
             # Create inverter with custom tolerance
-            inverter = PiecewiseInverter()
-            inverse_func = inverter.create_inverse(mat.energy_density, temp_symbol, E_symbol)
+            inverse_func = PiecewiseInverter.create_inverse(mat.energy_density, temp_symbol, E_symbol)
 
             print(f"✓ Method 2 inverse created successfully!")
             print(f"Temperature symbol used: {temp_symbol}")

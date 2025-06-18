@@ -1,6 +1,6 @@
 """Configuration parsing and YAML key definitions."""
 
-from .configuration import MaterialConfigParser
+from .material_yaml_parser import MaterialYAMLParser
 from .yaml_keys import *
 
-__all__ = ["MaterialConfigParser"]
+__all__ = ["MaterialYAMLParser"]

@@ -1,5 +1,4 @@
-"""Test script for piecewise inversion functionality."""
-
+# test_inversion.py
 import sympy as sp
 from pathlib import Path
 import sys
@@ -8,7 +7,7 @@ import sys
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from pymatlib.parsing.api import create_material
-from pymatlib.algorithms.inversion import create_energy_density_inverse
+from pymatlib.algorithms.inversion import PiecewiseInverter
 
 def test_with_real_material():
     """Test with actual SS304L material properties (linear case only)."""
@@ -27,7 +26,7 @@ def test_with_real_material():
 
     try:
         # Create inverse
-        inverse_energy_density = create_energy_density_inverse(ss304l, 'E')
+        inverse_energy_density = PiecewiseInverter.create_energy_density_inverse(ss304l, 'E')
         print(f"Inverse function: {inverse_energy_density}")
 
         # Test temperatures

@@ -6,8 +6,8 @@ import numpy as np
 import sympy as sp
 from matplotlib.gridspec import GridSpec
 
-from pymatlib.core.material import Material
-from pymatlib.algorithms.regression import RegressionManager
+from pymatlib.core.materials import Material
+from pymatlib.algorithms.regression_processor import RegressionProcessor
 from pymatlib.parsing.config.yaml_keys import CONSTANT_KEY, PRE_KEY, POST_KEY, NAME_KEY, MATERIAL_TYPE_KEY
 from pymatlib.data.constants import ProcessingConstants
 
@@ -188,7 +188,7 @@ class PropertyVisualizer:
                     # Overlay post-regression preview if requested
                     if has_regression and simplify_type == POST_KEY and x_data is not None and y_data is not None:
                         try:
-                            preview_pw = RegressionManager.process_regression(
+                            preview_pw = RegressionProcessor.process_regression(
                                 temp_array=x_data, prop_array=y_data, T=T,
                                 lower_bound_type=lower_bound_type, upper_bound_type=upper_bound_type,
                                 degree=degree, segments=segments, seed=ProcessingConstants.DEFAULT_REGRESSION_SEED
@@ -268,7 +268,7 @@ class PropertyVisualizer:
                     facecolor='white',
                     edgecolor='none'
                 )
-                logger.info(f"All properties plot saved as {filepath} \n")
+                logger.info(f"All properties plot saved as {filepath}")
         finally: # Always close the figure to prevent memory leaks
             if hasattr(self, 'fig') and self.fig is not None:
                 plt.close(self.fig)

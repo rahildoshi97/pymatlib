@@ -9,7 +9,7 @@ from pymatlib.data.constants import ProcessingConstants
 
 logger = logging.getLogger(__name__)
 
-class RegressionManager:
+class RegressionProcessor:
     """Handles all regression-related functionality."""
 
     @staticmethod
@@ -38,7 +38,7 @@ class RegressionManager:
         """Centralized regression processing logic."""
         v_pwlf = pwlf.PiecewiseLinFit(temp_array, prop_array, degree=degree, seed=seed)
         v_pwlf.fit(n_segments=segments)
-        return sp.Piecewise(*RegressionManager.get_symbolic_conditions(v_pwlf, T, lower_bound_type, upper_bound_type))
+        return sp.Piecewise(*RegressionProcessor.get_symbolic_conditions(v_pwlf, T, lower_bound_type, upper_bound_type))
 
     @staticmethod
     def get_symbolic_conditions(pwlf_: pwlf.PiecewiseLinFit, x: sp.Symbol, lower_: str, upper_: str):
@@ -46,16 +46,16 @@ class RegressionManager:
         conditions = []
         # Special case: single segment with extrapolation at both ends
         if pwlf_.n_segments == 1 and lower_ == EXTRAPOLATE_KEY and upper_ == EXTRAPOLATE_KEY:
-            eqn = RegressionManager.get_symbolic_eqn(pwlf_, 1, x)
+            eqn = RegressionProcessor.get_symbolic_eqn(pwlf_, 1, x)
             conditions.append((eqn, True))
             return conditions
         # Handle lower bound for all cases
         if lower_ == CONSTANT_KEY:
-            eqn = RegressionManager.get_symbolic_eqn(pwlf_, 1, x)
+            eqn = RegressionProcessor.get_symbolic_eqn(pwlf_, 1, x)
             conditions.append((eqn.evalf(subs={x: pwlf_.fit_breaks[0]}), x < pwlf_.fit_breaks[0]))
         # Process all segments
         for i in range(pwlf_.n_segments):
-            eqn = RegressionManager.get_symbolic_eqn(pwlf_, i + 1, x)
+            eqn = RegressionProcessor.get_symbolic_eqn(pwlf_, i + 1, x)
             # First segment with extrapolation
             if i == 0 and lower_ == EXTRAPOLATE_KEY:
                 conditions.append((eqn, x < pwlf_.fit_breaks[i+1]))
@@ -66,7 +66,7 @@ class RegressionManager:
                 conditions.append((eqn, sp.And(x >= pwlf_.fit_breaks[i], x < pwlf_.fit_breaks[i+1])))
         # Handle upper bound
         if upper_ == CONSTANT_KEY:
-            eqn = RegressionManager.get_symbolic_eqn(pwlf_, pwlf_.n_segments, x)
+            eqn = RegressionProcessor.get_symbolic_eqn(pwlf_, pwlf_.n_segments, x)
             conditions.append((eqn.evalf(subs={x: pwlf_.fit_breaks[-1]}), x >= pwlf_.fit_breaks[-1]))
         return conditions
 

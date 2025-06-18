@@ -13,8 +13,8 @@ composition:
 solidus_temperature: 1605.
 liquidus_temperature: 1735.
 # interval for evaporation
-initial_boiling_temperature: 6520.
-final_boiling_temperature: 6850.
+initial_boiling_temperature: 3090.
+final_boiling_temperature: 3200.
 
 properties:
 

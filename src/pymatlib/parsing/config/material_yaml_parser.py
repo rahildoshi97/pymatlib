@@ -6,9 +6,9 @@ from typing import Any, Dict, List, Tuple, Union
 import sympy as sp
 from ruamel.yaml import YAML, constructor, scanner
 
-from pymatlib.core.material import Material
-from pymatlib.parsing.processors.property_manager import PropertyManager
-from pymatlib.parsing.validation.type_detection import PropertyType, PropertyConfigAnalyzer
+from pymatlib.core.materials import Material
+from pymatlib.parsing.processors.material_property_processor import PropertyProcessor
+from pymatlib.parsing.validation.property_type_detector import PropertyType, PropertyTypeDetector
 from pymatlib.visualization.plotters import PropertyVisualizer
 from pymatlib.parsing.config.yaml_keys import PROPERTIES_KEY, MATERIAL_TYPE_KEY, \
     COMPOSITION_KEY, PURE_METAL_KEY, MELTING_TEMPERATURE_KEY, BOILING_TEMPERATURE_KEY, SOLIDUS_TEMPERATURE_KEY, \
@@ -16,7 +16,7 @@ from pymatlib.parsing.config.yaml_keys import PROPERTIES_KEY, MATERIAL_TYPE_KEY,
 
 logger = logging.getLogger(__name__)
 
-class ConfigParser:
+class BaseFileParser:
     """Base class for parsing configuration files."""
 
     def __init__(self, config_path: Union[str, Path]) -> None:
@@ -27,7 +27,7 @@ class ConfigParser:
     def _load_config(self) -> Dict[str, Any]:
         raise NotImplementedError("Subclasses must implement _load_config method")
 
-class YAMLConfigParser(ConfigParser):
+class YAMLFileParser(BaseFileParser):
     """Parser for YAML configuration files."""
 
     def _load_config(self) -> Dict[str, Any]:
@@ -45,7 +45,7 @@ class YAMLConfigParser(ConfigParser):
         except Exception as e:
             raise ValueError(f"Error parsing {self.config_path}: {str(e)}") from e
 
-class MaterialConfigParser(YAMLConfigParser):
+class MaterialYAMLParser(YAMLFileParser):
     """Parser for material configuration files in YAML format."""
 
     VALID_YAML_PROPERTIES = {
@@ -67,8 +67,8 @@ class MaterialConfigParser(YAMLConfigParser):
     def __init__(self, yaml_path: Union[str, Path]) -> None:
         super().__init__(yaml_path)
         self._validate_config()
-        self.categorized_properties = self._categorize_properties(self.config[PROPERTIES_KEY])
-        self.property_processor = PropertyManager()
+        self.categorized_properties = self._analyze_and_categorize_properties(self.config[PROPERTIES_KEY])
+        self.property_processor = PropertyProcessor()
         self.visualizer = PropertyVisualizer(self)
 
     # --- Public API ---
@@ -270,15 +270,15 @@ class MaterialConfigParser(YAMLConfigParser):
             raise ValueError(f"Invalid element symbol: {str(e)}") from e
 
     @staticmethod
-    def _categorize_properties(properties: Dict[str, Any]) -> Dict[PropertyType, List[Tuple[str, Any]]]:
+    def _analyze_and_categorize_properties(properties: Dict[str, Any]) -> Dict[PropertyType, List[Tuple[str, Any]]]:
         """Categorizes properties after detecting and validating their types."""
         categorized_properties: Dict[PropertyType, List[Tuple[str, Any]]] = {
             prop_type: [] for prop_type in PropertyType
         }
         for prop_name, config in properties.items():
             try:
-                prop_type = PropertyConfigAnalyzer.determine_property_type(prop_name, config)
-                PropertyConfigAnalyzer.validate_property_config(prop_name, config, prop_type)
+                prop_type = PropertyTypeDetector.determine_property_type(prop_name, config)
+                PropertyTypeDetector.validate_property_config(prop_name, config, prop_type)
                 categorized_properties[prop_type].append((prop_name, config))
             except ValueError as e:
                 raise ValueError(f"Configuration error for property '{prop_name}': {str(e)}") from e

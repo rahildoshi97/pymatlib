@@ -1,15 +1,14 @@
 """Core computational algorithms for materials property processing."""
 
 from .interpolation import interpolate_value, ensure_ascending_order
-from .regression import RegressionManager
-from .piecewise import PiecewiseBuilder
-from .inversion import PiecewiseInverter, create_energy_density_inverse
+from .regression_processor import RegressionProcessor
+from .piecewise_builder import PiecewiseBuilder
+from .inversion import PiecewiseInverter
 
 __all__ = [
     "interpolate_value",
     "ensure_ascending_order",
-    "RegressionManager",
+    "RegressionProcessor",
     "PiecewiseBuilder",
     "PiecewiseInverter",
-    "create_energy_density_inverse"
 ]

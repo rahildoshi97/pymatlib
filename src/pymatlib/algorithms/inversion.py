@@ -13,19 +13,48 @@ class PiecewiseInverter:
         """Initialize the inverter with numerical tolerance."""
         self.tolerance = tolerance
 
-    def create_inverse(self, piecewise_func: Union[sp.Piecewise, sp.Expr],
+    @staticmethod
+    def create_inverse(piecewise_func: Union[sp.Piecewise, sp.Expr],
                        input_symbol: Union[sp.Symbol, sp.Basic],
-                       output_symbol: Union[sp.Symbol, sp.Basic]) ->  sp.Piecewise:
+                       output_symbol: Union[sp.Symbol, sp.Basic],
+                       tolerance: float = 1e-12) -> sp.Piecewise:
         """
         Create the inverse of a linear piecewise function.
+
+        This static method provides a convenient interface for creating inverse
+        functions without requiring explicit instantiation of PiecewiseInverter.
         Args:
             piecewise_func: The original piecewise function E = f(T)
             input_symbol: Original input symbol (e.g., T)
             output_symbol: Output symbol for inverse function (e.g., E)
+            tolerance: Numerical tolerance for inversion stability (default: 1e-12)
         Returns:
             Inverse piecewise function T = f_inv(E)
         Raises:
             ValueError: If any piece has degree > 1
+        Examples:
+            >>> T = sp.Symbol('T')
+            >>> E = sp.Symbol('E')
+            >>> piecewise_function = sp.Piecewise((2*T + 100, T < 500), (3*T - 400, True))
+            >>> inverse = PiecewiseInverter.create_inverse(piecewise_function, T, E)
+        """
+        inverter = PiecewiseInverter(tolerance)
+        return inverter._create_inverse_impl(piecewise_func, input_symbol, output_symbol)
+
+    def _create_inverse_impl(self, piecewise_func: Union[sp.Piecewise, sp.Expr],
+                             input_symbol: Union[sp.Symbol, sp.Basic],
+                             output_symbol: Union[sp.Symbol, sp.Basic]) -> sp.Piecewise:
+        """
+        Internal implementation for creating inverse functions.
+
+        This method contains the core logic for inverting piecewise functions,
+        separated from the public static interface for better maintainability.
+        Args:
+            piecewise_func: The original piecewise function
+            input_symbol: Original input symbol
+            output_symbol: Output symbol for inverse function
+        Returns:
+            Inverse piecewise function
         """
         logger.info(f"Creating inverse for linear piecewise function with {len(piecewise_func.args)} pieces")
         # Validate that all pieces are linear
@@ -90,31 +119,32 @@ class PiecewiseInverter:
         else:
             raise ValueError(f"Expression has degree {degree}, only linear expressions are supported")
 
-def create_energy_density_inverse(material, output_symbol_name: str = 'E') -> sp.Piecewise:
-    """
-    Create inverse function for energy density: T = f_inv(E)
-    Args:
-        material: Material object with energy_density property
-        output_symbol_name: Symbol name for energy density (default: 'E')
-    Returns:
-        Inverse piecewise function
-    Raises:
-        ValueError: If energy density is not linear piecewise
-    """
-    if not hasattr(material, 'energy_density'):
-        raise ValueError("Material does not have energy_density property")
-    energy_density_func = material.energy_density
-    if not isinstance(energy_density_func, sp.Piecewise):
-        raise ValueError("Energy density must be a piecewise function")
-    # Extract the temperature symbol
-    symbols = energy_density_func.free_symbols
-    if len(symbols) != 1:
-        raise ValueError(f"Energy density function must have exactly one symbol, found: {symbols}")
-    temp_symbol = list(symbols)[0]
-    print(f"Using temperature symbol: {temp_symbol}, type: {type(temp_symbol)}")
-    energy_symbol = sp.Symbol(output_symbol_name)
-    # Create the inverter and generate inverse
-    inverter = PiecewiseInverter()
-    inverse_func = inverter.create_inverse(energy_density_func, temp_symbol, energy_symbol)
-    logger.info(f"Created inverse function: T = f_inv({output_symbol_name})")
-    return inverse_func
+    @staticmethod
+    def create_energy_density_inverse(material, output_symbol_name: str = 'E') -> sp.Piecewise:
+        """
+        Create inverse function for energy density: T = f_inv(E)
+        Args:
+            material: Material object with energy_density property
+            output_symbol_name: Symbol name for energy density (default: 'E')
+        Returns:
+            Inverse piecewise function
+        Raises:
+            ValueError: If energy density is not linear piecewise
+        """
+        if not hasattr(material, 'energy_density'):
+            raise ValueError("Material does not have energy_density property")
+        energy_density_func = material.energy_density
+        if not isinstance(energy_density_func, sp.Piecewise):
+            raise ValueError("Energy density must be a piecewise function")
+        # Extract the temperature symbol
+        symbols = energy_density_func.free_symbols
+        if len(symbols) != 1:
+            raise ValueError(f"Energy density function must have exactly one symbol, found: {symbols}")
+        temp_symbol = list(symbols)[0]
+        print(f"Using temperature symbol: {temp_symbol}, type: {type(temp_symbol)}")
+        energy_symbol = sp.Symbol(output_symbol_name)
+        # Create the inverter and generate inverse
+        inverter = PiecewiseInverter()
+        inverse_func = inverter.create_inverse(energy_density_func, temp_symbol, energy_symbol)
+        logger.info(f"Created inverse function: T = f_inv({output_symbol_name})")
+        return inverse_func

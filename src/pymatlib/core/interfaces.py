@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from typing import Any, Dict, Union, Tuple
 import numpy as np
 import sympy as sp
-from pymatlib.core.material import Material
+from pymatlib.core.materials import Material
 
 class PropertyProcessor(ABC):
     """Abstract base class for material property processors.

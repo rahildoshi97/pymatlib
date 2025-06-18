@@ -1,7 +1,7 @@
 import logging
 from typing import Optional, Union
 import sympy as sp
-from pymatlib.core.material import Material, MaterialTemperatureError
+from pymatlib.core.materials import Material, MaterialTemperatureError
 
 logger = logging.getLogger(__name__)
 

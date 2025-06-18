@@ -38,13 +38,12 @@ from pymatlib.parsing.api import (
 )
 
 # Core classes
-from pymatlib.core.material import Material
-from pymatlib.parsing.validation.type_detection import PropertyType
+from pymatlib.core.materials import Material
+from pymatlib.parsing.validation.property_type_detector import PropertyType
 
 # Piecewise utilities
 from pymatlib.algorithms.inversion import (
     PiecewiseInverter,
-    create_energy_density_inverse,
 )
 
 # Constants
@@ -66,7 +65,6 @@ __all__ = [
     "PropertyType",
     # Piecewise utilities
     "PiecewiseInverter",
-    "create_energy_density_inverse",
     # Constants
     "ProcessingConstants",
     "ErrorMessages",

@@ -7,7 +7,7 @@
 A dataclass representing a material (pure metal or alloy) with temperature-dependent properties.
 
 ```python
-from pymatlib.core.material import Material
+from pymatlib.core.materials import Material
 ```
 
 #### Properties
@@ -238,14 +238,16 @@ SymbolRegistry.clear()
 ## Error Classes
 
 ### Material Errors
+
 ```python
-from pymatlib.core.material import MaterialCompositionError, MaterialTemperatureError
+from pymatlib.core.materials import MaterialCompositionError, MaterialTemperatureError
 ```
 These are raised automatically during material validation
 
 ### Property Errors
+
 ```python
-from pymatlib.parsing.validation.custom_error import (
+from pymatlib.parsing.validation.errors import (
   PropertyError,
   DependencyError,
   CircularDependencyError
@@ -256,8 +258,9 @@ These are raised during property processing
 ## Type Definitions
 
 ### PropertyType Enum
+
 ```python
-from pymatlib.parsing.validation.type_detection import PropertyType
+from pymatlib.parsing.validation.property_type_detector import PropertyType
 
 # Available property types:
 PropertyType.CONSTANT

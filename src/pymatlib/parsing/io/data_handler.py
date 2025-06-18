@@ -9,7 +9,7 @@ from pymatlib.data.constants import ProcessingConstants, FileConstants
 
 logger = logging.getLogger(__name__)
 
-def read_data_from_file(file_config: Dict, header: bool = True) -> Tuple[np.ndarray, np.ndarray]:
+def load_property_data(file_config: Dict, header: bool = True) -> Tuple[np.ndarray, np.ndarray]:
     """
     Reads temperature and property data from a file with missing value handling.
     Args:
@@ -67,8 +67,8 @@ def read_data_from_file(file_config: Dict, header: bool = True) -> Tuple[np.ndar
     except Exception as e:
         raise ValueError(f"Error reading file {file_path}: {str(e)}")
     # Extract data from DataFrame with missing value handling
-    temp, prop = _extract_dataframe_columns(df, temp_col, prop_col, file_path)
-    temp, prop = _validate_and_clean_data(temp, prop, file_path)
+    temp, prop = _extract_data_columns(df, temp_col, prop_col, file_path)
+    temp, prop = _clean_and_validate_data(temp, prop, file_path)
     return temp, prop
 
 def _read_text_file(file_path: str, header: bool, temp_col: Union[str, int], prop_col: Union[str, int]) \
@@ -100,8 +100,8 @@ def _read_text_file(file_path: str, header: bool, temp_col: Union[str, int], pro
     except Exception as e:
         raise ValueError(f"Error processing text file: {str(e)}")
 
-def _extract_dataframe_columns(df: pd.DataFrame, temp_col: Union[str, int], prop_col: Union[str, int],
-                               file_path: str) -> Tuple[np.ndarray, np.ndarray]:
+def _extract_data_columns(df: pd.DataFrame, temp_col: Union[str, int], prop_col: Union[str, int],
+                          file_path: str) -> Tuple[np.ndarray, np.ndarray]:
     """Extract temperature and property columns from DataFrame with robust error handling."""
     # Handle temperature column
     if isinstance(temp_col, str):
@@ -174,7 +174,7 @@ def _get_column_index(col_identifier: Union[str, int], column_names: list,
                              f"out of bounds (file has {num_cols} columns)")
         return col_identifier
 
-def _validate_and_clean_data(temp: np.ndarray, prop: np.ndarray, file_path: str) -> Tuple[np.ndarray, np.ndarray]:
+def _clean_and_validate_data(temp: np.ndarray, prop: np.ndarray, file_path: str) -> Tuple[np.ndarray, np.ndarray]:
     """Validate data quality and handle missing values appropriately."""
     # Check for completely empty arrays
     if len(temp) == 0 or len(prop) == 0:

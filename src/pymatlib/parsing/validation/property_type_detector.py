@@ -27,7 +27,7 @@ class PropertyType(Enum):
     INVALID = auto()
 
 # --- Main Class ---
-class PropertyConfigAnalyzer:
+class PropertyTypeDetector:
     """Utility class for detecting and validating property types from configuration values."""
 
     # --- DETECTION RULES ---
@@ -36,7 +36,7 @@ class PropertyConfigAnalyzer:
         # Unique key checks first (most efficient)
         (lambda c: FILE_PATH_KEY in c, PropertyType.FILE),
         # Patterns sharing keys (order matters)
-        (lambda c: TEMPERATURE_KEY in c and VALUE_KEY in c and PropertyConfigAnalyzer._is_likely_step_function(c), PropertyType.STEP_FUNCTION),
+        (lambda c: TEMPERATURE_KEY in c and VALUE_KEY in c and PropertyTypeDetector._is_step_function(c), PropertyType.STEP_FUNCTION),
         (lambda c: TEMPERATURE_KEY in c and VALUE_KEY in c, PropertyType.KEY_VAL),
         (lambda c: TEMPERATURE_KEY in c and EQUATION_KEY in c and isinstance(c.get(EQUATION_KEY), list), PropertyType.PIECEWISE_EQUATION),
         (lambda c: TEMPERATURE_KEY in c and EQUATION_KEY in c and isinstance(c.get(EQUATION_KEY), str), PropertyType.COMPUTE),
@@ -47,12 +47,12 @@ class PropertyConfigAnalyzer:
     def determine_property_type(prop_name: str, config: Any) -> PropertyType:
         """Determines the property type using a declarative, rule-based approach."""
         logger.debug(f"Determining property type for '{prop_name}'")
-        if PropertyConfigAnalyzer._is_constant_format(config):
+        if PropertyTypeDetector._is_constant_format(config):
             return PropertyType.CONSTANT
         if not isinstance(config, dict):
             raise ValueError(f"Property '{prop_name}' has an invalid format. "
                              f"Expected a dictionary or a numeric constant, but got {type(config).__name__}.")
-        for detector, prop_type in PropertyConfigAnalyzer.DETECTION_RULES:
+        for detector, prop_type in PropertyTypeDetector.DETECTION_RULES:
             if detector(config):
                 logger.debug(f"Detected property '{prop_name}' as type: {prop_type.name}")
                 return prop_type
@@ -69,7 +69,7 @@ class PropertyConfigAnalyzer:
         return isinstance(val, float) or (isinstance(val, str) and ('.' in val or 'e' in val.lower()))
 
     @staticmethod
-    def _is_likely_step_function(config: Dict[str, Any]) -> bool:
+    def _is_step_function(config: Dict[str, Any]) -> bool:
         """
         A quick, non-validating check if a config looks like a step function.
         A step function has a list of 2 values AND a single temperature point (not a list).
@@ -86,12 +86,12 @@ class PropertyConfigAnalyzer:
         """Performs strict validation based on the detected property type."""
         logger.debug(f"Validating property '{prop_name}' for type: {prop_type.name}")
         validator_map = {
-            PropertyType.CONSTANT: PropertyConfigAnalyzer._validate_constant_property,
-            PropertyType.FILE: PropertyConfigAnalyzer._validate_file_property,
-            PropertyType.STEP_FUNCTION: PropertyConfigAnalyzer._validate_step_function_property,
-            PropertyType.KEY_VAL: PropertyConfigAnalyzer._validate_key_val_property,
-            PropertyType.PIECEWISE_EQUATION: PropertyConfigAnalyzer._validate_piecewise_equation_property,
-            PropertyType.COMPUTE: PropertyConfigAnalyzer._validate_compute_property,
+            PropertyType.CONSTANT: PropertyTypeDetector._validate_constant_property,
+            PropertyType.FILE: PropertyTypeDetector._validate_file_property,
+            PropertyType.STEP_FUNCTION: PropertyTypeDetector._validate_step_function_property,
+            PropertyType.KEY_VAL: PropertyTypeDetector._validate_key_val_property,
+            PropertyType.PIECEWISE_EQUATION: PropertyTypeDetector._validate_piecewise_equation_property,
+            PropertyType.COMPUTE: PropertyTypeDetector._validate_compute_property,
         }
         validator = validator_map.get(prop_type)
         if validator:
@@ -114,18 +114,18 @@ class PropertyConfigAnalyzer:
     def _validate_file_property(prop_name: str, config: Dict[str, Any]) -> None:
         required = {FILE_PATH_KEY, TEMPERATURE_HEADER_KEY, VALUE_HEADER_KEY, BOUNDS_KEY}
         optional = {REGRESSION_KEY}
-        PropertyConfigAnalyzer._check_keys(config, required, optional, "FILE")
-        PropertyConfigAnalyzer._check_bounds(config[BOUNDS_KEY])
+        PropertyTypeDetector._check_keys(config, required, optional, "FILE")
+        PropertyTypeDetector._check_bounds(config[BOUNDS_KEY])
         if REGRESSION_KEY in config:
-            PropertyConfigAnalyzer._check_regression(config[REGRESSION_KEY])
+            PropertyTypeDetector._check_regression(config[REGRESSION_KEY])
 
     @staticmethod
     def _validate_step_function_property(prop_name: str, config: Dict[str, Any]) -> None:
         required = {TEMPERATURE_KEY, VALUE_KEY}
         optional = {BOUNDS_KEY}
-        PropertyConfigAnalyzer._check_keys(config, required, optional, "STEP_FUNCTION")
+        PropertyTypeDetector._check_keys(config, required, optional, "STEP_FUNCTION")
         if BOUNDS_KEY in config:
-            PropertyConfigAnalyzer._check_bounds(config[BOUNDS_KEY])
+            PropertyTypeDetector._check_bounds(config[BOUNDS_KEY])
         val_list = config[VALUE_KEY]
         if not isinstance(val_list, list) or len(val_list) != 2:
             raise ValueError(f"'value' for a step function must be a list of exactly two numbers, got {val_list}")
@@ -166,10 +166,10 @@ class PropertyConfigAnalyzer:
     def _validate_key_val_property(prop_name: str, config: Dict[str, Any]) -> None:
         required = {TEMPERATURE_KEY, VALUE_KEY, BOUNDS_KEY}
         optional = {REGRESSION_KEY}
-        PropertyConfigAnalyzer._check_keys(config, required, optional, "KEY_VAL")
-        PropertyConfigAnalyzer._check_bounds(config[BOUNDS_KEY])
+        PropertyTypeDetector._check_keys(config, required, optional, "KEY_VAL")
+        PropertyTypeDetector._check_bounds(config[BOUNDS_KEY])
         if REGRESSION_KEY in config:
-            PropertyConfigAnalyzer._check_regression(config[REGRESSION_KEY])
+            PropertyTypeDetector._check_regression(config[REGRESSION_KEY])
         temp_def = config[TEMPERATURE_KEY]
         val_list = config[VALUE_KEY]
         if not isinstance(val_list, list):
@@ -181,10 +181,10 @@ class PropertyConfigAnalyzer:
     def _validate_piecewise_equation_property(prop_name: str, config: Dict[str, Any]) -> None:
         required = {TEMPERATURE_KEY, EQUATION_KEY, BOUNDS_KEY}
         optional = {REGRESSION_KEY}
-        PropertyConfigAnalyzer._check_keys(config, required, optional, "PIECEWISE_EQUATION")
-        PropertyConfigAnalyzer._check_bounds(config[BOUNDS_KEY])
+        PropertyTypeDetector._check_keys(config, required, optional, "PIECEWISE_EQUATION")
+        PropertyTypeDetector._check_bounds(config[BOUNDS_KEY])
         if REGRESSION_KEY in config:
-            PropertyConfigAnalyzer._check_regression(config[REGRESSION_KEY])
+            PropertyTypeDetector._check_regression(config[REGRESSION_KEY])
         if not isinstance(config[EQUATION_KEY], list):
             raise ValueError("'equation' for a piecewise equation must be a list of strings")
 
@@ -192,10 +192,10 @@ class PropertyConfigAnalyzer:
     def _validate_compute_property(prop_name: str, config: Dict[str, Any]) -> None:
         required = {TEMPERATURE_KEY, EQUATION_KEY, BOUNDS_KEY}
         optional = {REGRESSION_KEY}
-        PropertyConfigAnalyzer._check_keys(config, required, optional, "COMPUTE")
-        PropertyConfigAnalyzer._check_bounds(config[BOUNDS_KEY])
+        PropertyTypeDetector._check_keys(config, required, optional, "COMPUTE")
+        PropertyTypeDetector._check_bounds(config[BOUNDS_KEY])
         if REGRESSION_KEY in config:
-            PropertyConfigAnalyzer._check_regression(config[REGRESSION_KEY])
+            PropertyTypeDetector._check_regression(config[REGRESSION_KEY])
         if not isinstance(config[EQUATION_KEY], str):
             raise ValueError("'equation' for a computed property must be a string")
         try:
@@ -224,7 +224,7 @@ class PropertyConfigAnalyzer:
 
     @staticmethod
     def _check_regression(reg: Dict[str, Any]) -> None:
-        PropertyConfigAnalyzer._check_keys(reg, {SIMPLIFY_KEY, DEGREE_KEY, SEGMENTS_KEY}, set(), "regression")
+        PropertyTypeDetector._check_keys(reg, {SIMPLIFY_KEY, DEGREE_KEY, SEGMENTS_KEY}, set(), "regression")
         if reg[SIMPLIFY_KEY] not in {PRE_KEY, POST_KEY}:
             raise ValueError(f"regression 'simplify' must be '{PRE_KEY}' or '{POST_KEY}'")
         if not isinstance(reg[DEGREE_KEY], int) or reg[DEGREE_KEY] < 1:

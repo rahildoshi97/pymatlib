@@ -4,7 +4,7 @@ import numpy as np
 import sympy as sp
 
 from pymatlib.algorithms.interpolation import ensure_ascending_order
-from pymatlib.algorithms.regression import RegressionManager
+from pymatlib.algorithms.regression_processor import RegressionProcessor
 from pymatlib.data.constants import ProcessingConstants
 from pymatlib.parsing.config.yaml_keys import CONSTANT_KEY, EXTRAPOLATE_KEY, BOUNDS_KEY, PRE_KEY
 
@@ -14,8 +14,8 @@ class PiecewiseBuilder:
     """Centralized piecewise function creation with different strategies."""
 
     @staticmethod
-    def create_from_data(temp_array: np.ndarray, prop_array: np.ndarray,
-                         T: sp.Symbol, config: Dict, prop_name: str) -> sp.Piecewise:
+    def build_from_data(temp_array: np.ndarray, prop_array: np.ndarray,
+                        T: sp.Symbol, config: Dict, prop_name: str) -> sp.Piecewise:
         """
         Main entry point for data-based piecewise creation.
         Args:
@@ -35,15 +35,15 @@ class PiecewiseBuilder:
         lower_bound_type, upper_bound_type = config[BOUNDS_KEY]
         T_standard = sp.Symbol('T')
         # Check for regression configuration
-        has_regression, simplify_type, degree, segments = RegressionManager.process_regression_params(
+        has_regression, simplify_type, degree, segments = RegressionProcessor.process_regression_params(
             config, prop_name, len(temp_array))
         # Create piecewise function based on regression settings
         if has_regression and simplify_type == PRE_KEY:
-            pw_result = PiecewiseBuilder._create_with_regression(
+            pw_result = PiecewiseBuilder._build_with_regression(
                 temp_array, prop_array, T_standard, lower_bound_type, upper_bound_type,
                 degree, segments)
         else:
-            pw_result = PiecewiseBuilder._create_linear_interpolation(
+            pw_result = PiecewiseBuilder._build_linear_interpolation(
                 temp_array, prop_array, T_standard, lower_bound_type, upper_bound_type)
         # Handle symbol substitution if needed
         if isinstance(T, sp.Symbol) and str(T) != 'T':
@@ -51,9 +51,9 @@ class PiecewiseBuilder:
         return pw_result
 
     @staticmethod
-    def create_from_formulas(temp_points: np.ndarray, equations: List[Union[str, sp.Expr]],
-                             T: sp.Symbol, lower_bound_type: str = CONSTANT_KEY,
-                             upper_bound_type: str = CONSTANT_KEY) -> sp.Piecewise:
+    def build_from_formulas(temp_points: np.ndarray, equations: List[Union[str, sp.Expr]],
+                            T: sp.Symbol, lower_bound_type: str = CONSTANT_KEY,
+                            upper_bound_type: str = CONSTANT_KEY) -> sp.Piecewise:
         """
         Create piecewise from symbolic equations.
         Args:
@@ -108,8 +108,8 @@ class PiecewiseBuilder:
         return sp.Piecewise(*conditions)
 
     @staticmethod
-    def _create_linear_interpolation(temp_array: np.ndarray, prop_array: np.ndarray,
-                                     T: sp.Symbol, lower: str, upper: str) -> sp.Piecewise:
+    def _build_linear_interpolation(temp_array: np.ndarray, prop_array: np.ndarray,
+                                    T: sp.Symbol, lower: str, upper: str) -> sp.Piecewise:
         """
         Create basic linear interpolation piecewise function.
         Args:
@@ -154,9 +154,9 @@ class PiecewiseBuilder:
         return sp.Piecewise(*conditions)
 
     @staticmethod
-    def _create_with_regression(temp_array: np.ndarray, prop_array: np.ndarray,
-                                T: sp.Symbol, lower: str, upper: str,
-                                degree: int, segments: int) -> sp.Piecewise:
+    def _build_with_regression(temp_array: np.ndarray, prop_array: np.ndarray,
+                               T: sp.Symbol, lower: str, upper: str,
+                               degree: int, segments: int) -> sp.Piecewise:
         """
         Create piecewise with regression.
         This delegates to RegressionProcessor but provides a unified interface.
@@ -171,5 +171,5 @@ class PiecewiseBuilder:
         Returns:
             sp.Piecewise: Regression-based piecewise function
         """
-        return RegressionManager.process_regression(temp_array, prop_array, T, lower, upper, degree, segments,
-                                                    seed=ProcessingConstants.DEFAULT_REGRESSION_SEED)
+        return RegressionProcessor.process_regression(temp_array, prop_array, T, lower, upper, degree, segments,
+                                                      seed=ProcessingConstants.DEFAULT_REGRESSION_SEED)

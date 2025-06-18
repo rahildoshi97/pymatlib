@@ -4,8 +4,8 @@ from typing import Union
 
 import sympy as sp
 
-from pymatlib.core.material import Material
-from pymatlib.parsing.config.configuration import MaterialConfigParser
+from pymatlib.core.materials import Material
+from pymatlib.parsing.config.material_yaml_parser import MaterialYAMLParser
 
 logger = logging.getLogger(__name__)
 
@@ -43,9 +43,9 @@ def create_material(yaml_path: Union[str, Path], T: Union[float, sp.Symbol], ena
     """
     logger.info(f"Creating material from: {yaml_path}")
     try:
-        parser = MaterialConfigParser(yaml_path=yaml_path)
+        parser = MaterialYAMLParser(yaml_path=yaml_path)
         material = parser.create_material(T=T, enable_plotting=enable_plotting)
-        logger.info(f"Successfully created material: {material.name}")
+        logger.info(f"Successfully created material: {material.name}\n")
         return material
     except Exception as e:
         logger.error(f"Failed to create material from {yaml_path}: {e}", exc_info=True)
@@ -57,7 +57,7 @@ def get_supported_properties() -> list:
     Returns:
         List of strings representing valid property names that can be defined in YAML files.
     """
-    return list(MaterialConfigParser.VALID_YAML_PROPERTIES)
+    return list(MaterialYAMLParser.VALID_YAML_PROPERTIES)
 
 def validate_yaml_file(yaml_path: Union[str, Path]) -> bool:
     """
@@ -71,7 +71,7 @@ def validate_yaml_file(yaml_path: Union[str, Path]) -> bool:
         ValueError: If the YAML content is invalid
     """
     try:
-        _ = MaterialConfigParser(yaml_path)
+        _ = MaterialYAMLParser(yaml_path)
         return True
     except FileNotFoundError as e:
         # Re-raise with more context
