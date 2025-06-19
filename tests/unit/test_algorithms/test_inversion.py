@@ -4,7 +4,7 @@ from pathlib import Path
 import sys
 
 # Add src to path for testing
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+sys.path.insert(0, str(Path(__file__).parent / "src"))
 
 from pymatlib.parsing.api import create_material
 from pymatlib.algorithms.inversion import PiecewiseInverter
@@ -19,7 +19,7 @@ def test_with_real_material():
 
     # Load material
     current_file = Path(__file__)
-    yaml_path = current_file.parent.parent.parent / "src" / "pymatlib" / "data" / "materials" / "alloys" / "SS304L" / "SS304L.yaml"
+    yaml_path = current_file.parent.parent / "src" / "pymatlib" / "data" / "materials" / "alloys" / "SS304L" / "SS304L.yaml"
     ss304l = create_material(yaml_path=yaml_path, T=T, enable_plotting=True)
 
     print(f"Energy Density Function: {ss304l.energy_density}")

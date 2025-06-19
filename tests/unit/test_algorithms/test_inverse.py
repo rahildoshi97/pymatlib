@@ -11,7 +11,7 @@ T = sp.Symbol('T')
 E = sp.Symbol('E')
 
 current_file = Path(__file__)
-yaml_path = current_file.parent.parent.parent / "src" / "pymatlib" / "data" / "materials" / "alloys" / "SS304L" / "SS304L.yaml"
+yaml_path = current_file.parent.parent / "src" / "pymatlib" / "data" / "materials" / "alloys" / "SS304L" / "SS304L.yaml"
 ss316l = create_material(yaml_path=yaml_path, T=T, enable_plotting=True)
 
 # Display the energy density function
@@ -243,7 +243,7 @@ def test_with_real_material():
     E = sp.Symbol('E')
 
     current_file = Path(__file__)
-    yaml_path = current_file.parent.parent.parent / "src" / "pymatlib" / "data" / "materials" / "alloys" / "SS304L" / "SS304L.yaml"
+    yaml_path = current_file.parent.parent / "src" / "pymatlib" / "data" / "materials" / "alloys" / "SS304L" / "SS304L.yaml"
     ss316l = create_material(yaml_path=yaml_path, T=T, enable_plotting=True)
 
     print(f"Energy Density Function: {ss316l.energy_density}")
