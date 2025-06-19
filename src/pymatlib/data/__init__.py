@@ -5,7 +5,7 @@ This package provides access to physical constants, processing constants,
 chemical element data, and material property databases used throughout PyMatLib.
 """
 
-from .constants.physical_constants import Constants
+from .constants.physical_constants import PhysicalConstants
 from .constants.processing_constants import ProcessingConstants, ErrorMessages, FileConstants
 from .elements.element_data import (
     element_map,
@@ -14,7 +14,7 @@ from .elements.element_data import (
 )
 
 __all__ = [
-    "Constants",
+    "PhysicalConstants",
     "ProcessingConstants",
     "ErrorMessages",
     "FileConstants",
