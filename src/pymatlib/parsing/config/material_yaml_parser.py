@@ -7,7 +7,7 @@ import sympy as sp
 from ruamel.yaml import YAML, constructor, scanner
 
 from pymatlib.core.materials import Material
-from pymatlib.parsing.processors.material_property_processor import PropertyProcessor
+from pymatlib.parsing.processors.property_processor import PropertyProcessor
 from pymatlib.parsing.validation.property_type_detector import PropertyType, PropertyTypeDetector
 from pymatlib.visualization.plotters import PropertyVisualizer
 from pymatlib.parsing.config.yaml_keys import PROPERTIES_KEY, MATERIAL_TYPE_KEY, \

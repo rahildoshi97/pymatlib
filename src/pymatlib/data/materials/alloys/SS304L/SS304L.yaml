@@ -90,7 +90,7 @@ properties:
     regression:
       simplify: post                      # Apply regression after processing
       degree: 1
-      segments: 1
+      segments: 3
 
   # ====================================================================================================
   # PROPERTY TYPE 5: PIECEWISE_EQUATION

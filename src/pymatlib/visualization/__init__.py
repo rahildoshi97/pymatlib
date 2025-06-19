@@ -1,5 +1,7 @@
-"""Visualization components for material properties."""
+"""Visualization tools for material properties."""
 
 from .plotters import PropertyVisualizer
 
-__all__ = ["PropertyVisualizer"]
+__all__ = [
+    "PropertyVisualizer"
+]

@@ -1,19 +1,24 @@
 """
-PyMatLib - Python Material Properties Library
-=============================================
+PyMatLib - A Python library for temperature-dependent material property modeling.
 
-A high-performance Python library for material simulation and analysis with a focus on
-temperature-dependent properties. PyMatLib enables efficient modeling of pure metals and
-alloys through YAML configuration files, providing symbolic and numerical property
-evaluation for various material properties.
+This library provides tools for defining, processing, and evaluating material properties
+as functions of temperature, with support for various property definition formats
+including constants, piecewise functions, file-based data, and computed properties.
 
-Main Features:
-- YAML-driven material configuration
-- Temperature-dependent property modeling
-- Symbolic mathematics with SymPy
-- Piecewise function support with regression
-- Property inversion capabilities
-- Comprehensive visualization tools
+Key Features:
+- Temperature-dependent material property modeling
+- Multiple property definition formats (YAML-based)
+- Symbolic mathematics integration with SymPy
+- Piecewise function creation and evaluation
+- Material property visualization
+- Integration with numerical simulation frameworks
+
+Main Components:
+- Core: Material definitions and fundamental data structures
+- Parsing: YAML configuration parsing and property processing
+- Algorithms: Mathematical operations and property computations
+- Visualization: Property plotting and analysis tools
+- Data: Material databases and physical constants
 """
 
 # Enhanced version handling with multiple fallbacks
@@ -30,49 +35,59 @@ except ImportError:
         except ImportError:
             __version__ = "0.3.0+unknown"  # Fallback version
 
-# Core API exports
-from pymatlib.parsing.api import (
+# Core material definitions
+from .core.materials import Material
+from .core.elements import ChemicalElement
+from .core.symbol_registry import SymbolRegistry
+
+# Main API functions
+from .parsing.api import (
     create_material,
     get_supported_properties,
-    validate_yaml_file,
+    validate_yaml_file
 )
 
-# Core classes
-from pymatlib.core.materials import Material
-from pymatlib.parsing.validation.property_type_detector import PropertyType
+# Property processing
+from .parsing.processors.property_processor import PropertyProcessor
+from .parsing.validation.property_type_detector import PropertyType
 
-# Piecewise utilities
-from pymatlib.algorithms.inversion import (
-    PiecewiseInverter,
-)
+# Algorithms
+from .algorithms.interpolation import interpolate_value, ensure_ascending_order
+from .algorithms.piecewise_builder import PiecewiseBuilder
+from .algorithms.inversion import PiecewiseInverter
 
-# Constants
-from pymatlib.data.constants import (
-    ProcessingConstants,
-    ErrorMessages,
-    FileConstants,
-)
+# Visualization
+from .visualization.plotters import PropertyVisualizer
 
 __all__ = [
     # Version
-    "__version__",
-    # Main API
-    "create_material",
-    "get_supported_properties",
-    "validate_yaml_file",
+    '__version__',
+
     # Core classes
-    "Material",
-    "PropertyType",
-    # Piecewise utilities
-    "PiecewiseInverter",
-    # Constants
-    "ProcessingConstants",
-    "ErrorMessages",
-    "FileConstants",
+    'Material',
+    'ChemicalElement',
+    'SymbolRegistry',
+
+    # Main API
+    'create_material',
+    'get_supported_properties',
+    'validate_yaml_file',
+
+    # Processing
+    'PropertyProcessor',
+    'PropertyType',
+
+    # Algorithms
+    'interpolate_value',
+    'ensure_ascending_order',
+    'PiecewiseBuilder',
+    'PiecewiseInverter',
+
+    # Visualization
+    'PropertyVisualizer'
 ]
 
 # Package metadata
 __author__ = "Rahil Doshi"
 __email__ = "rahil.doshi@fau.de"
-__license__ = "GPL-3.0"
-__description__ = "A high-performance Python library for material simulation and analysis"
+__description__ = "Temperature-dependent material property modeling library"

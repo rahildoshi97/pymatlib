@@ -1,9 +1,35 @@
-from .property_processor_base import PropertyProcessorBase
-from .material_property_processor import PropertyProcessor
+"""
+Property processing modules for PyMatLib.
+
+This package contains the core property processing functionality,
+including specialized handlers for different property types,
+dependency resolution, and post-processing.
+"""
+
+from .property_processor import PropertyProcessor
+from .property_handlers import (
+    BasePropertyHandler,
+    ConstantPropertyHandler,
+    StepFunctionPropertyHandler,
+    FilePropertyHandler,
+    KeyValPropertyHandler,
+    PiecewiseEquationPropertyHandler,
+    ComputedPropertyHandler
+)
+from .dependency_processor import DependencyProcessor
+from .post_processor import PropertyPostProcessor
 from .temperature_resolver import TemperatureResolver
 
 __all__ = [
-    "PropertyProcessorBase",
-    "PropertyProcessor",
-    "TemperatureResolver"
+    'PropertyProcessor',
+    'BasePropertyHandler',
+    'ConstantPropertyHandler',
+    'StepFunctionPropertyHandler',
+    'FilePropertyHandler',
+    'KeyValPropertyHandler',
+    'PiecewiseEquationPropertyHandler',
+    'ComputedPropertyHandler',
+    'DependencyProcessor',
+    'PropertyPostProcessor',
+    'TemperatureResolver'
 ]

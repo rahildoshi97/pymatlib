@@ -5,9 +5,12 @@ from typing import List, Union, Optional
 
 from pymatlib.core.materials import Material
 from pymatlib.parsing.io.data_handler import load_property_data
-from pymatlib.parsing.config.yaml_keys import MELTING_TEMPERATURE_KEY, BOILING_TEMPERATURE_KEY, \
-    SOLIDUS_TEMPERATURE_KEY, LIQUIDUS_TEMPERATURE_KEY, INITIAL_BOILING_TEMPERATURE_KEY, FINAL_BOILING_TEMPERATURE_KEY, \
+from pymatlib.parsing.config.yaml_keys import (
+    MELTING_TEMPERATURE_KEY, BOILING_TEMPERATURE_KEY,
+    SOLIDUS_TEMPERATURE_KEY, LIQUIDUS_TEMPERATURE_KEY,
+    INITIAL_BOILING_TEMPERATURE_KEY, FINAL_BOILING_TEMPERATURE_KEY,
     FILE_PATH_KEY, TEMPERATURE_KEY, VALUE_KEY
+)
 from pymatlib.data.constants import ProcessingConstants
 
 logger = logging.getLogger(__name__)
@@ -45,15 +48,15 @@ class TemperatureResolver:
             np.ndarray: Processed temperature array
         Examples:
             # Direct numeric value
-            process_temperature_definition(500.0) # Returns [500.0]
+            resolve_temperature_definition(500.0) # Returns [500.0]
             # List of temperatures
-            process_temperature_definition([300, 400, 500]) # Returns [300, 400, 500]
+            resolve_temperature_definition([300, 400, 500]) # Returns [300, 400, 500]
             # Equidistant format
-            process_temperature_definition("(300, 50)", n_values=5) # Returns [300, 350, 400, 450, 500]
+            resolve_temperature_definition("(300, 50)", n_values=5) # Returns [300, 350, 400, 450, 500]
             # Range format
-            process_temperature_definition("(300, 500, 50)") # Returns [300, 350, 400, 450, 500]
+            resolve_temperature_definition("(300, 500, 50)") # Returns [300, 350, 400, 450, 500]
             # Temperature reference (requires material)
-            process_temperature_definition("melting_temperature", material=material)
+            resolve_temperature_definition("melting_temperature", material=material)
         """
         if isinstance(temp_def, list):
             return TemperatureResolver._resolve_list_format(temp_def, material)
@@ -143,8 +146,7 @@ class TemperatureResolver:
     @staticmethod
     def get_temperature_value(temp_ref: Union[str, float, int], material: Material) -> float:
         """
-        Enhanced helper function to get temperature value from material or direct numeric input.
-        Replaces both get_transition_temperature and _get_temperature_value from utilities.py
+        Helper function to get temperature value from material or direct numeric input.
         Args:
             temp_ref: Temperature reference (string, float, or int)
             material: Material object for reference resolution
@@ -268,7 +270,7 @@ class TemperatureResolver:
                 # Format: (start, increment/decrement) - requires n_values
                 return TemperatureResolver._resolve_equidistant_format(values, n_values)
             elif len(values) == 3:
-                # Format: (start, stop, difference/points)
+                # Format: (start, stop, step/points)
                 return TemperatureResolver._resolve_range_format(values)
             else:
                 raise ValueError(f"Temperature string must have 2 or 3 comma-separated values, got {len(values)}")
@@ -305,10 +307,11 @@ class TemperatureResolver:
         except (ValueError, TypeError) as e:
             raise ValueError(f"Invalid equidistant temperature format: ({values[0]}, {values[1]}) \n -> {str(e)}") from e
 
+    # --- Range Format Methods ---
     @staticmethod
     def _resolve_range_format(values: List[str]) -> np.ndarray:
         """
-        Process range temperature format: (start, stop, difference/points).
+        Process range temperature format: (start, stop, step/points).
         Args:
             values: List containing [start, stop, step_or_points] as strings
         Returns:
@@ -316,38 +319,111 @@ class TemperatureResolver:
         """
         try:
             start, stop = float(values[0]), float(values[1])
-            # Validate temperatures
-            if start <= TemperatureResolver.ABSOLUTE_ZERO or stop <= TemperatureResolver.ABSOLUTE_ZERO:
-                raise ValueError(f"Temperatures must be above absolute zero ({TemperatureResolver.ABSOLUTE_ZERO}K), got start={start}K, stop={stop}K")
-            # Parse third parameter (could be step size or number of points)
+            # Validate basic temperature constraints
+            TemperatureResolver._validate_range_temperatures(start, stop)
+            # Determine format type and delegate to appropriate method
             third_param_str = values[2].strip()
-            third_param = float(third_param_str)
+            format_type = TemperatureResolver._determine_format_type(third_param_str)
+            if format_type == "points":
+                return TemperatureResolver._resolve_points_format(values)
+            elif format_type == "step":
+                return TemperatureResolver._resolve_step_format(values)
+            else:
+                raise ValueError(f"Unknown format type: {format_type}")
+        except (ValueError, TypeError) as e:
+            raise ValueError(f"Invalid range temperature format: ({', '.join(values)}) \n -> {str(e)}") from e
+
+    @staticmethod
+    def _determine_format_type(third_param: str) -> str:
+        """
+        Determine if third parameter is step size or number of points.
+        Args:
+            third_param: Third parameter as string
+        Returns:
+            str: Either "step" or "points"
+        """
+        try:
+            third_param_value = float(third_param)
+            # Check if string represents an integer (no decimal point)
             is_integer_format = (
-                # Check if string represents an integer (no decimal point)
-                    '.' not in third_param_str and
-                    'e' not in third_param_str.lower() and
-                    third_param == int(third_param) and
-                    0 < third_param <= 1000
+                    '.' not in third_param and
+                    'e' not in third_param.lower() and
+                    third_param_value == int(third_param_value) and
+                    0 < third_param_value <= 1000
             )
             # Determine if it's number of points or step size
             if is_integer_format:
-                # Likely number of points (reasonable upper limit)
-                n_points = int(third_param)
-                if n_points < TemperatureResolver.MIN_POINTS:
-                    raise ValueError(f"Number of points must be at least {TemperatureResolver.MIN_POINTS}, got {n_points}")
-                temp_array = np.linspace(start, stop, n_points)
+                return "points"
             else:
-                # Step size
-                if abs(third_param) <= TemperatureResolver.EPSILON:
-                    raise ValueError("Temperature step cannot be zero")
-                if (start < stop and third_param <= 0) or (start > stop and third_param >= 0):
-                    raise ValueError("Step sign must match range direction")
-                if abs(third_param) > abs(stop - start):
-                    raise ValueError(f"Absolute value of step ({abs(third_param)}) is too large for the range. It should be <= {abs(stop - start)}")
-                temp_array = np.arange(start, stop + third_param/2, third_param)
+                return "step"
+        except (ValueError, TypeError):
+            raise ValueError(f"Third parameter must be numeric, got: {third_param}")
+
+    @staticmethod
+    def _resolve_step_format(values: List[str]) -> np.ndarray:
+        """
+        Handle (start, end, step) format.
+        Args:
+            values: List containing [start, stop, step] as strings
+        Returns:
+            np.ndarray: Generated temperature array using step size
+        """
+        try:
+            start, stop, step = float(values[0]), float(values[1]), float(values[2])
+            # Validate step size
+            if abs(step) <= TemperatureResolver.EPSILON:
+                raise ValueError("Temperature step cannot be zero")
+            # Validate step direction matches range direction
+            if (start < stop and step <= 0) or (start > stop and step >= 0):
+                raise ValueError("Step sign must match range direction")
+            # Validate step size is reasonable for the range
+            if abs(step) > abs(stop - start):
+                raise ValueError(f"Absolute value of step ({abs(step)}) is too large for the range. "
+                                 f"It should be <= {abs(stop - start)}")
+            # Generate temperature array using step size
+            temp_array = np.arange(start, stop + step/2, step)
             return temp_array
         except (ValueError, TypeError) as e:
-            raise ValueError(f"Invalid range temperature format: ({', '.join(values)}) \n -> {str(e)}") from e
+            raise ValueError(f"Invalid step format: ({', '.join(values)}) \n -> {str(e)}") from e
+
+    @staticmethod
+    def _resolve_points_format(values: List[str]) -> np.ndarray:
+        """
+        Handle (start, end, num_points) format.
+        Args:
+            values: List containing [start, stop, num_points] as strings
+        Returns:
+            np.ndarray: Generated temperature array with specified number of points
+        """
+        try:
+            start, stop = float(values[0]), float(values[1])
+            n_points = int(float(values[2]))
+            # Validate number of points
+            if n_points < TemperatureResolver.MIN_POINTS:
+                raise ValueError(f"Number of points must be at least {TemperatureResolver.MIN_POINTS}, got {n_points}")
+            if n_points > 10000:  # Reasonable upper limit to prevent memory issues
+                raise ValueError(f"Number of points ({n_points}) is too large. Maximum allowed is 10000.")
+            # Generate temperature array using linspace
+            temp_array = np.linspace(start, stop, n_points)
+            return temp_array
+        except (ValueError, TypeError) as e:
+            raise ValueError(f"Invalid points format: ({', '.join(values)}) \n -> {str(e)}") from e
+
+    @staticmethod
+    def _validate_range_temperatures(start: float, stop: float) -> None:
+        """
+        Validate start and stop temperatures for range formats.
+        Args:
+            start: Start temperature
+            stop: Stop temperature
+        Raises:
+            ValueError: If temperatures are invalid
+        """
+        if start <= TemperatureResolver.ABSOLUTE_ZERO or stop <= TemperatureResolver.ABSOLUTE_ZERO:
+            raise ValueError(f"Temperatures must be above absolute zero ({TemperatureResolver.ABSOLUTE_ZERO}K), "
+                             f"got start={start}K, stop={stop}K")
+        if abs(start - stop) <= TemperatureResolver.EPSILON:
+            raise ValueError(f"Start and stop temperatures must be different, got start={start}K, stop={stop}K")
 
     # --- Validation Methods ---
     @staticmethod
@@ -361,9 +437,11 @@ class TemperatureResolver:
         if len(temp_array) == 0:
             raise ValueError(f"Temperature array is empty{' for ' + context if context else ''}")
         if len(temp_array) < TemperatureResolver.MIN_POINTS:
-            raise ValueError(f"Temperature array must have at least {TemperatureResolver.MIN_POINTS} points, got {len(temp_array)}{' for ' + context if context else ''}")
+            raise ValueError(f"Temperature array must have at least {TemperatureResolver.MIN_POINTS} points, "
+                             f"got {len(temp_array)}{' for ' + context if context else ''}")
         if np.any(temp_array <= TemperatureResolver.ABSOLUTE_ZERO):
             invalid_temps = temp_array[temp_array <= TemperatureResolver.ABSOLUTE_ZERO]
-            raise ValueError(f"All temperatures must be above absolute zero ({TemperatureResolver.ABSOLUTE_ZERO}K), got {invalid_temps}{' for ' + context if context else ''}")
+            raise ValueError(f"All temperatures must be above absolute zero ({TemperatureResolver.ABSOLUTE_ZERO}K), "
+                             f"got {invalid_temps}{' for ' + context if context else ''}")
         if not np.all(np.isfinite(temp_array)):
             raise ValueError(f"Temperature array contains non-finite values{' for ' + context if context else ''}")

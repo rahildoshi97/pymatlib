@@ -17,7 +17,7 @@ logging.getLogger('matplotlib').setLevel(logging.WARNING)
 logging.getLogger('PIL').setLevel(logging.WARNING)
 logging.getLogger('fontTools').setLevel(logging.WARNING)
 with SourceFileGenerator() as sfg:
-    data_type = "float64"  # if ctx.double_accuracy else "float32"
+    data_type = "float64"
 
     u, u_tmp = ps.fields(f"u, u_tmp: {data_type}[2D]", layout='fzyx')
     thermal_diffusivity_symbol = sp.Symbol("thermal_diffusivity")
