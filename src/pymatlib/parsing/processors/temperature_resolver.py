@@ -11,18 +11,16 @@ from pymatlib.parsing.config.yaml_keys import (
     INITIAL_BOILING_TEMPERATURE_KEY, FINAL_BOILING_TEMPERATURE_KEY,
     FILE_PATH_KEY, TEMPERATURE_KEY, VALUE_KEY
 )
-from pymatlib.data.constants import ProcessingConstants
+from pymatlib.data.constants import PhysicalConstants, ProcessingConstants
 
 logger = logging.getLogger(__name__)
 
 class TemperatureResolver:
     """Handles processing of different temperature definition formats in YAML configurations."""
-
     # --- Class Constants ---
-    ABSOLUTE_ZERO = ProcessingConstants.ABSOLUTE_ZERO
+    ABSOLUTE_ZERO = PhysicalConstants.ABSOLUTE_ZERO
     EPSILON = ProcessingConstants.TEMPERATURE_EPSILON
     MIN_POINTS = ProcessingConstants.MIN_TEMPERATURE_POINTS
-
     # Temperature reference mapping
     TEMPERATURE_REFERENCE_MAP = {
         MELTING_TEMPERATURE_KEY: 'melting_temperature',

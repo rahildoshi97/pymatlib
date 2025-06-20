@@ -9,7 +9,6 @@ class ProcessingConstants:
     TEMPERATURE_EPSILON: Final[float] = 1e-8
     MONOTONICITY_THRESHOLD: Final[float] = 1e-8
     # Temperature limits
-    ABSOLUTE_ZERO: Final[float] = 0.0
     MIN_TEMPERATURE: Final[float] = 0.0
     # Data validation
     MIN_DATA_POINTS: Final[int] = 2

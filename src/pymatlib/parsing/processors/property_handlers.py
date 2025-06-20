@@ -16,7 +16,7 @@ from pymatlib.algorithms.piecewise_builder import PiecewiseBuilder
 from pymatlib.parsing.config.yaml_keys import (
     TEMPERATURE_KEY, VALUE_KEY, BOUNDS_KEY, FILE_PATH_KEY, EQUATION_KEY
 )
-from pymatlib.data.constants import ProcessingConstants
+from pymatlib.data.constants import PhysicalConstants, ProcessingConstants
 
 logger = logging.getLogger(__name__)
 
@@ -203,7 +203,7 @@ class StepFunctionPropertyHandler(BasePropertyHandler):
             setattr(material, prop_name, step_function)
             # Create visualization data
             offset = ProcessingConstants.STEP_FUNCTION_OFFSET
-            val1 = max(transition_temp - offset, ProcessingConstants.ABSOLUTE_ZERO)
+            val1 = max(transition_temp - offset, PhysicalConstants.ABSOLUTE_ZERO)
             val2 = transition_temp + offset
             step_temp_array = np.array([val1, transition_temp, val2])
             x_data, y_data = create_step_visualization_data(transition_temp, val_array, step_temp_array)
@@ -290,14 +290,6 @@ class PiecewiseEquationPropertyHandler(BasePropertyHandler):
                                                T, prop_config, 'PIECEWISE_EQUATION', skip_numeric_check=True)
         except Exception as e:
             raise ValueError(f"Failed to process piecewise equation property '{prop_name}' \n -> {str(e)}") from e
-
-'''class ComputedPropertyHandler(BasePropertyHandler):
-    """Handler for computed properties."""
-    def process_property(self, material: Material, prop_name: str,
-                         T: Union[float, sp.Symbol]) -> None:
-        """Process computed properties using predefined models with dependency checking."""
-        # This will be implemented by the dependency processor
-        pass'''
 
 class ComputedPropertyHandler(BasePropertyHandler):
     """Handler for computed properties."""
