@@ -95,6 +95,24 @@ properties:
       degree: 1
       segments: 1
 
+  energy_density:
+    temperature: (300, 3000, 5.0)         # (start, stop, step) - 5K increments
+    equation: density * specific_enthalpy  # Property dependencies automatically resolved
+    bounds: [extrapolate, extrapolate]
+    regression:
+      simplify: post
+      degree: 1
+      segments: 6
+
+  specific_enthalpy:
+    temperature: (300, 3000, 541)         # (start, stop, num_points) - 541 evenly spaced points
+    equation: Integral(heat_capacity, T)   # Symbolic integration
+    bounds: [ constant, constant ]
+    regression:
+      simplify: post
+      degree: 1
+      segments: 2
+
 # ====================================================================================================
 # PURE METAL SPECIFIC NOTES:
 # 

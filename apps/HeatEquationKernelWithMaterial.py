@@ -12,6 +12,7 @@ logging.basicConfig(
     level=logging.INFO,  # DEBUG/INFO/WARNING
     format="%(asctime)s %(levelname)s %(name)s -> %(message)s"
 )
+
 # Silence matplotlib and other noisy libraries
 logging.getLogger('matplotlib').setLevel(logging.WARNING)
 logging.getLogger('PIL').setLevel(logging.WARNING)

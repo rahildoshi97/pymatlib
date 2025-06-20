@@ -9,7 +9,7 @@ from matplotlib.gridspec import GridSpec
 from pymatlib.core.materials import Material
 from pymatlib.algorithms.regression_processor import RegressionProcessor
 from pymatlib.parsing.config.yaml_keys import CONSTANT_KEY, PRE_KEY, POST_KEY, NAME_KEY, MATERIAL_TYPE_KEY
-from pymatlib.data.constants import ProcessingConstants
+from pymatlib.data.constants import PhysicalConstants, ProcessingConstants
 
 logger = logging.getLogger(__name__)
 
@@ -97,7 +97,7 @@ class PropertyVisualizer:
                 upper_bound = data_upper
             # Create extended temperature range for visualization
             padding = (upper_bound - lower_bound) * ProcessingConstants.TEMPERATURE_PADDING_FACTOR
-            ABSOLUTE_ZERO = ProcessingConstants.ABSOLUTE_ZERO
+            ABSOLUTE_ZERO = PhysicalConstants.ABSOLUTE_ZERO
             padded_lower = max(lower_bound - padding, ABSOLUTE_ZERO)
             padded_upper = upper_bound + padding
             num_points = int(np.ceil((padded_upper - padded_lower) / step)) + 1

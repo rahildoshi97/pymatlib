@@ -23,10 +23,8 @@ def demonstrate_material_properties():
     T = sp.Symbol('T')
 
     current_file = Path(__file__)
-    yaml_path_Al = current_file.parent.parent.parent / "src" / "pymatlib" / "data" / "materials" / "pure_metals" / "Al" / "Al.yaml"
-    yaml_path_SS304L = current_file.parent.parent.parent / "src" / "pymatlib" / "data" / "materials" / "alloys" / "SS304L" / "SS304L.yaml"
-    print(f"yaml_path_Al: {yaml_path_Al}")
-    print(f"yaml_path_SS304L: {yaml_path_SS304L}")
+    yaml_path_Al = current_file.parent.parent / "src" / "pymatlib" / "data" / "materials" / "pure_metals" / "Al" / "Al.yaml"
+    yaml_path_SS304L = current_file.parent.parent / "src" / "pymatlib" / "data" / "materials" / "alloys" / "SS304L" / "SS304L.yaml"
 
     materials = []
     print(f"\n{'='*80}")
@@ -35,13 +33,13 @@ def demonstrate_material_properties():
         mat_Al = create_material(yaml_path=yaml_path_Al, T=T, enable_plotting=True)
         materials.append(mat_Al)
     else:
-        raise ValueError(f"Aluminum YAML file not found: {yaml_path_Al}")
+        raise FileNotFoundError(f"Aluminum YAML file not found: {yaml_path_Al}")
 
     if yaml_path_SS304L.exists():
         mat_SS304L = create_material(yaml_path=yaml_path_SS304L, T=T, enable_plotting=True)
         materials.append(mat_SS304L)
     else:
-        raise ValueError(f"SS304L YAML file not found: {yaml_path_SS304L}")
+        raise FileNotFoundError(f"SS304L YAML file not found: {yaml_path_SS304L}")
 
     for mat in materials:
         print(f"\n{'='*80}")

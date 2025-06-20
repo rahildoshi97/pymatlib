@@ -1,7 +1,7 @@
 """
 Base processor class for material property processing with common finalization logic.
 
-This module provides the BasePropertyProcessor class that serves as a foundation
+This module provides the PropertyProcessorBase class that serves as a foundation
 for all property processors in the PyMatLib library, ensuring consistent
 processing patterns and reducing code duplication.
 """
@@ -9,13 +9,14 @@ processing patterns and reducing code duplication.
 import logging
 import numpy as np
 import sympy as sp
-from typing import Dict, Union, Tuple, Any, Optional
+from typing import Dict, Union, Tuple, Optional
+from pathlib import Path
+
 from pymatlib.algorithms.piecewise_builder import PiecewiseBuilder
 from pymatlib.parsing.utils.utilities import handle_numeric_temperature
 from pymatlib.core.materials import Material
 
 logger = logging.getLogger(__name__)
-
 
 class PropertyProcessorBase:
     """
@@ -23,18 +24,25 @@ class PropertyProcessorBase:
 
     This class provides shared functionality for processing material properties,
     including piecewise function creation, visualization, and property assignment.
-    It serves as the foundation for MaterialPropertyProcessor and other specialized
-    processors in the PyMatLib library.
+    It serves as the foundation for all property handlers in the PyMatLib library.
     Attributes:
         processed_properties (set): Set of property names that have been processed
         visualizer: Optional visualizer instance for property plotting
+        base_dir (Path): Base directory for file operations
     """
 
     def __init__(self):
         """Initialize the base processor with empty state."""
         self.processed_properties = set()
         self.visualizer = None
-        logger.debug("BasePropertyProcessor initialized")
+        self.base_dir: Path = None
+        logger.debug("PropertyProcessorBase initialized")
+
+    def set_processing_context(self, base_dir: Path, visualizer, processed_properties: set):
+        """Set processing context shared across handlers."""
+        self.base_dir = base_dir
+        self.visualizer = visualizer
+        self.processed_properties = processed_properties
 
     def _finalize_property_processing(self, material: Material, prop_name: str,
                                       temp_array: np.ndarray, prop_array: np.ndarray,
@@ -195,7 +203,7 @@ class PropertyProcessorBase:
             visualizer: Visualizer instance that implements visualization methods
         """
         self.visualizer = visualizer
-        logger.debug("Visualizer set for BasePropertyProcessor")
+        logger.debug("Visualizer set for PropertyProcessorBase")
 
     def reset_processing_state(self) -> None:
         """
