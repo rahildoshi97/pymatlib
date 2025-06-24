@@ -14,11 +14,19 @@ from pymatlib.parsing.config.yaml_keys import EQUATION_KEY, TEMPERATURE_KEY
 
 logger = logging.getLogger(__name__)
 
+
 class DependencyProcessor:
     """Handles dependency resolution and computed property processing."""
+
     def __init__(self, properties: Dict[str, Any], processed_properties: Set[str]):
         self.properties = properties
         self.processed_properties = processed_properties
+        # Store reference to the property handler for finalization
+        self.property_handler = None
+
+    def set_property_handler(self, property_handler):
+        """Set reference to the property handler for finalization."""
+        self.property_handler = property_handler
 
     def process_computed_property(self, material: Material, prop_name: str,
                                   T: Union[float, sp.Symbol]) -> None:
@@ -59,6 +67,16 @@ class DependencyProcessor:
                     logger.warning(f"Property '{prop_name}' has {invalid_count} non-finite values. "
                                    f"This may indicate issues with the expression: {expression}")
                 validate_monotonic_energy_density(prop_name, temp_array, y_dense)
+                if self.property_handler is not None:
+                    # Use the property processor's finalization method for consistent handling
+                    self.property_handler.finalize_computed_property(
+                        material, prop_name, temp_array, y_dense, T, prop_config
+                    )
+                else:
+                    # Fallback: Set property directly (no visualization)
+                    setattr(material, prop_name, material_property)
+                    self.processed_properties.add(prop_name)
+                    logger.warning(f"Property processor not available for '{prop_name}' - skipping visualization")
                 # Set the property on the material
                 setattr(material, prop_name, material_property)
                 self.processed_properties.add(prop_name)
@@ -92,7 +110,8 @@ class DependencyProcessor:
                     available_props = sorted(list(self.properties.keys()))
                     logger.error(f"Missing dependencies for '{prop_name}': {missing_deps}. "
                                  f"Available: {available_props}")
-                    raise DependencyError(expression=expression, missing_deps=missing_deps, available_props=available_props)
+                    raise DependencyError(expression=expression, missing_deps=missing_deps,
+                                          available_props=available_props)
                 # Check for circular dependencies
                 self._validate_circular_dependencies(prop_name, dependencies, set())
                 # Process dependencies first
@@ -103,7 +122,8 @@ class DependencyProcessor:
                             self.process_computed_property(material, dep, T)
                         else:
                             available_props = sorted(list(self.properties.keys()))
-                            raise DependencyError(expression=expression, missing_deps=[dep], available_props=available_props)
+                            raise DependencyError(expression=expression, missing_deps=[dep],
+                                                  available_props=available_props)
             # Verify all dependencies are now available
             missing_deps = [dep for dep in dependencies if not hasattr(material, dep) or getattr(material, dep) is None]
             if missing_deps:
@@ -120,9 +140,9 @@ class DependencyProcessor:
                     raise ValueError(f"Symbol '{dep}' not found in symbol registry")
                 substitutions[dep_symbol] = dep_value
             # Handle temperature substitution based on type
-            if isinstance(T, sp.Symbol): # If T is a symbolic variable, substitute the standard 'T' with it
+            if isinstance(T, sp.Symbol):  # If T is a symbolic variable, substitute the standard 'T' with it
                 substitutions[T_standard] = T
-            else: # For numeric T, substitute with the value directly
+            else:  # For numeric T, substitute with the value directly
                 substitutions[T_standard] = T
             # Perform substitution and evaluate integrals
             result_expr = sympy_expr.subs(substitutions)

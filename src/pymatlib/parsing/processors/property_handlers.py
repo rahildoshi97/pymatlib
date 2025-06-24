@@ -1,6 +1,6 @@
 import logging
 from typing import Any, Dict, Union
-from pathlib import Path
+# from pathlib import Path
 import numpy as np
 import sympy as sp
 
@@ -19,6 +19,7 @@ from pymatlib.data.constants import PhysicalConstants, ProcessingConstants
 
 logger = logging.getLogger(__name__)
 
+
 class BasePropertyHandler(PropertyProcessorBase):
     """
     Base class for property handlers with common functionality.
@@ -26,12 +27,15 @@ class BasePropertyHandler(PropertyProcessorBase):
     This class inherits from PropertyProcessorBase to provide shared functionality
     for processing material properties. All specialized handlers inherit from this class.
     """
+
     def __init__(self):
         super().__init__()
         logger.debug("BasePropertyHandler initialized")
 
+
 class ConstantPropertyHandler(BasePropertyHandler):
     """Handler for constant properties."""
+
     def process_property(self, material: Material, prop_name: str,
                          prop_config: Union[float, str], T: Union[float, sp.Symbol]) -> None:
         """Process constant float property."""
@@ -46,8 +50,10 @@ class ConstantPropertyHandler(BasePropertyHandler):
             logger.error(f"Failed to process constant property '{prop_name}': {e}", exc_info=True)
             raise ValueError(f"Failed to process constant property \n -> {str(e)}") from e
 
+
 class StepFunctionPropertyHandler(BasePropertyHandler):
     """Handler for step function properties."""
+
     def process_property(self, material: Material, prop_name: str,
                          prop_config: Dict[str, Any], T: Union[float, sp.Symbol]) -> None:
         """Process step function with unified symbol handling."""
@@ -77,8 +83,10 @@ class StepFunctionPropertyHandler(BasePropertyHandler):
         except Exception as e:
             raise ValueError(f"Failed to process step function property '{prop_name}'\n -> {str(e)}") from e
 
+
 class FilePropertyHandler(BasePropertyHandler):
     """Handler for file-based properties."""
+
     def process_property(self, material: Material, prop_name: str,
                          file_config: Dict[str, Any], T: Union[float, sp.Symbol]) -> None:
         """Process property data from a file configuration."""
@@ -99,8 +107,10 @@ class FilePropertyHandler(BasePropertyHandler):
             logger.error(f"Failed to process file property '{prop_name}': {e}", exc_info=True)
             raise ValueError(f"Failed to process file property {prop_name} \n -> {str(e)}") from e
 
+
 class KeyValPropertyHandler(BasePropertyHandler):
     """Handler for key-value properties."""
+
     def process_property(self, material: Material, prop_name: str,
                          prop_config: Dict[str, Any], T: Union[float, sp.Symbol]) -> None:
         """Process property defined with key-val pairs."""
@@ -117,8 +127,10 @@ class KeyValPropertyHandler(BasePropertyHandler):
         except Exception as e:
             raise ValueError(f"Failed to process key-val property '{prop_name}' \n -> {str(e)}") from e
 
+
 class PiecewiseEquationPropertyHandler(BasePropertyHandler):
     """Handler for piecewise equation properties."""
+
     def process_property(self, material: Material, prop_name: str,
                          prop_config: Dict[str, Any], T: Union[float, sp.Symbol]) -> None:
         """Process piecewise equation property."""
@@ -131,8 +143,9 @@ class PiecewiseEquationPropertyHandler(BasePropertyHandler):
                 expr = sp.sympify(eqn)
                 for symbol in expr.free_symbols:
                     if str(symbol) != 'T':
-                        raise ValueError(f"Unsupported symbol '{symbol}' in equation '{eqn}' for property '{prop_name}'. "
-                                         f"Only 'T' is allowed.")
+                        raise ValueError(
+                            f"Unsupported symbol '{symbol}' in equation '{eqn}' for property '{prop_name}'. "
+                            f"Only 'T' is allowed.")
             lower_bound_type, upper_bound_type = prop_config[BOUNDS_KEY]
             temp_points, eqn_strings = ensure_ascending_order(temp_points, eqn_strings)
             # Create dense temperature array for validation
@@ -152,8 +165,10 @@ class PiecewiseEquationPropertyHandler(BasePropertyHandler):
         except Exception as e:
             raise ValueError(f"Failed to process piecewise equation property '{prop_name}' \n -> {str(e)}") from e
 
+
 class ComputedPropertyHandler(BasePropertyHandler):
     """Handler for computed properties."""
+
     def __init__(self):
         super().__init__()
         self.dependency_processor = None
@@ -162,6 +177,8 @@ class ComputedPropertyHandler(BasePropertyHandler):
         """Set the dependency processor with access to all properties."""
         from pymatlib.parsing.processors.dependency_processor import DependencyProcessor
         self.dependency_processor = DependencyProcessor(properties, self.processed_properties)
+        # Pass reference to this handler for finalization
+        self.dependency_processor.set_property_handler(self)
 
     def process_property(self, material: Material, prop_name: str,
                          config: Dict[str, Any], T: Union[float, sp.Symbol]) -> None:
@@ -170,3 +187,16 @@ class ComputedPropertyHandler(BasePropertyHandler):
             raise ValueError("Dependency processor not initialized")
         # Pass the config to the dependency processor if needed, or ignore it
         self.dependency_processor.process_computed_property(material, prop_name, T)
+
+    def finalize_computed_property(self, material: Material, prop_name: str,
+                                   temp_array: np.ndarray, prop_array: np.ndarray,
+                                   T: Union[float, sp.Symbol], config: Dict[str, Any]) -> None:
+        """
+        Public method to finalize computed property processing.
+
+        This method provides a public interface to the protected _finalize_property_processing
+        method, allowing the DependencyProcessor to properly finalize computed properties
+        while maintaining consistency with other property handlers.
+        """
+        self._finalize_property_processing(material, prop_name, temp_array, prop_array,
+                                           T, config, 'COMPUTE', skip_numeric_check=True)

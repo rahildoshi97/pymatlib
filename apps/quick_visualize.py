@@ -8,6 +8,7 @@ from pycallgraph2.globbing_filter import GlobbingFilter
 # Add pymatlib to path
 sys.path.append(str(Path(__file__).parent.parent))
 
+
 def quick_visualize(target_function, output_name, include_patterns):
     """Quick visualization for any target function."""
     image_folder = Path(__file__).parent / 'callgraph_images'
@@ -36,6 +37,7 @@ def quick_visualize(target_function, output_name, include_patterns):
 
     print(f"Visualization saved to: {output_file}")
 
+
 def analyze_material_properties(mat):
     """Analyze and report material properties."""
     print(f"\n--- Material Analysis: {mat.name} ---")
@@ -51,6 +53,7 @@ def analyze_material_properties(mat):
         print(f"✗ Energy density: None (not defined in YAML)")
         return False
 
+
 def test_material_with_energy_density():
     """Test material creation focusing on materials with energy density."""
     import sympy as sp
@@ -62,7 +65,7 @@ def test_material_with_energy_density():
     yaml_paths = [
         Path(__file__).parent.parent / "src" / "pymatlib" / "data" / "materials" / "alloys" / "SS304L" / "SS304L.yaml",
         Path(__file__).parent.parent / "src" / "pymatlib" / "data" / "materials" / "pure_metals" / "Al" / "Al.yaml",
-        ]
+    ]
 
     materials_with_energy = []
 
@@ -78,10 +81,11 @@ def test_material_with_energy_density():
 
     return materials_with_energy
 
+
 def test_inverse_with_working_material():
     """Test inverse function with materials that have energy density."""
     import sympy as sp
-    from pymatlib.algorithms.inversion import PiecewiseInverter
+    from pymatlib.algorithms.piecewise_inverter import PiecewiseInverter
 
     materials = test_material_with_energy_density()
 
@@ -104,7 +108,8 @@ def test_inverse_with_working_material():
                     energy_val = float(mat.energy_density.subs(temp_symbol, test_temp))
                     recovered_temp = float(inverse_func.subs(E_symbol, energy_val))
                     error = abs(test_temp - recovered_temp)
-                    print(f"✓ Round-trip test: T={test_temp} -> E={energy_val:.2e} -> T={recovered_temp:.1f}, Error={error:.2e}")
+                    print(
+                        f"✓ Round-trip test: T={test_temp} -> E={energy_val:.2e} -> T={recovered_temp:.1f}, Error={error:.2e}")
 
                     return inverse_func
                 else:
@@ -114,12 +119,13 @@ def test_inverse_with_working_material():
 
     return None
 
+
 def test_heat_equation_workflow():
     """Test the complete heat equation workflow."""
     import sympy as sp
     import pystencils as ps
     from pymatlib.parsing.api import create_material
-    from pymatlib.algorithms.inversion import PiecewiseInverter
+    from pymatlib.algorithms.piecewise_inverter import PiecewiseInverter
 
     print("\n--- Heat Equation Workflow Test ---")
 
@@ -128,7 +134,8 @@ def test_heat_equation_workflow():
     u, u_tmp = ps.fields(f"u, u_tmp: {data_type}[2D]", layout='fzyx')
 
     # Test with SS304L (known to have energy density)
-    yaml_path = Path(__file__).parent.parent / "src" / "pymatlib" / "data" / "materials" / "alloys" / "SS304L" / "SS304L.yaml"
+    yaml_path = Path(
+        __file__).parent.parent / "src" / "pymatlib" / "data" / "materials" / "alloys" / "SS304L" / "SS304L.yaml"
 
     if yaml_path.exists():
         try:
@@ -157,6 +164,7 @@ def test_heat_equation_workflow():
 
     return None
 
+
 def create_comprehensive_demo():
     """Create a comprehensive demonstration of working functionality."""
     from examples.material_properties_demo import demonstrate_material_properties
@@ -168,6 +176,7 @@ def create_comprehensive_demo():
     except Exception as e:
         print(f"Demo failed: {e}")
         return False
+
 
 if __name__ == "__main__":
     print("Creating enhanced material visualization call graphs...")
@@ -183,7 +192,7 @@ if __name__ == "__main__":
     quick_visualize(
         test_inverse_with_working_material,
         'working_inverse_function',
-        ['pymatlib.algorithms.inversion.*', 'PiecewiseInverter.*', 'create_inverse']
+        ['pymatlib.algorithms.piecewise_inverter.*', 'PiecewiseInverter.*', 'create_inverse']
     )
 
     # Test heat equation workflow

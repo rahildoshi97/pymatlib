@@ -54,7 +54,7 @@ from .parsing.validation.property_type_detector import PropertyType
 # Algorithms
 from .algorithms.interpolation import interpolate_value, ensure_ascending_order
 from .algorithms.piecewise_builder import PiecewiseBuilder
-from .algorithms.inversion import PiecewiseInverter
+from .algorithms.piecewise_inverter import PiecewiseInverter
 
 # Visualization
 from .visualization.plotters import PropertyVisualizer

@@ -6,7 +6,7 @@ from pystencilssfg import SourceFileGenerator
 from walberla.codegen import Sweep
 
 from pymatlib.parsing.api import create_material
-from pymatlib.algorithms.inversion import PiecewiseInverter
+from pymatlib.algorithms.piecewise_inverter import PiecewiseInverter
 
 logging.basicConfig(
     level=logging.INFO,  # DEBUG/INFO/WARNING
@@ -17,6 +17,7 @@ logging.basicConfig(
 logging.getLogger('matplotlib').setLevel(logging.WARNING)
 logging.getLogger('PIL').setLevel(logging.WARNING)
 logging.getLogger('fontTools').setLevel(logging.WARNING)
+
 with SourceFileGenerator() as sfg:
     data_type = "float64"
 

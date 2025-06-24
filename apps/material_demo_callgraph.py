@@ -9,12 +9,14 @@ from pycallgraph2.globbing_filter import GlobbingFilter
 # Add pymatlib to path
 sys.path.append(str(Path(__file__).parent.parent))
 
+
 def setup_visualization_environment():
     """Setup directories and paths for visualization."""
     apps_directory = Path(__file__).parent
     image_folder = apps_directory / 'callgraph_images'
     image_folder.mkdir(exist_ok=True)
     return image_folder
+
 
 def create_robust_inverse_visualization():
     """Create visualization that handles both successful and failed inverse creation."""
@@ -23,7 +25,7 @@ def create_robust_inverse_visualization():
     config = Config(max_depth=12, min_depth=1)
     config.trace_filter = GlobbingFilter(
         include=[
-            'pymatlib.algorithms.inversion.*',
+            'pymatlib.algorithms.piecewise_inverter.*',
             'pymatlib.parsing.api.*',
             'pymatlib.core.materials.*',
             'PiecewiseInverter.*',
@@ -50,7 +52,7 @@ def create_robust_inverse_visualization():
     with PyCallGraph(config=config, output=graphviz):
         import sympy as sp
         from pymatlib.parsing.api import create_material
-        from pymatlib.algorithms.inversion import PiecewiseInverter
+        from pymatlib.algorithms.piecewise_inverter import PiecewiseInverter
 
         T = sp.Symbol('T')
         current_file = Path(__file__)
@@ -80,7 +82,8 @@ def create_robust_inverse_visualization():
                             if len(energy_symbols) == 1:
                                 temp_symbol = list(energy_symbols)[0]
                                 E_symbol = sp.Symbol('E')
-                                inverse_func2 = PiecewiseInverter.create_inverse(mat.energy_density, temp_symbol, E_symbol)
+                                inverse_func2 = PiecewiseInverter.create_inverse(mat.energy_density, temp_symbol,
+                                                                                 E_symbol)
                                 print(f"Method 2 succeeded for {mat.name}")
 
                                 # Test a few evaluations
@@ -99,6 +102,7 @@ def create_robust_inverse_visualization():
                     print(f"Failed to create material from {yaml_path}: {e}")
 
     print(f"Robust inverse visualization saved to: {output_file}")
+
 
 def create_heat_equation_workflow_visualization():
     """Create visualization for the heat equation workflow from your existing code."""
@@ -134,7 +138,7 @@ def create_heat_equation_workflow_visualization():
         import sympy as sp
         import pystencils as ps
         from pymatlib.parsing.api import create_material
-        from pymatlib.algorithms.inversion import PiecewiseInverter
+        from pymatlib.algorithms.piecewise_inverter import PiecewiseInverter
 
         # Create fields
         data_type = "float64"
@@ -143,7 +147,8 @@ def create_heat_equation_workflow_visualization():
         # Load material
         yaml_path = Path(__file__).parent / 'SS304L_HeatEquationKernelWithMaterial.yaml'
         if not yaml_path.exists():
-            yaml_path = Path(__file__).parent.parent / "src" / "pymatlib" / "data" / "materials" / "alloys" / "SS304L" / "SS304L.yaml"
+            yaml_path = Path(
+                __file__).parent.parent / "src" / "pymatlib" / "data" / "materials" / "alloys" / "SS304L" / "SS304L.yaml"
 
         if yaml_path.exists():
             try:
@@ -165,6 +170,7 @@ def create_heat_equation_workflow_visualization():
                 print(f"Material creation failed: {e}")
 
     print(f"Heat equation workflow visualization saved to: {output_file}")
+
 
 if __name__ == "__main__":
     print("Creating robust material and inverse function visualizations...")

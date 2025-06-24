@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from typing import Final
 
+
 @dataclass(frozen=True)
 class ProcessingConstants:
     """Processing constants used throughout the YAML parser."""
@@ -29,6 +30,7 @@ class ProcessingConstants:
     # Shared regex for temperature arithmetic
     TEMP_ARITHMETIC_REGEX: Final[str] = r'^(\w+)\s*([+-])\s*(\d+(?:\.\d+)?)$'
 
+
 @dataclass(frozen=True)
 class ErrorMessages:
     """Standardized error message templates."""
@@ -37,6 +39,7 @@ class ErrorMessages:
     INVALID_PROPERTY_TYPE: Final[str] = "Invalid property type for '{prop_name}': {prop_type}"
     MISSING_DEPENDENCY: Final[str] = "Missing dependency '{dep}' for property '{prop_name}'"
     CIRCULAR_DEPENDENCY: Final[str] = "Circular dependency detected: {cycle_path}"
+
 
 @dataclass(frozen=True)
 class FileConstants:

@@ -10,6 +10,7 @@ from pymatlib.parsing.config.yaml_keys import CONSTANT_KEY, EXTRAPOLATE_KEY, BOU
 
 logger = logging.getLogger(__name__)
 
+
 class PiecewiseBuilder:
     """Centralized piecewise function creation with different strategies."""
 
@@ -69,9 +70,9 @@ class PiecewiseBuilder:
         # Process expressions using the provided symbol T
         processed_exprs = []
         for expr in equations:
-            if isinstance(expr, str): # For string expressions, use the provided symbol T
+            if isinstance(expr, str):  # For string expressions, use the provided symbol T
                 processed_exprs.append(sp.sympify(expr, locals={'T': T}))
-            else: # For SymPy expressions, use as is
+            else:  # For SymPy expressions, use as is
                 processed_exprs.append(expr)
         # Validate input
         if len(processed_exprs) != len(temp_points) - 1:
@@ -96,12 +97,12 @@ class PiecewiseBuilder:
         for i, expr in enumerate(processed_exprs):
             if i == 0 and lower_bound_type == EXTRAPOLATE_KEY:
                 # First segment with extrapolation
-                conditions.append((expr, T < temp_points[i+1]))
+                conditions.append((expr, T < temp_points[i + 1]))
             elif i == len(processed_exprs) - 1 and upper_bound_type == EXTRAPOLATE_KEY:
                 # Last segment with extrapolation
                 conditions.append((expr, T >= temp_points[i]))
-            else: # Regular interval
-                conditions.append((expr, sp.And(T >= temp_points[i], T < temp_points[i+1])))
+            else:  # Regular interval
+                conditions.append((expr, sp.And(T >= temp_points[i], T < temp_points[i + 1])))
         # Handle upper bound
         if upper_bound_type == CONSTANT_KEY:
             conditions.append((processed_exprs[-1].subs(T, temp_points[-1]), T >= temp_points[-1]))
@@ -137,9 +138,9 @@ class PiecewiseBuilder:
         conditions.append((lower_expr, T < temp_array[0]))
         # Handle main interpolation segments
         for i in range(len(temp_array) - 1):
-            slope = (prop_array[i+1] - prop_array[i]) / (temp_array[i+1] - temp_array[i])
+            slope = (prop_array[i + 1] - prop_array[i]) / (temp_array[i + 1] - temp_array[i])
             expr = prop_array[i] + slope * (T - temp_array[i])
-            condition = sp.And(T >= temp_array[i], T < temp_array[i+1])
+            condition = sp.And(T >= temp_array[i], T < temp_array[i + 1])
             conditions.append((expr, condition))
         # Handle upper bound (T >= temp_array[-1])
         if upper == CONSTANT_KEY:

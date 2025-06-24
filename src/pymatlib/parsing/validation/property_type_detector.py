@@ -16,6 +16,7 @@ from pymatlib.data.constants import ProcessingConstants
 
 logger = logging.getLogger(__name__)
 
+
 # --- Enum ---
 class PropertyType(Enum):
     CONSTANT = auto()
@@ -25,6 +26,7 @@ class PropertyType(Enum):
     PIECEWISE_EQUATION = auto()
     COMPUTE = auto()
     INVALID = auto()
+
 
 # --- Main Class ---
 class PropertyTypeDetector:
@@ -36,10 +38,13 @@ class PropertyTypeDetector:
         # Unique key checks first (most efficient)
         (lambda c: FILE_PATH_KEY in c, PropertyType.FILE),
         # Patterns sharing keys (order matters)
-        (lambda c: TEMPERATURE_KEY in c and VALUE_KEY in c and PropertyTypeDetector._is_step_function(c), PropertyType.STEP_FUNCTION),
+        (lambda c: TEMPERATURE_KEY in c and VALUE_KEY in c and PropertyTypeDetector._is_step_function(c),
+         PropertyType.STEP_FUNCTION),
         (lambda c: TEMPERATURE_KEY in c and VALUE_KEY in c, PropertyType.KEY_VAL),
-        (lambda c: TEMPERATURE_KEY in c and EQUATION_KEY in c and isinstance(c.get(EQUATION_KEY), list), PropertyType.PIECEWISE_EQUATION),
-        (lambda c: TEMPERATURE_KEY in c and EQUATION_KEY in c and isinstance(c.get(EQUATION_KEY), str), PropertyType.COMPUTE),
+        (lambda c: TEMPERATURE_KEY in c and EQUATION_KEY in c and isinstance(c.get(EQUATION_KEY), list),
+         PropertyType.PIECEWISE_EQUATION),
+        (lambda c: TEMPERATURE_KEY in c and EQUATION_KEY in c and isinstance(c.get(EQUATION_KEY), str),
+         PropertyType.COMPUTE),
     ]
 
     # --- Main Public API ---
@@ -77,7 +82,7 @@ class PropertyTypeDetector:
         val_list = config.get(VALUE_KEY)
         temp_def = config.get(TEMPERATURE_KEY)
         is_two_values = isinstance(val_list, list) and len(val_list) == 2
-        is_single_temp = not isinstance(temp_def, list) # Must be a string or number
+        is_single_temp = not isinstance(temp_def, list)  # Must be a string or number
         return is_two_values and is_single_temp
 
     # --- Strict Validators (called by the parser) ---
@@ -98,7 +103,8 @@ class PropertyTypeDetector:
             try:
                 validator(prop_name, config)
             except Exception as e:
-                raise ValueError(f"Invalid configuration for '{prop_name}' (expected type {prop_type.name}): {str(e)}") from e
+                raise ValueError(
+                    f"Invalid configuration for '{prop_name}' (expected type {prop_type.name}): {str(e)}") from e
         else:
             raise NotImplementedError(f"No validation implemented for property type: {prop_type.name}")
 
@@ -139,9 +145,9 @@ class PropertyTypeDetector:
                       # INITIAL_BOILING_TEMPERATURE_KEY, FINAL_BOILING_TEMPERATURE_KEY, BOILING_TEMPERATURE_KEY}
         # if isinstance(temp_def, str) and temp_def not in valid_refs:
             # raise ValueError(f"'temperature' reference '{temp_def}' is not a valid transition name.")
-        if isinstance(temp_def, str): # Check if it's a valid arithmetic expression
+        if isinstance(temp_def, str):  # Check if it's a valid arithmetic expression
             match = re.match(ProcessingConstants.TEMP_ARITHMETIC_REGEX, temp_def.strip())
-            if match: # If it matches, check if the base reference is valid
+            if match:  # If it matches, check if the base reference is valid
                 base_ref = match.group(1)
                 valid_refs = {
                     MELTING_TEMPERATURE_KEY, SOLIDUS_TEMPERATURE_KEY, LIQUIDUS_TEMPERATURE_KEY,
@@ -150,7 +156,7 @@ class PropertyTypeDetector:
                 if base_ref not in valid_refs:
                     raise ValueError(f"invalid base temperature reference '{base_ref}' in expression '{temp_def}'. "
                                      f"Allowed base references are: {sorted(list(valid_refs))}")
-            else: # If not arithmetic, it must be an exact reference
+            else:  # If not arithmetic, it must be an exact reference
                 valid_refs = {
                     MELTING_TEMPERATURE_KEY, SOLIDUS_TEMPERATURE_KEY, LIQUIDUS_TEMPERATURE_KEY,
                     INITIAL_BOILING_TEMPERATURE_KEY, FINAL_BOILING_TEMPERATURE_KEY, BOILING_TEMPERATURE_KEY
@@ -175,7 +181,8 @@ class PropertyTypeDetector:
         if not isinstance(val_list, list):
             raise ValueError("'value' for a key-val property must be a list.")
         if isinstance(temp_def, list) and len(temp_def) != len(val_list):
-            raise ValueError(f"temperature list (length {len(temp_def)}) and value list (length {len(val_list)}) must have the same length")
+            raise ValueError(
+                f"temperature list (length {len(temp_def)}) and value list (length {len(val_list)}) must have the same length")
 
     @staticmethod
     def _validate_piecewise_equation_property(prop_name: str, config: Dict[str, Any]) -> None:

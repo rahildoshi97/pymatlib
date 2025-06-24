@@ -15,6 +15,7 @@ from pymatlib.data.constants import PhysicalConstants, ProcessingConstants
 
 logger = logging.getLogger(__name__)
 
+
 class TemperatureResolver:
     """Handles processing of different temperature definition formats in YAML configurations."""
     # --- Class Constants ---
@@ -40,6 +41,11 @@ class TemperatureResolver:
         Process different temperature definition formats with optional material reference support.
         Args:
             temp_def: Temperature definition (list, string, numeric, or reference)
+                - List: [300, 400, 500] (explicit temperatures)
+                - String: "(300, 500, 50)" (range format)
+                - String: "(300, 50)" (equidistant format, requires n_values)
+                - Float: 500.0 (single temperature)
+                - String: "melting_temperature + 50" (reference format, requires material)
             n_values: Number of values (required for equidistant format)
             material: Material object for temperature reference resolution (optional)
         Returns:
@@ -63,7 +69,8 @@ class TemperatureResolver:
         elif isinstance(temp_def, (int, float)):
             temp_val = float(temp_def)
             if temp_val <= TemperatureResolver.ABSOLUTE_ZERO:
-                raise ValueError(f"Temperature must be above absolute zero ({TemperatureResolver.ABSOLUTE_ZERO}K), got {temp_val}K")
+                raise ValueError(
+                    f"Temperature must be above absolute zero ({TemperatureResolver.ABSOLUTE_ZERO}K), got {temp_val}K")
             return np.array([temp_val], dtype=float)
         else:
             raise ValueError(f"Unsupported temperature definition format: {type(temp_def)}")
@@ -249,7 +256,8 @@ class TemperatureResolver:
         if material is not None:
             return np.array([TemperatureResolver.resolve_temperature_reference(temp_str, material)])
         else:
-            raise ValueError(f"String temperature definition must be enclosed in parentheses or require material for reference: {temp_str}")
+            raise ValueError(
+                f"String temperature definition must be enclosed in parentheses or require material for reference: {temp_str}")
 
     @staticmethod
     def _process_temperature_range_format(temp_str: str, n_values: Optional[int] = None) -> np.ndarray:
@@ -286,7 +294,8 @@ class TemperatureResolver:
             np.ndarray: Generated temperature array
         """
         if n_values is None:
-            raise ValueError("Number of values required for equidistant temperature format (start, increment/decrement)")
+            raise ValueError(
+                "Number of values required for equidistant temperature format (start, increment/decrement)")
         if n_values < TemperatureResolver.MIN_POINTS:
             raise ValueError(f"Number of values must be at least {TemperatureResolver.MIN_POINTS}, got {n_values}")
         try:
@@ -294,7 +303,8 @@ class TemperatureResolver:
             if abs(increment) <= TemperatureResolver.EPSILON:
                 raise ValueError("Temperature increment/decrement cannot be zero")
             if start <= TemperatureResolver.ABSOLUTE_ZERO:
-                raise ValueError(f"Start temperature must be above absolute zero ({TemperatureResolver.ABSOLUTE_ZERO}K), got {start}K")
+                raise ValueError(
+                    f"Start temperature must be above absolute zero ({TemperatureResolver.ABSOLUTE_ZERO}K), got {start}K")
             # Generate temperature array
             temp_array = np.array([start + i * increment for i in range(n_values)])
             # Validate all temperatures are above absolute zero
@@ -303,7 +313,8 @@ class TemperatureResolver:
                 raise ValueError(f"Generated temperatures must be above absolute zero, got {invalid_temps}")
             return temp_array
         except (ValueError, TypeError) as e:
-            raise ValueError(f"Invalid equidistant temperature format: ({values[0]}, {values[1]}) \n -> {str(e)}") from e
+            raise ValueError(
+                f"Invalid equidistant temperature format: ({values[0]}, {values[1]}) \n -> {str(e)}") from e
 
     # --- Range Format Methods ---
     @staticmethod
@@ -379,7 +390,7 @@ class TemperatureResolver:
                 raise ValueError(f"Absolute value of step ({abs(step)}) is too large for the range. "
                                  f"It should be <= {abs(stop - start)}")
             # Generate temperature array using step size
-            temp_array = np.arange(start, stop + step/2, step)
+            temp_array = np.arange(start, stop + step / 2, step)
             return temp_array
         except (ValueError, TypeError) as e:
             raise ValueError(f"Invalid step format: ({', '.join(values)}) \n -> {str(e)}") from e

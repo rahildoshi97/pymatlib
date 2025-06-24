@@ -92,7 +92,7 @@ properties:
     bounds: [extrapolate, extrapolate]     # Allow extrapolation outside range
     regression:
       simplify: post
-      degree: 1
+      degree: 2
       segments: 1
 
   energy_density:

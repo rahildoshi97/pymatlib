@@ -13,8 +13,10 @@ from pymatlib.data.constants import PhysicalConstants, ProcessingConstants
 
 logger = logging.getLogger(__name__)
 
+
 class PropertyVisualizer:
     """Handles visualization of material properties."""
+
     # --- Constructor ---
     def __init__(self, parser) -> None:
         self.parser = parser
@@ -88,7 +90,8 @@ class PropertyVisualizer:
                 step = temp_range / 1000  # Create 1000 points for smooth visualization
             else:
                 # Fallback for properties without explicit temperature data
-                data_lower, data_upper = (ProcessingConstants.DEFAULT_TEMP_LOWER, ProcessingConstants.DEFAULT_TEMP_UPPER)
+                data_lower, data_upper = (ProcessingConstants.DEFAULT_TEMP_LOWER,
+                                          ProcessingConstants.DEFAULT_TEMP_UPPER)
                 step = (data_upper - data_lower) / 1000
             # Set bounds with property-specific defaults
             if lower_bound is None:
@@ -108,12 +111,12 @@ class PropertyVisualizer:
             ax.set_xlabel("Temperature (K)", fontweight='bold')
             ax.set_ylabel(f"{prop_name}", fontweight='bold')
             colors = {
-                'constant': '#1f77b4',          # blue
-                'raw': '#ff7f0e',               # orange
-                'regression_pre': '#2ca02c',    # green
-                'regression_post': '#d62728',   # red
-                'bounds': '#9467bd',            # purple
-                'extended': '#8c564b',          # brown
+                'constant': '#1f77b4',  # blue
+                'raw': '#ff7f0e',  # orange
+                'regression_pre': '#2ca02c',  # green
+                'regression_post': '#d62728',  # red
+                'bounds': '#9467bd',  # purple
+                'extended': '#8c564b',  # brown
             }
             # Initialize y_value for annotations
             _y_value = 0.0
@@ -143,14 +146,14 @@ class PropertyVisualizer:
                             bbox=dict(facecolor='white', alpha=0.7, boxstyle='round'))
                     # Set y_value for boundary annotations
                     _y_value = np.mean(y_data)
-                else: # Fallback for step function without data
+                else:  # Fallback for step function without data
                     try:
                         f_current = sp.lambdify(T, current_prop, 'numpy')
                         _y_value = f_current(lower_bound)
                     except Exception as e:
                         logger.warning(f"Could not evaluate step function: {e}")
                         _y_value = 0.0
-            else: # Handle all other property types (FILE, KEY_VAL, PIECEWISE_EQUATION, COMPUTE)
+            else:  # Handle all other property types (FILE, KEY_VAL, PIECEWISE_EQUATION, COMPUTE)
                 try:
                     f_current = sp.lambdify(T, current_prop, 'numpy')
                     # Determine the appropriate label and color based on regression status
@@ -160,7 +163,7 @@ class PropertyVisualizer:
                     else:
                         main_color = colors['extended']
                         main_label = 'raw (extended)'
-                    try: # Plot the main function over extended range
+                    try:  # Plot the main function over extended range
                         y_extended = f_current(extended_temp)
                         ax.plot(extended_temp, y_extended, color=main_color,
                                 linestyle='-', linewidth=2.5, label=main_label, zorder=2)
@@ -253,10 +256,10 @@ class PropertyVisualizer:
                 except Exception as e:
                     logger.warning(f"tight_layout failed: {e}. Using subplots_adjust as fallback.")
                     plt.subplots_adjust(
-                        left=0.1,   # Left margin
-                        bottom=0.1, # Bottom margin
+                        left=0.1,  # Left margin
+                        bottom=0.1,  # Bottom margin
                         right=0.9,  # Right margin
-                        top=0.9,    # Top margin (leave space for subtitle)
+                        top=0.9,  # Top margin (leave space for subtitle)
                         hspace=0.4  # Height spacing between subplots
                     )
                 filename = f"{self.parser.config[NAME_KEY].replace(' ', '_')}_properties.png"
@@ -268,8 +271,16 @@ class PropertyVisualizer:
                     facecolor='white',
                     edgecolor='none'
                 )
-                logger.info(f"All properties plot saved as {filepath}")
-        finally: # Always close the figure to prevent memory leaks
+                if len(self.visualized_properties) != sum(len(props) for props in self.parser.categorized_properties.values()):
+                    logger.warning(
+                        f"Not all properties visualized! "
+                        f"Visualized: {len(self.visualized_properties)}, "
+                        f"Total: {sum(len(props) for props in self.parser.categorized_properties.values())}"
+                    )
+                else:
+                    logger.info(f"All properties ({sum(len(props) for props in self.parser.categorized_properties.values())}) visualized successfully.")
+                    logger.info(f"All properties plot saved as {filepath}")
+        finally:  # Always close the figure to prevent memory leaks
             if hasattr(self, 'fig') and self.fig is not None:
                 plt.close(self.fig)
                 self.fig = None

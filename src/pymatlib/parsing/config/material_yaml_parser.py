@@ -16,6 +16,7 @@ from pymatlib.parsing.config.yaml_keys import PROPERTIES_KEY, MATERIAL_TYPE_KEY,
 
 logger = logging.getLogger(__name__)
 
+
 class BaseFileParser:
     """Base class for parsing configuration files."""
 
@@ -26,6 +27,7 @@ class BaseFileParser:
 
     def _load_config(self) -> Dict[str, Any]:
         raise NotImplementedError("Subclasses must implement _load_config method")
+
 
 class YAMLFileParser(BaseFileParser):
     """Parser for YAML configuration files."""
@@ -44,6 +46,7 @@ class YAMLFileParser(BaseFileParser):
             raise scanner.ScannerError(f"YAML syntax error in {self.config_path}: {str(e)}") from e
         except Exception as e:
             raise ValueError(f"Error parsing {self.config_path}: {str(e)}") from e
+
 
 class MaterialYAMLParser(YAMLFileParser):
     """Parser for material configuration files in YAML format."""
@@ -131,7 +134,8 @@ class MaterialYAMLParser(YAMLFileParser):
     # --- Validation Methods ---
     def _validate_config(self) -> None:
         if not isinstance(self.config, dict):
-            raise ValueError("The YAML file must start with a dictionary/object structure with key-value pairs, not a list or scalar value")
+            raise ValueError(
+                "The YAML file must start with a dictionary/object structure with key-value pairs, not a list or scalar value")
         self._validate_required_fields()
         properties = self.config.get(PROPERTIES_KEY, {})
         if not isinstance(properties, dict):
@@ -180,7 +184,8 @@ class MaterialYAMLParser(YAMLFileParser):
         # Check that all fractions are valid numbers
         for element, fraction in composition.items():
             if not isinstance(fraction, (int, float)):
-                raise ValueError(f"Composition fraction for '{element}' must be a number, got {type(fraction).__name__}")
+                raise ValueError(
+                    f"Composition fraction for '{element}' must be a number, got {type(fraction).__name__}")
             if fraction < 0:
                 raise ValueError(f"Composition fraction for '{element}' cannot be negative, got {fraction}")
             if fraction > 1:

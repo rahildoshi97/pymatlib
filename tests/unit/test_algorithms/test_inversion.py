@@ -2,7 +2,7 @@
 
 import pytest
 import sympy as sp
-from pymatlib.algorithms.inversion import PiecewiseInverter
+from pymatlib.algorithms.piecewise_inverter import PiecewiseInverter
 
 class TestPiecewiseInverter:
     """Test cases for PiecewiseInverter."""

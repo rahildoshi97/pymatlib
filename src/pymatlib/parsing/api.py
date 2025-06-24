@@ -9,6 +9,7 @@ from pymatlib.parsing.config.material_yaml_parser import MaterialYAMLParser
 
 logger = logging.getLogger(__name__)
 
+
 def create_material(yaml_path: Union[str, Path], T: Union[float, sp.Symbol], enable_plotting: bool = True) -> Material:
     """
     Create material instance from YAML configuration file.
@@ -51,6 +52,7 @@ def create_material(yaml_path: Union[str, Path], T: Union[float, sp.Symbol], ena
         logger.error(f"Failed to create material from {yaml_path}: {e}", exc_info=True)
         raise
 
+
 def get_supported_properties() -> list:
     """
     Returns a list of all supported material properties.
@@ -58,6 +60,7 @@ def get_supported_properties() -> list:
         List of strings representing valid property names that can be defined in YAML files.
     """
     return list(MaterialYAMLParser.VALID_YAML_PROPERTIES)
+
 
 def validate_yaml_file(yaml_path: Union[str, Path]) -> bool:
     """
@@ -82,6 +85,7 @@ def validate_yaml_file(yaml_path: Union[str, Path]) -> bool:
     except Exception as e:
         # Catch other errors
         raise ValueError(f"Unexpected error validating YAML: {str(e)}") from e
+
 
 # --- Internal/Test Helper ---
 def _test_api():

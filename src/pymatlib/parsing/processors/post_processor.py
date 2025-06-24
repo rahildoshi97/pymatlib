@@ -15,8 +15,10 @@ from pymatlib.parsing.config.yaml_keys import REGRESSION_KEY, POST_KEY
 
 logger = logging.getLogger(__name__)
 
+
 class PropertyPostProcessor:
     """Handles post-processing of properties after initial processing."""
+
     def post_process_properties(self, material: Material, T: Union[float, sp.Symbol],
                                 properties: Dict[str, Any],
                                 categorized_properties: Dict[PropertyType, List[Tuple[str, Any]]],
@@ -92,7 +94,8 @@ class PropertyPostProcessor:
                 raise ValueError(f"Cannot convert temperature data to numpy array for {prop_name}: {str(e)}") from e
         # Validate dtype
         if temp_array.dtype.kind not in ['f', 'i']:
-            logger.warning(f"Temperature array for {prop_name} has non-numeric dtype {temp_array.dtype}. Converting to float64.")
+            logger.warning(
+                f"Temperature array for {prop_name} has non-numeric dtype {temp_array.dtype}. Converting to float64.")
             try:
                 temp_array = np.asarray(temp_array, dtype=np.float64)
             except (ValueError, TypeError) as e:
@@ -116,7 +119,7 @@ class PropertyPostProcessor:
         try:
             piecewise_func = PiecewiseBuilder.build_from_data(temp_array, prop_array, T, prop_config, prop_name)
             logger.debug(f"Successfully created piecewise function for {prop_name} with post-regression")
-        finally: # Restore original config
+        finally:  # Restore original config
             prop_config[REGRESSION_KEY][SIMPLIFY_KEY] = original_simplify_type
         setattr(material, prop_name, piecewise_func)
         logger.debug(f"Successfully applied post-regression to property: {prop_name}")

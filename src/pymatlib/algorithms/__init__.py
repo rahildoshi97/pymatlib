@@ -9,7 +9,7 @@ property inversion operations.
 from .interpolation import interpolate_value, ensure_ascending_order
 from .regression_processor import RegressionProcessor
 from .piecewise_builder import PiecewiseBuilder
-from .inversion import PiecewiseInverter
+from .piecewise_inverter import PiecewiseInverter
 
 __all__ = [
     "interpolate_value",

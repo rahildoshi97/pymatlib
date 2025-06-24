@@ -10,6 +10,7 @@ from pymatlib.data.constants import ProcessingConstants
 
 logger = logging.getLogger(__name__)
 
+
 # --- Core Utility Functions ---
 def handle_numeric_temperature(material: Material, prop_name: str,
                                T: Union[float, sp.Symbol], processor_instance,
@@ -32,6 +33,7 @@ def handle_numeric_temperature(material: Material, prop_name: str,
         except Exception as e:
             raise ValueError(f"Failed to evaluate {prop_name} at T={T}: {str(e)}")
     return False
+
 
 def create_step_visualization_data(transition_temp: float, val_array: List[float],
                                    temp_range: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:

@@ -165,9 +165,9 @@ element_map = {
     'Mo': MOLYBDENUM,
 }
 
+
 def get_element(symbol: str) -> ChemicalElement:
     """Get element by symbol with error handling."""
     if symbol not in element_map:
         raise KeyError(f"Element with symbol '{symbol}' not found")
     return element_map[symbol]
-

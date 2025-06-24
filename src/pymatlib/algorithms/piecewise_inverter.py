@@ -4,11 +4,13 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 class PiecewiseInverter:
     """
     Creates inverse functions for linear piecewise functions only.
     Simplified version that supports only degree 1 polynomial.
     """
+
     def __init__(self, tolerance: float = 1e-12):
         """Initialize the inverter with numerical tolerance."""
         self.tolerance = tolerance
@@ -135,7 +137,7 @@ class PiecewiseInverter:
             raise ValueError("Material does not have energy_density property")
         energy_density_func = material.energy_density
         if not isinstance(energy_density_func, sp.Piecewise):
-            raise ValueError("Energy density must be a piecewise function")
+            raise ValueError(f"Energy density must be a piecewise function, found: {type(energy_density_func)}")
         # Extract the temperature symbol
         symbols = energy_density_func.free_symbols
         if len(symbols) != 1:

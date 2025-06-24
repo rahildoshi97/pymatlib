@@ -6,6 +6,7 @@ import numpy as np
 import sympy as sp
 from pymatlib.core.materials import Material
 
+
 class PropertyProcessor(ABC):
     """Abstract base class for material property processors.
 
@@ -26,6 +27,7 @@ class PropertyProcessor(ABC):
             T: Temperature symbol or value
         """
         pass
+
 
 class TemperatureResolver(ABC):
     """Abstract base class for temperature resolution."""
@@ -54,6 +56,7 @@ class TemperatureResolver(ABC):
         """
         pass
 
+
 class DataHandler(ABC):
     """Abstract base class for data file handling."""
 
@@ -66,6 +69,7 @@ class DataHandler(ABC):
             Tuple of (temperature_array, property_array)
         """
         pass
+
 
 class Visualizer(ABC):
     """Abstract base class for property visualization."""

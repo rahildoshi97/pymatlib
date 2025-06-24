@@ -19,6 +19,7 @@ from pymatlib.parsing.processors.post_processor import PropertyPostProcessor
 
 logger = logging.getLogger(__name__)
 
+
 class PropertyProcessor(PropertyProcessorBase):
     """
     Main orchestrator for processing different property types for material objects.
@@ -26,6 +27,7 @@ class PropertyProcessor(PropertyProcessorBase):
     This class coordinates the processing of various property types by delegating
     to specialized handlers for each property type.
     """
+
     def __init__(self) -> None:
         """Initialize processor with specialized handlers."""
         super().__init__()

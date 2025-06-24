@@ -2,6 +2,7 @@ import sympy as sp
 from dataclasses import dataclass
 from typing import List, Union
 
+
 @dataclass
 class ChemicalElement:
     name: str
@@ -11,6 +12,7 @@ class ChemicalElement:
     boiling_temperature: float
     latent_heat_of_fusion: float
     latent_heat_of_vaporization: float
+
 
 # Utility functions for element property interpolation
 def interpolate(values: List[float], composition: List[float]) -> Union[float, sp.Expr]:
@@ -32,6 +34,7 @@ def interpolate(values: List[float], composition: List[float]) -> Union[float, s
         result += v * c
     return result
 
+
 def interpolate_atomic_number(elements: List[ChemicalElement], composition: List[float]) -> float:
     """
     Interpolates the atomic number based on the elements and their composition.
@@ -45,6 +48,7 @@ def interpolate_atomic_number(elements: List[ChemicalElement], composition: List
     """
     values = [element.atomic_number for element in elements]
     return interpolate(values, composition)
+
 
 def interpolate_atomic_mass(elements: List[ChemicalElement], composition: List[float]) -> float:
     """
@@ -60,12 +64,14 @@ def interpolate_atomic_mass(elements: List[ChemicalElement], composition: List[f
     values = [element.atomic_mass for element in elements]
     return interpolate(values, composition)
 
+
 def interpolate_melting_temperature(elements: List[ChemicalElement], composition: List[float]) -> float:
     """
     Interpolates the melting temperature based on the elements and their composition.
     """
     values = [element.melting_temperature for element in elements]
     return interpolate(values, composition)
+
 
 def interpolate_boiling_temperature(elements: List[ChemicalElement], composition: List[float]) -> float:
     """

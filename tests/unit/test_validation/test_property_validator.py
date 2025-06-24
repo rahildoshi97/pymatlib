@@ -21,7 +21,7 @@ class TestPropertyValidator:
         temp_array = np.array([300, 400, 500, 600])
         energy_array = np.array([1000, 1500, 1200, 2500])  # Not monotonic
         # Match the actual error message from your implementation
-        with pytest.raises(ValueError, match="violates non decreasing constraint"):
+        with pytest.raises(ValueError, match="violates strictly increasing constraint"):
             validate_monotonic_energy_density("energy_density", temp_array, energy_array)
 
     def test_validate_monotonic_property_valid(self):
@@ -36,7 +36,7 @@ class TestPropertyValidator:
         temp_array = np.array([300, 400, 500])
         prop_array = np.array([100, 150, 120])  # Not monotonic
         # Test that it raises an error for non-monotonic data
-        with pytest.raises(ValueError, match="violates non decreasing constraint"):
+        with pytest.raises(ValueError, match="violates strictly increasing constraint"):
             validate_monotonic_property("test_property", temp_array, prop_array)
 
     def test_validate_monotonic_property_with_mode(self):
@@ -49,7 +49,7 @@ class TestPropertyValidator:
                                         mode="strictly_decreasing")
         except TypeError:
             # If mode parameter doesn't exist, test default behavior
-            with pytest.raises(ValueError, match="violates non decreasing constraint"):
+            with pytest.raises(ValueError, match="violates strictly increasing constraint"):
                 validate_monotonic_property("test_property", temp_array, prop_array)
 
     def test_validate_monotonic_property_edge_cases(self):
@@ -122,5 +122,5 @@ class TestPropertyValidator:
         validate_monotonic_property("heat_capacity", temp_array, heat_capacity)
         # Density typically decreases with temperature (should fail default validation)
         density = np.array([2700, 2690, 2680, 2670, 2660])
-        with pytest.raises(ValueError, match="violates non decreasing constraint"):
+        with pytest.raises(ValueError, match="violates strictly increasing constraint"):
             validate_monotonic_property("density", temp_array, density)

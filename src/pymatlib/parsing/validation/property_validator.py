@@ -6,6 +6,7 @@ from pymatlib.data.constants import ProcessingConstants
 
 logger = logging.getLogger(__name__)
 
+
 def validate_monotonic_energy_density(prop_name: str, temp_array: np.ndarray,
                                       prop_array: np.ndarray,
                                       tolerance: float = ProcessingConstants.DEFAULT_TOLERANCE) -> None:
@@ -13,10 +14,11 @@ def validate_monotonic_energy_density(prop_name: str, temp_array: np.ndarray,
     if prop_name != 'energy_density':
         return
     validate_monotonic_property(prop_name, temp_array, prop_array,
-                                mode="non_decreasing", tolerance=tolerance)
+                                mode="strictly_increasing", tolerance=tolerance)
+
 
 def validate_monotonic_property(prop_name: str, temp_array: np.ndarray,
-                                prop_array: np.ndarray, mode: str = "non_decreasing",
+                                prop_array: np.ndarray, mode: str = "strictly_increasing",
                                 tolerance: float = ProcessingConstants.DEFAULT_TOLERANCE) -> None:
     """
     Generalized property monotonicity validation with enhanced error reporting.

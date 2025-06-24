@@ -18,6 +18,7 @@ from pymatlib.core.materials import Material
 
 logger = logging.getLogger(__name__)
 
+
 class PropertyProcessorBase:
     """
     Base class for material property processors with common finalization logic.
