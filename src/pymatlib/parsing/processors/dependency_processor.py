@@ -77,9 +77,6 @@ class DependencyProcessor:
                     setattr(material, prop_name, material_property)
                     self.processed_properties.add(prop_name)
                     logger.warning(f"Property processor not available for '{prop_name}' - skipping visualization")
-                # Set the property on the material
-                setattr(material, prop_name, material_property)
-                self.processed_properties.add(prop_name)
                 logger.debug(f"Successfully computed property '{prop_name}' over {len(temp_array)} temperature points")
             except Exception as e:
                 logger.error(f"Error evaluating expression for property '{prop_name}': {e}", exc_info=True)

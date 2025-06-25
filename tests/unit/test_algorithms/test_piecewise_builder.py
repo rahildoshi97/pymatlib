@@ -71,7 +71,7 @@ class TestPiecewiseBuilder:
         """Test error handling for mismatched formula count."""
         temp_points = np.array([300, 400, 500])
         equations = ["2*T + 300"]  # Should have 2 equations for 3 points
-        with pytest.raises(ValueError, match="Number of formulas"):
+        with pytest.raises(ValueError, match="Number of equations"):
             PiecewiseBuilder.build_from_formulas(temp_points, equations, temp_symbol)
 
     def test_build_from_data_mixed_boundaries(self, temp_symbol):

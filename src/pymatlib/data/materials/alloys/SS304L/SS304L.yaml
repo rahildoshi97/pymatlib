@@ -89,7 +89,7 @@ properties:
     bounds: [constant, constant]
     regression:
       simplify: post                      # Apply regression after processing
-      degree: 1
+      degree: 2
       segments: 3
 
   # ====================================================================================================
@@ -128,7 +128,7 @@ properties:
     equation: density * specific_enthalpy  # Property dependencies automatically resolved
     bounds: [extrapolate, extrapolate]
     regression:
-      simplify: post
+      simplify: pre
       degree: 1
       segments: 6
 

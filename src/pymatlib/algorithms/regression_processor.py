@@ -51,7 +51,7 @@ class RegressionProcessor:
         # Special case: single segment with extrapolation at both ends
         if pwlf_.n_segments == 1 and lower_ == EXTRAPOLATE_KEY and upper_ == EXTRAPOLATE_KEY:
             eqn = RegressionProcessor.get_symbolic_eqn(pwlf_, 1, x)
-            conditions.append((eqn, True))
+            conditions.append((eqn, x >= -sp.oo))
             return conditions
         # Handle lower bound for all cases
         if lower_ == CONSTANT_KEY:

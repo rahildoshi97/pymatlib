@@ -28,28 +28,37 @@ class PiecewiseBuilder:
         Returns:
             sp.Piecewise: Symbolic piecewise function
         """
+        # Validate input arrays
+        if temp_array is None or prop_array is None:
+            raise ValueError(f"Temperature and property arrays cannot be None for '{prop_name}'")
         if len(temp_array) != len(prop_array):
-            raise ValueError(f"Temperature and property arrays must have same length for {prop_name}")
-        # Ensure ascending order (handles both ascending and descending input)
-        temp_array, prop_array = ensure_ascending_order(temp_array, prop_array)
-        # Extract configuration
-        lower_bound_type, upper_bound_type = config[BOUNDS_KEY]
-        T_standard = sp.Symbol('T')
-        # Check for regression configuration
-        has_regression, simplify_type, degree, segments = RegressionProcessor.process_regression_params(
-            config, prop_name, len(temp_array))
-        # Create piecewise function based on regression settings
-        if has_regression and simplify_type == PRE_KEY:
-            pw_result = PiecewiseBuilder._build_with_regression(
-                temp_array, prop_array, T_standard, lower_bound_type, upper_bound_type,
-                degree, segments)
-        else:
-            pw_result = PiecewiseBuilder._build_linear_interpolation(
-                temp_array, prop_array, T_standard, lower_bound_type, upper_bound_type)
-        # Handle symbol substitution if needed
-        if isinstance(T, sp.Symbol) and str(T) != 'T':
-            pw_result = pw_result.subs(T_standard, T)
-        return pw_result
+            raise ValueError(f"Temperature and property arrays must have same length for '{prop_name}'")
+        if len(temp_array) == 0:
+            raise ValueError(f"Empty data arrays provided for '{prop_name}'")
+        try:
+            # Ensure ascending order (handles both ascending and descending input)
+            temp_array, prop_array = ensure_ascending_order(temp_array, prop_array)
+            # Extract configuration
+            lower_bound_type, upper_bound_type = config[BOUNDS_KEY]
+            T_standard = sp.Symbol('T')
+            # Check for regression configuration
+            has_regression, simplify_type, degree, segments = RegressionProcessor.process_regression_params(
+                config, prop_name, len(temp_array))
+            # Create piecewise function based on regression settings
+            if has_regression and simplify_type == PRE_KEY:
+                pw_result = PiecewiseBuilder._build_with_regression(
+                    temp_array, prop_array, T_standard, lower_bound_type, upper_bound_type,
+                    degree, segments)
+            else:
+                pw_result = PiecewiseBuilder._build_without_regression(
+                    temp_array, prop_array, T_standard, lower_bound_type, upper_bound_type)
+            # Handle symbol substitution if needed
+            if isinstance(T, sp.Symbol) and str(T) != 'T':
+                pw_result = pw_result.subs(T_standard, T)
+            return pw_result
+        except Exception as e:
+            logger.error(f"Failed to build piecewise from data for '{prop_name}': {e}", exc_info=True)
+            raise ValueError(f"Failed building piecewise from data for '{prop_name}': {str(e)}") from e
 
     @staticmethod
     def build_from_formulas(temp_points: np.ndarray, equations: List[Union[str, sp.Expr]],
@@ -66,51 +75,64 @@ class PiecewiseBuilder:
         Returns:
             sp.Piecewise: Symbolic piecewise function
         """
-        temp_points = np.asarray(temp_points, dtype=float)
-        # Process expressions using the provided symbol T
-        processed_exprs = []
-        for expr in equations:
-            if isinstance(expr, str):  # For string expressions, use the provided symbol T
-                processed_exprs.append(sp.sympify(expr, locals={'T': T}))
-            else:  # For SymPy expressions, use as is
-                processed_exprs.append(expr)
-        # Validate input
-        if len(processed_exprs) != len(temp_points) - 1:
+        logger.debug(f"Building piecewise function from {len(equations)} formulas and {len(temp_points)} breakpoints")
+        if len(equations) != len(temp_points) - 1:
             raise ValueError(
-                f"Number of formulas ({len(processed_exprs)}) must be one less than "
-                f"number of breakpoints ({len(temp_points)})"
-            )
-        # Special case: single expression with extrapolation at both ends
-        if (len(processed_exprs) == 1 and
-                lower_bound_type == EXTRAPOLATE_KEY and
-                upper_bound_type == EXTRAPOLATE_KEY):
-            logger.warning(
-                "Using a single expression with extrapolation at both ends. "
-                "Consider simplifying your YAML definition to use a direct equation."
-            )
-            return processed_exprs[0]
-        conditions = []
-        # Handle lower bound
-        if lower_bound_type == CONSTANT_KEY:
-            conditions.append((processed_exprs[0].subs(T, temp_points[0]), T < temp_points[0]))
-        # Handle intervals (including special cases for first and last)
-        for i, expr in enumerate(processed_exprs):
-            if i == 0 and lower_bound_type == EXTRAPOLATE_KEY:
-                # First segment with extrapolation
-                conditions.append((expr, T < temp_points[i + 1]))
-            elif i == len(processed_exprs) - 1 and upper_bound_type == EXTRAPOLATE_KEY:
-                # Last segment with extrapolation
-                conditions.append((expr, T >= temp_points[i]))
-            else:  # Regular interval
-                conditions.append((expr, sp.And(T >= temp_points[i], T < temp_points[i + 1])))
-        # Handle upper bound
-        if upper_bound_type == CONSTANT_KEY:
-            conditions.append((processed_exprs[-1].subs(T, temp_points[-1]), T >= temp_points[-1]))
-        return sp.Piecewise(*conditions)
+                f"Number of equations ({len(equations)}) must be one less than temperature/break points ({len(temp_points)})")
+        if len(temp_points) < 2:
+            raise ValueError("At least 2 temperature points required for piecewise equations")
+        try:
+            temp_points = np.asarray(temp_points, dtype=float)
+            # Parse equations into SymPy expressions using the provided symbol T
+            parsed_equations = []
+            for i, eqn_str in enumerate(equations):
+                try:
+                    expr = sp.sympify(eqn_str)
+                    # Validate that only T symbol is used
+                    for symbol in expr.free_symbols:
+                        if str(symbol) != str(T):
+                            raise ValueError(
+                                f"Invalid symbol '{symbol}' in equation '{eqn_str}'. Only '{T}' is allowed.")
+                    parsed_equations.append(expr)
+                except Exception as e:
+                    raise ValueError(f"Failed to parse equation {i + 1}: '{eqn_str}': {e}")
+            # Special case: single expression with extrapolation at both ends
+            if (len(parsed_equations) == 1 and
+                    lower_bound_type == EXTRAPOLATE_KEY and
+                    upper_bound_type == EXTRAPOLATE_KEY):
+                logger.warning(
+                    "Using a single expression with extrapolation at both ends. "
+                    "Consider simplifying your YAML definition to use a direct equation."
+                )
+                # Return as Piecewise for consistency
+                # Force Piecewise by creating a trivial condition
+                return sp.Piecewise((parsed_equations[0], T >= -sp.oo))  # Always true, but explicit
+            # Build piecewise conditions for multiple equations or different boundary types
+            conditions = []
+            # Handle lower bound
+            if lower_bound_type == CONSTANT_KEY:
+                conditions.append((parsed_equations[0].subs(T, temp_points[0]), T < temp_points[0]))
+            # Handle intervals (including special cases for first and last)
+            for i, expr in enumerate(parsed_equations):
+                if i == 0 and lower_bound_type == EXTRAPOLATE_KEY:
+                    # First segment with extrapolation
+                    conditions.append((expr, T < temp_points[i + 1]))
+                elif i == len(parsed_equations) - 1 and upper_bound_type == EXTRAPOLATE_KEY:
+                    # Last segment with extrapolation
+                    conditions.append((expr, T >= temp_points[i]))
+                else:  # Regular interval
+                    conditions.append((expr, sp.And(T >= temp_points[i], T < temp_points[i + 1])))
+            # Handle upper bound
+            if upper_bound_type == CONSTANT_KEY:
+                conditions.append((parsed_equations[-1].subs(T, temp_points[-1]), T >= temp_points[-1]))
+            return sp.Piecewise(*conditions)
+        except Exception as e:
+            logger.error(f"Failed to build piecewise from formulas: {e}", exc_info=True)
+            raise ValueError(f"Failed building piecewise from formulas: {str(e)}") from e
 
     @staticmethod
-    def _build_linear_interpolation(temp_array: np.ndarray, prop_array: np.ndarray,
-                                    T: sp.Symbol, lower: str, upper: str) -> sp.Piecewise:
+    def _build_without_regression(temp_array: np.ndarray, prop_array: np.ndarray,
+                                  T: sp.Symbol, lower: str, upper: str) -> sp.Piecewise:
         """
         Create basic linear interpolation piecewise function.
         Args:
@@ -122,9 +144,6 @@ class PiecewiseBuilder:
         Returns:
             sp.Piecewise: Linear interpolation piecewise function
         """
-        # Validation (array should already be sorted by ensure_ascending_order)
-        if temp_array is None or len(temp_array) == 0:
-            raise ValueError("Temperature array is empty")
         conditions = []
         # Handle lower bound (T < temp_array[0])
         if lower == CONSTANT_KEY:
