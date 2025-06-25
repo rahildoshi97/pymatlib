@@ -7,7 +7,6 @@ import sympy as sp
 from pymatlib.core.materials import Material
 from pymatlib.core.symbol_registry import SymbolRegistry
 from pymatlib.parsing.processors.temperature_resolver import TemperatureResolver
-from pymatlib.parsing.utils.utilities import handle_numeric_temperature
 from pymatlib.parsing.validation.property_validator import validate_monotonic_energy_density
 from pymatlib.parsing.validation.errors import DependencyError, CircularDependencyError
 from pymatlib.parsing.config.yaml_keys import EQUATION_KEY, TEMPERATURE_KEY
@@ -51,8 +50,6 @@ class DependencyProcessor:
             except Exception as e:
                 logger.error(f"Failed to parse expression for property '{prop_name}': {e}", exc_info=True)
                 raise ValueError(f"Failed to process computed property '{prop_name}' \n -> {str(e)}") from e
-            if handle_numeric_temperature(material, prop_name, T, self, piecewise_expr=material_property):
-                return
             # Evaluate the expression
             T_standard = sp.Symbol('T')
             if isinstance(T, sp.Symbol) and str(T) != 'T':

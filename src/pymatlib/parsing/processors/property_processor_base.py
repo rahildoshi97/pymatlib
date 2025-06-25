@@ -13,7 +13,6 @@ from typing import Dict, Union, Tuple, Optional
 from pathlib import Path
 
 from pymatlib.algorithms.piecewise_builder import PiecewiseBuilder
-from pymatlib.parsing.utils.utilities import handle_numeric_temperature
 from pymatlib.core.materials import Material
 
 logger = logging.getLogger(__name__)
@@ -45,36 +44,59 @@ class PropertyProcessorBase:
         self.visualizer = visualizer
         self.processed_properties = processed_properties
 
-    def _finalize_property_processing(self, material: Material, prop_name: str,
-                                      temp_array: np.ndarray, prop_array: np.ndarray,
-                                      T: Union[float, sp.Symbol], config: Dict,
-                                      prop_type: str, skip_numeric_check: bool = False) -> bool:
+    def finalize_with_piecewise_function(self, material: Material, prop_name: str,
+                                         piecewise_func: sp.Piecewise, T: Union[float, sp.Symbol],
+                                         config: Dict, prop_type: str,
+                                         x_data: Optional[np.ndarray] = None,
+                                         y_data: Optional[np.ndarray] = None) -> bool:
         """
-        Common finalization logic for property processing.
+        Finalize property processing when you already have a piecewise function.
+        This method handles:
+        1. Numeric temperature evaluation
+        2. Property assignment
+        3. Visualization
+        4. Processing tracking
+        Returns True if processing is complete (numeric case), False if symbolic.
+        """
+        logger.debug(f"Finalizing property '{prop_name}' with existing piecewise function")
+        # Handle numeric temperature case
+        if not isinstance(T, sp.Symbol):
+            try:
+                T_standard = sp.Symbol('T')
+                value = float(piecewise_func.subs(T_standard, T).evalf())
+                setattr(material, prop_name, sp.Float(value))
+                self.processed_properties.add(prop_name)
+                logger.debug(f"Numeric evaluation completed for '{prop_name}': {value}")
+                return True
+            except Exception as e:
+                raise ValueError(f"Failed to evaluate {prop_name} at T={T}: {str(e)}")
+        # Assign symbolic piecewise function
+        setattr(material, prop_name, piecewise_func)
+        # Generate visualization
+        bounds = None
+        if x_data is not None and len(x_data) > 0:
+            bounds = (np.min(x_data), np.max(x_data))
+        self._visualize_if_enabled(material=material, prop_name=prop_name, T=T, prop_type=prop_type,
+                                   x_data=x_data, y_data=y_data, config=config, bounds=bounds)
+        # Track processed property
+        self.processed_properties.add(prop_name)
+        logger.debug(f"Successfully finalized property '{prop_name}'")
+        return False
 
-        This method handles the final steps of property processing including:
-        - Numeric temperature evaluation (if applicable)
-        - Piecewise function creation
-        - Property assignment to material
-        - Visualization (if enabled)
-        - Processing tracking
-        Args:
-            material: Material object to modify
-            prop_name: Name of the property being processed
-            temp_array: Temperature data points
-            prop_array: Property values corresponding to temperatures
-            T: Temperature symbol or numeric value
-            config: Configuration dictionary containing bounds and settings
-            prop_type: Type of property for logging and visualization
-            skip_numeric_check: If True, skips numeric temperature handling
-                              (useful for piecewise and computed properties)
-        Returns:
-            bool: True if numeric evaluation was performed and processing is complete,
-                  False if symbolic processing should continue
-        Raises:
-            ValueError: If piecewise function creation fails
+    def finalize_with_data_arrays(self, material: Material, prop_name: str,
+                                  temp_array: np.ndarray, prop_array: np.ndarray,
+                                  T: Union[float, sp.Symbol], config: Dict, prop_type: str) -> bool:
         """
-        logger.debug(f"Finalizing processing for property '{prop_name}' of type {prop_type}")
+        Finalize property processing when you have data arrays.
+        This method handles:
+        1. Numeric temperature evaluation (interpolation)
+        2. Piecewise function creation
+        3. Property assignment
+        4. Visualization
+        5. Processing tracking
+        Returns True if processing is complete (numeric case), False if symbolic.
+        """
+        logger.debug(f"Finalizing property '{prop_name}' with data arrays")
         # Validate input arrays
         if temp_array is None or prop_array is None:
             raise ValueError(f"Temperature and property arrays cannot be None for '{prop_name}'")
@@ -82,36 +104,29 @@ class PropertyProcessorBase:
             raise ValueError(f"Temperature and property arrays must have same length for '{prop_name}'")
         # Extract boundary configuration
         lower_bound_type, upper_bound_type = config.get('bounds', ['constant', 'constant'])
-        # Handle numeric temperature case (if not skipped)
-        if not skip_numeric_check:
-            if handle_numeric_temperature(
-                    material, prop_name, T, self,
-                    interpolation_data=(temp_array, prop_array, lower_bound_type, upper_bound_type)
-            ):
-                logger.debug(f"Numeric temperature evaluation completed for '{prop_name}'")
+        # Handle numeric temperature case (interpolation)
+        if not isinstance(T, sp.Symbol):
+            from pymatlib.algorithms.interpolation import interpolate_value
+            try:
+                value = interpolate_value(T, temp_array, prop_array, lower_bound_type, upper_bound_type)
+                setattr(material, prop_name, sp.Float(value))
+                self.processed_properties.add(prop_name)
+                logger.debug(f"Numeric interpolation completed for '{prop_name}': {value}")
                 return True
+            except Exception as e:
+                raise ValueError(f"Failed to interpolate {prop_name} at T={T}: {str(e)}")
         # Create symbolic piecewise function
         try:
-            piecewise_func = PiecewiseBuilder.build_from_data(
-                temp_array, prop_array, T, config, prop_name
-            )
-            # Assign property to material
+            piecewise_func = PiecewiseBuilder.build_from_data(temp_array, prop_array, T, config, prop_name)
             setattr(material, prop_name, piecewise_func)
             logger.debug(f"Created piecewise function for property '{prop_name}'")
         except Exception as e:
             logger.error(f"Failed to create piecewise function for '{prop_name}': {e}")
             raise ValueError(f"Failed to finalize property '{prop_name}': {str(e)}") from e
-        # Generate visualization if enabled
-        self._visualize_if_enabled(
-            material=material,
-            prop_name=prop_name,
-            T=T,
-            prop_type=prop_type,
-            x_data=temp_array,
-            y_data=prop_array,
-            config=config,
-            bounds=(np.min(temp_array), np.max(temp_array))
-        )
+        # Generate visualization
+        self._visualize_if_enabled(material=material, prop_name=prop_name, T=T, prop_type=prop_type,
+                                   x_data=temp_array, y_data=prop_array, config=config,
+                                   bounds=(np.min(temp_array), np.max(temp_array)))
         # Track processed property
         self.processed_properties.add(prop_name)
         logger.debug(f"Successfully finalized property '{prop_name}'")

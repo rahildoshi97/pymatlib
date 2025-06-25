@@ -1,6 +1,5 @@
 import logging
 from typing import Any, Dict, Union
-# from pathlib import Path
 import numpy as np
 import sympy as sp
 
@@ -8,7 +7,7 @@ from pymatlib.core.materials import Material
 from pymatlib.parsing.processors.property_processor_base import PropertyProcessorBase
 from pymatlib.parsing.processors.temperature_resolver import TemperatureResolver
 from pymatlib.parsing.io.data_handler import load_property_data
-from pymatlib.parsing.utils.utilities import handle_numeric_temperature, create_step_visualization_data
+from pymatlib.parsing.utils.utilities import create_step_visualization_data
 from pymatlib.parsing.validation.property_validator import validate_monotonic_energy_density
 from pymatlib.algorithms.interpolation import ensure_ascending_order
 from pymatlib.algorithms.piecewise_builder import PiecewiseBuilder
@@ -41,7 +40,8 @@ class ConstantPropertyHandler(BasePropertyHandler):
         """Process constant float property."""
         try:
             value = float(prop_config)
-            setattr(material, prop_name, sp.Float(value))
+            prop_value = sp.Float(value)
+            setattr(material, prop_name, prop_value)
             logger.debug(f"Set constant property {prop_name} = {value}")
             self._visualize_if_enabled(material=material, prop_name=prop_name, T=T, prop_type='CONSTANT',
                                        x_data=None, y_data=None)
@@ -63,23 +63,18 @@ class StepFunctionPropertyHandler(BasePropertyHandler):
             transition_temp = TemperatureResolver.resolve_temperature_reference(temp_key, material)
             T_standard = sp.Symbol('T')
             step_function = sp.Piecewise((val_array[0], T_standard < transition_temp), (val_array[1], True))
-            if handle_numeric_temperature(material, prop_name, T, self, piecewise_expr=step_function):
-                return
             if str(T) != 'T':
                 step_function = step_function.subs(T_standard, T)
-            setattr(material, prop_name, step_function)
             # Create visualization data
             offset = ProcessingConstants.STEP_FUNCTION_OFFSET
             val1 = max(transition_temp - offset, PhysicalConstants.ABSOLUTE_ZERO)
             val2 = transition_temp + offset
             step_temp_array = np.array([val1, transition_temp, val2])
             x_data, y_data = create_step_visualization_data(transition_temp, val_array, step_temp_array)
-            self._visualize_if_enabled(
-                material=material, prop_name=prop_name, T=T, prop_type='STEP_FUNCTION',
-                x_data=x_data, y_data=y_data, config=prop_config,
-                bounds=(np.min(step_temp_array), np.max(step_temp_array))
-            )
-            self.processed_properties.add(prop_name)
+            # Use piecewise finalization
+            self.finalize_with_piecewise_function(material=material, prop_name=prop_name, piecewise_func=step_function,
+                                                  T=T, config=prop_config, prop_type='STEP_FUNCTION',
+                                                  x_data=x_data, y_data=y_data)
         except Exception as e:
             raise ValueError(f"Failed to process step function property '{prop_name}'\n -> {str(e)}") from e
 
@@ -98,8 +93,9 @@ class FilePropertyHandler(BasePropertyHandler):
             logger.debug(f"Loaded {len(temp_array)} data points for property '{prop_name}' "
                          f"(T range: {np.min(temp_array):.1f}K - {np.max(temp_array):.1f}K)")
             validate_monotonic_energy_density(prop_name, temp_array, prop_array)
-            self._finalize_property_processing(material, prop_name, temp_array, prop_array,
-                                               T, file_config, 'FILE')
+            # Use data array finalization
+            self.finalize_with_data_arrays(material=material, prop_name=prop_name, temp_array=temp_array,
+                                           prop_array=prop_array, T=T, config=file_config, prop_type='FILE')
         except FileNotFoundError as e:
             logger.error(f"File not found for property '{prop_name}': {file_path}", exc_info=True)
             raise ValueError(f"File not found for property '{prop_name}': {file_path}") from e
@@ -122,8 +118,9 @@ class KeyValPropertyHandler(BasePropertyHandler):
                 raise ValueError(f"Length mismatch in {prop_name}: key and val arrays must have same length")
             key_array, val_array = ensure_ascending_order(key_array, val_array)
             validate_monotonic_energy_density(prop_name, key_array, val_array)
-            self._finalize_property_processing(material, prop_name, key_array, val_array,
-                                               T, prop_config, 'KEY_VAL')
+            # Use data array finalization
+            self.finalize_with_data_arrays(material=material, prop_name=prop_name, temp_array=key_array,
+                                           prop_array=val_array, T=T, config=prop_config, prop_type='KEY_VAL')
         except Exception as e:
             raise ValueError(f"Failed to process key-val property '{prop_name}' \n -> {str(e)}") from e
 
@@ -148,20 +145,26 @@ class PiecewiseEquationPropertyHandler(BasePropertyHandler):
                             f"Only 'T' is allowed.")
             lower_bound_type, upper_bound_type = prop_config[BOUNDS_KEY]
             temp_points, eqn_strings = ensure_ascending_order(temp_points, eqn_strings)
-            # Create dense temperature array for validation
-            diff = max(np.min(np.diff(np.sort(temp_points))) / 10.0, 1.0)
-            temp_dense = np.arange(temp_points[0], temp_points[-1] + diff / 2, diff)
+            # Create piecewise function from formulas
             T_standard = sp.Symbol('T')
             piecewise_standard = PiecewiseBuilder.build_from_formulas(temp_points, list(eqn_strings), T_standard,
                                                                       lower_bound_type, upper_bound_type)
-            if handle_numeric_temperature(material, prop_name, T, self, piecewise_expr=piecewise_standard):
-                return
-            # Evaluate for validation
+            # Substitute the actual temperature symbol if different
+            if str(T) != 'T':
+                piecewise_func = piecewise_standard.subs(T_standard, T)
+            else:
+                piecewise_func = piecewise_standard
+            # Create dense temperature array for visualization
+            diff = max(np.min(np.diff(np.sort(temp_points))) / 10.0, 1.0)
+            temp_dense = np.arange(temp_points[0], temp_points[-1] + diff / 2, diff)
+            # Evaluate for visualization
             f_pw = sp.lambdify(T_standard, piecewise_standard, 'numpy')
             y_dense = f_pw(temp_dense)
             validate_monotonic_energy_density(prop_name, temp_dense, y_dense)
-            self._finalize_property_processing(material, prop_name, temp_dense, y_dense,
-                                               T, prop_config, 'PIECEWISE_EQUATION', skip_numeric_check=True)
+            # Use piecewise finalization
+            self.finalize_with_piecewise_function(material=material, prop_name=prop_name, piecewise_func=piecewise_func,
+                                                  T=T, config=prop_config, prop_type='PIECEWISE_EQUATION',
+                                                  x_data=temp_dense, y_data=y_dense)
         except Exception as e:
             raise ValueError(f"Failed to process piecewise equation property '{prop_name}' \n -> {str(e)}") from e
 
@@ -198,5 +201,6 @@ class ComputedPropertyHandler(BasePropertyHandler):
         method, allowing the DependencyProcessor to properly finalize computed properties
         while maintaining consistency with other property handlers.
         """
-        self._finalize_property_processing(material, prop_name, temp_array, prop_array,
-                                           T, config, 'COMPUTE', skip_numeric_check=True)
+        # Use data array finalization
+        self.finalize_with_data_arrays(material=material, prop_name=prop_name, temp_array=temp_array,
+                                       prop_array=prop_array, T=T, config=config, prop_type='COMPUTE')

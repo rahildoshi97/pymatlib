@@ -67,10 +67,17 @@ def demonstrate_material_properties():
                 if hasattr(mat, valid_prop_name):
                     valid_prop_value = getattr(mat, valid_prop_name)
                     print(f"{valid_prop_name:<30}: {valid_prop_value}")
-                    print(f"  Type: {type(valid_prop_value)}")
+                    print(f"{' ' * 24} Type : {type(valid_prop_value)}")
+                    allowed_types = (sp.Piecewise, sp.Float, type(None))
+                    if not isinstance(valid_prop_value, allowed_types):
+                        raise TypeError(
+                            f"{' ' * 24}  !  WARNING: Unexpected type for property '{valid_prop_name}': {type(valid_prop_value)}."
+                            f"Expected: sp.Piecewise, sp.Float, or None")
+                    else:
+                        print(f"{' ' * 30}  ✓ Valid type")
                 else:
                     print(f"{valid_prop_name:<30}: Not defined in YAML")
-                    print(f"  Type: Not defined")
+                    print(f"{' ' * 30} Type: Not defined")
             except Exception as e:
                 print(f"{valid_prop_name:<30}: Error - {str(e)}")
         print(f"\n{'=' * 80}")
@@ -89,7 +96,7 @@ def demonstrate_material_properties():
                     print(f"{valid_prop_name:<30}: Not defined in YAML")
             except Exception as e:
                 print(f"{valid_prop_name:<30}: Error - {str(e)}")
-    test_inverse_functions(materials, T)
+    # test_inverse_functions(materials, T)
 
 
 def test_inverse_functions(materials, T):
