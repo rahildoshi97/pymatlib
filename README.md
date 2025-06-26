@@ -79,12 +79,12 @@ material_with_plot = create_material('steel.yaml', T, enable_plotting=True)
 ### Working with Piecewise Inverse Functions
 
 ```python
-from pymatlib.algorithms.inversion import create_energy_density_inverse
+from pymatlib.algorithms.piecewise_inverter import PiecewiseInverter
 
 # Create inverse energy density function: T = f_inv(E)
 if hasattr(material, 'energy_density'):
     E = sp.Symbol('E')
-    inverse_func = create_energy_density_inverse(material, 'E')
+    inverse_func = PiecewiseInverter.create_energy_density_inverse(material, 'E')
 
     # Test round-trip accuracy
     test_temp = 500.0

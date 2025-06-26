@@ -149,7 +149,7 @@ For applications requiring temperature from energy density:
 ```python
 import sympy as sp
 from pymatlib.parsing.api import create_material
-from pymatlib.algorithms.inversion import create_energy_density_inverse
+from pymatlib.algorithms.piecewise_inverter import PiecewiseInverter
 
 # Create inverse function T = f_inv(E)
 T = sp.Symbol('T')
@@ -157,7 +157,7 @@ E = sp.Symbol('E')
 material = create_material('steel.yaml', T)
 
 # Create inverse (only for linear piecewise functions)
-inverse_func = create_energy_density_inverse(material, 'E')
+inverse_func = PiecewiseInverter.create_energy_density_inverse(material, 'E')
 
 # Use inverse function
 energy_value = 1.5e9  # J/m³

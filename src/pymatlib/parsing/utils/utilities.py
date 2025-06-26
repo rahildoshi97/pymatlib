@@ -1,8 +1,7 @@
 import logging
-from typing import List, Tuple, Union
+from typing import List, Tuple
 
 import numpy as np
-import sympy as sp
 
 from pymatlib.algorithms import interpolate_value
 from pymatlib.core.materials import Material

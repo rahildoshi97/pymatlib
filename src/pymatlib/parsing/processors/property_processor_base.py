@@ -27,15 +27,15 @@ class PropertyProcessorBase:
     It serves as the foundation for all property handlers in the PyMatLib library.
     Attributes:
         processed_properties (set): Set of property names that have been processed
-        visualizer: Optional visualizer instance for property plotting
         base_dir (Path): Base directory for file operations
+        visualizer: Optional visualizer instance for property plotting
     """
 
     def __init__(self):
         """Initialize the base processor with empty state."""
         self.processed_properties = set()
-        self.visualizer = None
         self.base_dir: Path = None
+        self.visualizer = None
         logger.debug("PropertyProcessorBase initialized")
 
     def set_processing_context(self, base_dir: Path, visualizer, processed_properties: set):

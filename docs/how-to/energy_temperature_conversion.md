@@ -56,12 +56,12 @@ if hasattr(material, 'energy_density'):
 
 The inverse conversion (energy to temperature) will be available through:
 ```python
-from pymatlib.algorithms.inversion import create_energy_density_inverse
+from pymatlib.algorithms.piecewise_inverter import PiecewiseInverter
 
 # Create inverse function (when implemented)
 if hasattr(material, 'energy_density'):
     E = sp.Symbol('E')
-    inverse_func = create_energy_density_inverse(material, 'E')
+    inverse_func = PiecewiseInverter.create_energy_density_inverse(material, 'E')
 ```
 # Use inverse function
 ```python

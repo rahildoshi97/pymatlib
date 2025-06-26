@@ -21,7 +21,7 @@ import sympy as sp
 import pystencils as ps
 from pystencilssfg import SourceFileGenerator
 from pymatlib.parsing.api import create_material
-from pymatlib.algorithms.inversion import create_energy_density_inverse
+from pymatlib.algorithms.piecewise_inverter import PiecewiseInverter
 
 with SourceFileGenerator() as sfg:
     data_type = "float64"
@@ -83,7 +83,7 @@ For simulations requiring energy-temperature conversion:
 
 if hasattr(material, 'energy_density'):
     E = sp.Symbol('E')
-    inverse_energy_density = create_energy_density_inverse(material, 'E')
+    inverse_energy_density = PiecewiseInverter.create_energy_density_inverse(material, 'E')
 ```
 
 ## Complete Example
@@ -96,7 +96,7 @@ from pystencilssfg import SourceFileGenerator
 from walberla.codegen import Sweep
 
 from pymatlib.parsing.api import create_material
-from pymatlib.algorithms.inversion import create_energy_density_inverse
+from pymatlib.algorithms.piecewise_inverter import PiecewiseInverter
 
 with SourceFileGenerator() as sfg:
     data_type = "float64"
@@ -117,7 +117,7 @@ with SourceFileGenerator() as sfg:
 
     if hasattr(material, 'energy_density'):
         E = sp.Symbol('E')
-        inverse_energy_density = create_energy_density_inverse(material, 'E')
+        inverse_energy_density = PiecewiseInverter.create_energy_density_inverse(material, 'E')
 
     subexp = [
         ps.Assignment(thermal_diffusivity_symbol, material.thermal_diffusivity),

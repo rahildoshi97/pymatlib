@@ -114,7 +114,7 @@ class PropertyTypeDetector:
         try:
             float(val)
         except (ValueError, TypeError):
-            raise ValueError(f"could not be converted to a float. Invalid value: '{val}'")
+            raise ValueError(f"'{prop_name}' could not be converted to a float. Invalid value: '{val}'")
 
     @staticmethod
     def _validate_file_property(prop_name: str, config: Dict[str, Any]) -> None:
@@ -141,10 +141,6 @@ class PropertyTypeDetector:
         except (ValueError, TypeError):
             raise ValueError(f"step function values must be numeric, got {val_list}")
         temp_def = config[TEMPERATURE_KEY]
-        # valid_refs = {MELTING_TEMPERATURE_KEY, SOLIDUS_TEMPERATURE_KEY, LIQUIDUS_TEMPERATURE_KEY,
-                      # INITIAL_BOILING_TEMPERATURE_KEY, FINAL_BOILING_TEMPERATURE_KEY, BOILING_TEMPERATURE_KEY}
-        # if isinstance(temp_def, str) and temp_def not in valid_refs:
-            # raise ValueError(f"'temperature' reference '{temp_def}' is not a valid transition name.")
         if isinstance(temp_def, str):  # Check if it's a valid arithmetic expression
             match = re.match(ProcessingConstants.TEMP_ARITHMETIC_REGEX, temp_def.strip())
             if match:  # If it matches, check if the base reference is valid

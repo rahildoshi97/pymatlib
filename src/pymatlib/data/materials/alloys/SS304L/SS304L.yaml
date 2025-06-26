@@ -53,7 +53,7 @@ properties:
   # ====================================================================================================
 
   latent_heat_of_fusion:
-    temperature: [solidus_temperature - 5, liquidus_temperature + 5]  # Temperature references with arithmetic
+    temperature: [solidus_temperature - 1, liquidus_temperature + 1]  # Temperature references with arithmetic
     value: [0, 171401.]                    # Corresponding property values
     bounds: [constant, constant]           # Boundary behavior: 'constant' or 'extrapolate'
 
@@ -62,7 +62,7 @@ properties:
     value: [1.2632e-5, 1.468e-5, 1.524e-5, 1.581e-5, 1.639e-5, 1.699e-5, 1.759e-5, 1.821e-5, 1.885e-5, 2.1e-5, 2.3e-5, 2.5e-5, 2.7e-5]
     bounds: [constant, constant]
     regression:                            # Optional regression configuration
-      simplify: post                        # 'pre' (before processing) or 'post' (after processing)
+      simplify: pre                       # 'pre' (before processing) or 'post' (after processing)
       degree: 1                            # Polynomial degree for regression
       segments: 2                          # Number of piecewise segments
 
@@ -73,14 +73,14 @@ properties:
   # ====================================================================================================
 
   heat_capacity:
-    file_path: ./SS304L.xlsx              # Relative path from YAML file location
-    temperature_header: T (K)             # Column name for temperature data
+    file_path: ./SS304L.xlsx               # Relative path from YAML file location
+    temperature_header: T (K)              # Column name for temperature data
     value_header: Specific heat (J/(Kg K)) # Column name for property data
-    bounds: [constant, constant]          # Required boundary behavior
-    regression:                           # Optional regression for data simplification
-      simplify: pre                       # Apply regression before processing
-      degree: 1                           # Linear regression
-      segments: 4                         # Divide into 4 piecewise segments
+    bounds: [constant, constant]           # Required boundary behavior
+    regression:                            # Optional regression for data simplification
+      simplify: pre                        # Apply regression before processing
+      degree: 1                            # Linear regression
+      segments: 4                          # Divide into 4 piecewise segments
 
   density:
     file_path: ./SS304L.xlsx
@@ -88,7 +88,7 @@ properties:
     value_header: Density (kg/(m)^3)
     bounds: [constant, constant]
     regression:
-      simplify: post                      # Apply regression after processing
+      simplify: post                       # Apply regression after processing
       degree: 2
       segments: 3
 
@@ -99,12 +99,12 @@ properties:
   # ====================================================================================================
 
   heat_conductivity:
-    temperature: [500, 1700, 3000]        # Temperature breakpoints (K)
+    temperature: [500, 1700, 3000]         # Temperature breakpoints (K)
     equation: [0.0124137215440647*T + 13.0532171803243, 0.0124137215440647*T + 13.0532171803243]
     # Two equations for three breakpoints: [500-1700K] and [1700-3000K]
     bounds: [constant, constant]           # Boundary behavior outside range
     regression:
-      simplify: post                      # Apply regression after symbolic processing
+      simplify: post                       # Apply regression after symbolic processing
       degree: 1
       segments: 2
 
@@ -115,7 +115,7 @@ properties:
   # ====================================================================================================
 
   specific_enthalpy:
-    temperature: (300, 3000, 541)         # (start, stop, num_points) - 541 evenly spaced points
+    temperature: (300, 3000, 541)          # (start, stop, num_points) - 541 evenly spaced points
     equation: Integral(heat_capacity, T)   # Symbolic integration
     bounds: [constant, constant]
     regression:
@@ -124,7 +124,7 @@ properties:
       segments: 2
 
   energy_density:
-    temperature: (300, 3000, 5.0)         # (start, stop, step) - 5K increments
+    temperature: (300, 3000, 5.0)          # (start, stop, step) - 5K increments
     equation: density * specific_enthalpy  # Property dependencies automatically resolved
     bounds: [extrapolate, extrapolate]
     regression:
@@ -133,7 +133,7 @@ properties:
       segments: 6
 
   thermal_diffusivity:
-    temperature: (3000, 300, -5.0)        # (start, stop, negative_step) - decreasing temperature
+    temperature: (3000, 300, -5.0)         # (start, stop, negative_step) - decreasing temperature
     equation: heat_conductivity /(density * heat_capacity)  # Multi-property dependency
     bounds: [constant, constant]
     regression:
