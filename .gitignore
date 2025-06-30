@@ -144,6 +144,10 @@ pymatlib_plots/
 *.gif
 *.svg
 
+# Report outputs
+pymatlib_reports/
+*.pdf
+
 # Data files (unless specifically needed)
 *.xlsx
 *.csv
