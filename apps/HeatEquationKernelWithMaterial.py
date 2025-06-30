@@ -36,9 +36,9 @@ with SourceFileGenerator() as sfg:
     yaml_path_Al = Path(__file__).parent.parent / "src" / "pymatlib" / "data" / "materials" / "pure_metals" / "Al" / "Al.yaml"
     yaml_path_SS304L = Path(__file__).parent.parent / "src" / "pymatlib" / "data" / "materials" / "alloys" / "SS304L" / "SS304L.yaml"
 
-    mat = create_material(yaml_path=yaml_path, T=u.center(), enable_plotting=True)
-    mat_Al = create_material(yaml_path=yaml_path_Al, T=u.center(), enable_plotting=True)
-    mat_SS304L = create_material(yaml_path=yaml_path_SS304L, T=u.center(), enable_plotting=True)
+    mat = create_material(yaml_path=yaml_path, T=u.center(), enable_plotting=True, generate_pdf_report=True)
+    mat_Al = create_material(yaml_path=yaml_path_Al, T=u.center(), enable_plotting=True, generate_pdf_report=True)
+    mat_SS304L = create_material(yaml_path=yaml_path_SS304L, T=u.center(), enable_plotting=True, generate_pdf_report=True)
 
     print(f"Energy density function: {mat.energy_density}")
     print(f"Type: {type(mat.energy_density)}")

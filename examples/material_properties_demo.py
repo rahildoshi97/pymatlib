@@ -3,7 +3,7 @@ import logging
 from pathlib import Path
 import sympy as sp
 
-from pymatlib.parsing.api import create_material, get_supported_properties
+from pymatlib.parsing.api import create_material, generate_pdf_report_only, get_material_info, get_supported_properties
 from pymatlib.algorithms.piecewise_inverter import PiecewiseInverter
 
 
@@ -23,21 +23,29 @@ def demonstrate_material_properties():
     """Demonstrate material property evaluation."""
     setup_logging()
     T = sp.Symbol('u_C')
+    # T = 300.15
     current_file = Path(__file__)
     yaml_path_Al = current_file.parent.parent / "src" / "pymatlib" / "data" / "materials" / "pure_metals" / "Al" / "Al.yaml"
     yaml_path_SS304L = current_file.parent.parent / "src" / "pymatlib" / "data" / "materials" / "alloys" / "SS304L" / "SS304L.yaml"
     materials = []
     print(f"\n{'=' * 80}")
     if yaml_path_Al.exists():
-        mat_Al = create_material(yaml_path=yaml_path_Al, T=T, enable_plotting=True)
+        # _ = generate_pdf_report_only(yaml_path=yaml_path_Al, T=T)
+        mat_Al = create_material(yaml_path=yaml_path_Al, T=T, enable_plotting=True, generate_pdf_report=True)
         materials.append(mat_Al)
     else:
         raise FileNotFoundError(f"Aluminum YAML file not found: {yaml_path_Al}")
     if yaml_path_SS304L.exists():
-        mat_SS304L = create_material(yaml_path=yaml_path_SS304L, T=T, enable_plotting=True)
+        # _ = generate_pdf_report_only(yaml_path=yaml_path_SS304L, T=T)
+        mat_SS304L = create_material(yaml_path=yaml_path_SS304L, T=T, enable_plotting=True, generate_pdf_report=True)
         materials.append(mat_SS304L)
     else:
         raise FileNotFoundError(f"SS304L YAML file not found: {yaml_path_SS304L}")
+    print(f"{'=' * 80}")
+    print(f"get_material_info_Al:\n{get_material_info(yaml_path=yaml_path_Al)}")
+    print(f"{'=' * 80}")
+    print(f"get_material_info_SS304L:\n{get_material_info(yaml_path=yaml_path_SS304L)}")
+    print(f"{'=' * 80}")
     for mat in materials:
         print(f"\n{'=' * 80}")
         print(f"MATERIAL: {mat.name}")
@@ -56,8 +64,9 @@ def demonstrate_material_properties():
             print(f"Melting Temperature: {mat.melting_temperature}")
         if hasattr(mat, 'boiling_temperature'):
             print(f"Boiling Temperature: {mat.boiling_temperature}")
+        print(f"{'=' * 80}")
         # Test computed properties at specific temperature
-        test_temp = 273.15  # Kelvin
+        test_temp = 300.15  # Kelvin
         valid_properties = get_supported_properties()
         print(f"\n{'=' * 80}")
         print(f"PROPERTIES FOR '{mat.name}'")

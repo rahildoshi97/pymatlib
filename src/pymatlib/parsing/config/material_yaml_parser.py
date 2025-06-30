@@ -10,6 +10,7 @@ from pymatlib.core.materials import Material
 from pymatlib.parsing.processors.property_processor import PropertyProcessor
 from pymatlib.parsing.validation.property_type_detector import PropertyType, PropertyTypeDetector
 from pymatlib.visualization.plotters import PropertyVisualizer
+from pymatlib.visualization.pdf_reporter_4 import PDFReporter
 from pymatlib.parsing.config.yaml_keys import PROPERTIES_KEY, MATERIAL_TYPE_KEY, \
     COMPOSITION_KEY, PURE_METAL_KEY, MELTING_TEMPERATURE_KEY, BOILING_TEMPERATURE_KEY, SOLIDUS_TEMPERATURE_KEY, \
     LIQUIDUS_TEMPERATURE_KEY, INITIAL_BOILING_TEMPERATURE_KEY, FINAL_BOILING_TEMPERATURE_KEY, ALLOY_KEY, NAME_KEY
@@ -73,9 +74,11 @@ class MaterialYAMLParser(YAMLFileParser):
         self.categorized_properties = self._analyze_and_categorize_properties(self.config[PROPERTIES_KEY])
         self.property_processor = PropertyProcessor()
         self.visualizer = PropertyVisualizer(self)
+        self.pdf_reporter = PDFReporter(self)  # Add PDF reporter
 
     # --- Public API ---
-    def create_material(self, T: Union[float, sp.Symbol], enable_plotting: bool = True) -> Material:
+    def create_material(self, T: Union[float, sp.Symbol],
+                        enable_plotting: bool = True, generate_pdf_report: bool = False) -> Material:
         """Create a Material instance from the parsed configuration and temperature."""
         logger.info(f"Creating material from configuration: {self.config_path}")
         try:
@@ -122,6 +125,10 @@ class MaterialYAMLParser(YAMLFileParser):
             # Save plots only if plotting was enabled
             if enable_plotting:
                 self.visualizer.save_property_plots()
+            # Generate PDF report if requested
+            if generate_pdf_report:
+                pdf_path = self.pdf_reporter.generate_pdf_report(material, T)
+                logger.info(f"PDF report generated successfully: {pdf_path}")
             logger.info(f"Successfully created material: {name}")
             return material
         except KeyError as e:
