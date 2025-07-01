@@ -9,7 +9,7 @@ from pymatlib.parsing.api import create_material
 from pymatlib.algorithms.piecewise_inverter import PiecewiseInverter
 
 logging.basicConfig(
-    level=logging.INFO,  # DEBUG/INFO/WARNING
+    level=logging.WARNING,  # DEBUG/INFO/WARNING/ERROR/CRITICAL
     format="%(asctime)s %(levelname)s %(name)s -> %(message)s"
 )
 
