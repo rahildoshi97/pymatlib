@@ -71,12 +71,14 @@ class Material:
         Called automatically after the dataclass initialization.
         Validates composition and temperatures, then calculates derived properties.
         """
+        logger.info("Initializing material: %s (type: %s)", self.name, self.material_type)
         self._validate_composition()
         self._validate_temperatures()
         self._calculate_properties()
 
     def _validate_composition(self) -> None:
         """Validate the material composition."""
+        logger.debug("Validating composition for material: %s", self.name)
         if not self.elements:
             raise ValueError("Elements list cannot be empty")
         if len(self.elements) != len(self.composition):
@@ -228,15 +230,20 @@ class Material:
 
     def _calculate_properties(self) -> None:
         """Calculate interpolated atomic properties based on composition."""
+        logger.debug("Calculating interpolated properties for %s", self.name)
         if self.material_type == 'pure_metal':
             # For pure metals, use the single element's properties
             element = self.elements[0]
             self.atomic_number = float(element.atomic_number)
             self.atomic_mass = float(element.atomic_mass)
+            logger.debug("Pure metal properties - atomic_number: %.1f, atomic_mass: %.3f",
+                         self.atomic_number, self.atomic_mass)
         elif self.material_type == 'alloy':
             # For alloys, calculate weighted averages
             self.atomic_number = interpolate_atomic_number(self.elements, self.composition)
             self.atomic_mass = interpolate_atomic_mass(self.elements, self.composition)
+            logger.debug("Alloy properties - atomic_number: %.3f, atomic_mass: %.3f",
+                         self.atomic_number, self.atomic_mass)
 
     def solidification_interval(self) -> Tuple[sp.Float, sp.Float]:
         """

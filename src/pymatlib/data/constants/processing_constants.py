@@ -9,6 +9,8 @@ class ProcessingConstants:
     DEFAULT_TOLERANCE: Final[float] = 1e-8
     TEMPERATURE_EPSILON: Final[float] = 1e-8
     MONOTONICITY_THRESHOLD: Final[float] = 1e-8
+    # Composition
+    COMPOSITION_THRESHOLD: Final[float] = 1e-10
     # Temperature limits
     MIN_TEMPERATURE: Final[float] = 0.0
     # Data validation

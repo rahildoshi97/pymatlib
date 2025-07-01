@@ -27,6 +27,7 @@ class PropertyVisualizer:
         self.plot_directory = yaml_dir / "pymatlib_plots"
         self.visualized_properties = set()
         self.is_enabled = True
+        logger.debug("PropertyVisualizer initialized for parser: %s", parser.config_path)
 
     def is_visualization_enabled(self) -> bool:
         """Check if visualization is currently enabled."""
@@ -39,16 +40,19 @@ class PropertyVisualizer:
             logger.debug("Visualization disabled, skipping plot initialization")
             return
         if self.parser.categorized_properties is None:
-            logger.warning("categorized_properties is None. Skipping plot initialization.")
+            logger.error("categorized_properties is None - cannot initialize plots")
             raise ValueError("No properties to plot.")
         property_count = sum(len(props) for props in self.parser.categorized_properties.values())
+        logger.info("Initializing visualization for %d properties", property_count)
         self.fig = plt.figure(figsize=(12, 4 * property_count))
         self.gs = GridSpec(property_count, 1, figure=self.fig)
         self.current_subplot = 0
         self.plot_directory.mkdir(exist_ok=True)
+        logger.debug("Plot directory created: %s", self.plot_directory)
 
     def reset_visualization_tracking(self) -> None:
-        logger.debug("PropertyVisualizer: reset_visualization_tracking")
+        logger.debug("Resetting visualization tracking - clearing %d tracked properties",
+                     len(self.visualized_properties))
         self.visualized_properties = set()
 
     def visualize_property(
@@ -69,14 +73,16 @@ class PropertyVisualizer:
             upper_bound_type: str = CONSTANT_KEY) -> None:
         """Visualize a single property."""
         if prop_name in self.visualized_properties:
-            logger.debug("Skipping - already visualized for property: %r", prop_name)
+            logger.debug("Property '%s' already visualized, skipping", prop_name)
             return
         if not hasattr(self, 'fig') or self.fig is None:
-            logger.debug("Skipping - no figure available for property: %r", prop_name)
+            logger.warning("No figure available for property '%s' - visualization skipped", prop_name)
             return
         if not isinstance(T, sp.Symbol):
-            logger.debug("Skipping - T is not symbolic for property: %r", prop_name)
+            logger.debug("Temperature is not symbolic for property '%s' - visualization skipped", prop_name)
             return
+        logger.info("Visualizing property: %s (type: %s) for material: %s",
+                    prop_name, prop_type, material.name)
         try:
             # Create subplot
             ax = self.fig.add_subplot(self.gs[self.current_subplot])
@@ -93,11 +99,13 @@ class PropertyVisualizer:
                 data_lower, data_upper = (ProcessingConstants.DEFAULT_TEMP_LOWER,
                                           ProcessingConstants.DEFAULT_TEMP_UPPER)
                 step = (data_upper - data_lower) / 1000
+                logger.debug("Using data temperature range: %.1f - %.1f K", data_lower, data_upper)
             # Set bounds with property-specific defaults
             if lower_bound is None:
                 lower_bound = data_lower
             if upper_bound is None:
                 upper_bound = data_upper
+                logger.debug("Using default temperature range: %.1f - %.1f K", data_lower, data_upper)
             # Create extended temperature range for visualization
             padding = (upper_bound - lower_bound) * ProcessingConstants.TEMPERATURE_PADDING_FACTOR
             ABSOLUTE_ZERO = PhysicalConstants.ABSOLUTE_ZERO
@@ -127,6 +135,7 @@ class PropertyVisualizer:
                         horizontalalignment='center', bbox=dict(facecolor='white', alpha=0.7, boxstyle='round'))
                 ax.set_ylim(value * 0.9, value * 1.1)
                 _y_value = value
+                logger.debug("Plotted constant property '%s' with value: %g", prop_name, value)
             elif prop_type == 'STEP_FUNCTION':
                 if x_data is not None and y_data is not None:
                     # Plot step function with proper visualization
@@ -146,12 +155,14 @@ class PropertyVisualizer:
                             bbox=dict(facecolor='white', alpha=0.7, boxstyle='round'))
                     # Set y_value for boundary annotations
                     _y_value = np.mean(y_data)
+                    logger.debug("Plotted step function '%s' with transition at %.1f K",
+                                 prop_name, transition_temp)
                 else:  # Fallback for step function without data
                     try:
                         f_current = sp.lambdify(T, current_prop, 'numpy')
                         _y_value = f_current(lower_bound)
                     except Exception as e:
-                        logger.warning(f"Could not evaluate step function: {e}")
+                        logger.warning("Could not evaluate step function '%s': %s", prop_name, e)
                         _y_value = 0.0
             else:  # Handle all other property types (FILE, KEY_VAL, PIECEWISE_EQUATION, COMPUTE)
                 try:
@@ -167,8 +178,10 @@ class PropertyVisualizer:
                         y_extended = f_current(extended_temp)
                         ax.plot(extended_temp, y_extended, color=main_color,
                                 linestyle='-', linewidth=2.5, label=main_label, zorder=2)
+                        logger.debug("Plotted extended range for property '%s'", prop_name)
                     except Exception as e:
-                        logger.warning(f"Could not evaluate function over extended range: {e}")
+                        logger.warning("Could not evaluate function over extended range for '%s': %s",
+                                       prop_name, e)
                         # Fallback to data range if available
                         if x_data is not None and y_data is not None:
                             ax.plot(x_data, y_data, color=colors['raw'],
@@ -186,7 +199,8 @@ class PropertyVisualizer:
                         try:
                             _y_value = f_current(upper_bound)
                         except (ValueError, TypeError, AttributeError) as e:
-                            logger.error(f"Could not evaluate function at boundary: {e}")
+                            logger.error("Could not evaluate function at boundary for '%s': %s",
+                                         prop_name, e)
                             _y_value = 0.0
                     # Overlay post-regression preview if requested
                     if has_regression and simplify_type == POST_KEY and x_data is not None and y_data is not None:
@@ -200,10 +214,12 @@ class PropertyVisualizer:
                             y_preview = f_preview(extended_temp)
                             ax.plot(extended_temp, y_preview, color=colors['regression_post'],
                                     linestyle='--', linewidth=2, label='regression (post)', zorder=4)
+                            logger.debug("Added post-regression preview for property '%s'", prop_name)
                         except Exception as e:
-                            logger.warning(f"Could not generate post-regression preview: {e}")
+                            logger.warning("Could not generate post-regression preview for '%s': %s",
+                                           prop_name, e)
                 except Exception as e:
-                    logger.error(f"Error creating function for property {prop_name}: {e}")
+                    logger.error("Error creating function for property '%s': %s", prop_name, e)
                     ax.text(0.5, 0.5, f"Error: {str(e)}", transform=ax.transAxes,
                             horizontalalignment='center', bbox=dict(facecolor='red', alpha=0.2))
                     _y_value = 0.0
@@ -221,6 +237,7 @@ class PropertyVisualizer:
                         _y_value = float(current_prop) if hasattr(current_prop, '__float__') else 0.0
                 except (ValueError, TypeError, AttributeError):
                     _y_value = 0.0
+                    logger.warning("Could not determine y_value for annotations for property '%s'", prop_name)
             # Add boundary type annotations
             ax.text(lower_bound, _y_value, f' {lower_bound_type}',
                     verticalalignment='top', horizontalalignment='right',
@@ -237,8 +254,9 @@ class PropertyVisualizer:
             ax.legend(loc='best', framealpha=0.8, fancybox=True, shadow=True)
             # Add property to visualized set
             self.visualized_properties.add(prop_name)
+            logger.info("Successfully visualized property: %s", prop_name)
         except Exception as e:
-            logger.error(f"Unexpected error visualizing property {prop_name}: {e}")
+            logger.error("Unexpected error visualizing property '%s': %s", prop_name, e, exc_info=True)
             raise ValueError(f"Unexpected error in property {prop_name}: {e}")
 
     def save_property_plots(self) -> None:
@@ -254,7 +272,7 @@ class PropertyVisualizer:
                 try:
                     plt.tight_layout(rect=[0, 0.01, 1, 0.98], pad=1.0)
                 except Exception as e:
-                    logger.warning(f"tight_layout failed: {e}. Using subplots_adjust as fallback.")
+                    logger.warning("tight_layout failed: %s. Using subplots_adjust as fallback", e)
                     plt.subplots_adjust(
                         left=0.1,  # Left margin
                         bottom=0.1,  # Bottom margin
@@ -271,16 +289,18 @@ class PropertyVisualizer:
                     facecolor='white',
                     edgecolor='none'
                 )
-                if len(self.visualized_properties) != sum(len(props) for props in self.parser.categorized_properties.values()):
+                total_properties = sum(len(props) for props in self.parser.categorized_properties.values())
+                visualized_count = len(self.visualized_properties)
+                if visualized_count != total_properties:
                     logger.warning(
-                        f"Not all properties visualized! "
-                        f"Visualized: {len(self.visualized_properties)}, "
-                        f"Total: {sum(len(props) for props in self.parser.categorized_properties.values())}"
+                        "Not all properties visualized! Visualized: %d, Total: %d",
+                        visualized_count, total_properties
                     )
                 else:
-                    logger.info(f"All properties ({sum(len(props) for props in self.parser.categorized_properties.values())}) visualized successfully.")
-                    logger.info(f"All properties plot saved as {filepath}")
+                    logger.info("All properties (%d) visualized successfully", total_properties)
+                logger.info("Property plots saved to: %s", filepath)
         finally:  # Always close the figure to prevent memory leaks
             if hasattr(self, 'fig') and self.fig is not None:
                 plt.close(self.fig)
                 self.fig = None
+                logger.debug("Figure closed and memory cleaned up")

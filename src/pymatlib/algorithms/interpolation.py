@@ -1,42 +1,86 @@
+import logging
 import numpy as np
 from typing import Tuple
 
 from pymatlib.parsing.config.yaml_keys import CONSTANT_KEY
 
+logger = logging.getLogger(__name__)
 
 def interpolate_value(T: float, x_array: np.ndarray, y_array: np.ndarray,
                       lower_bound_type: str, upper_bound_type: str) -> float:
     """Interpolate a value at temperature T using the provided data arrays."""
-    if T < x_array[0]:
-        if lower_bound_type == CONSTANT_KEY:
-            return float(y_array[0])
-        else:  # 'extrapolate'
-            denominator = x_array[1] - x_array[0]
-            if denominator == 0:
-                raise ValueError("Cannot extrapolate: first two temperature values are equal.")
-            slope = (y_array[1] - y_array[0]) / denominator
-            return float(y_array[0] + slope * (T - x_array[0]))
-    elif T >= x_array[-1]:
-        if upper_bound_type == CONSTANT_KEY:
-            return float(y_array[-1])
-        else:  # 'extrapolate'
-            denominator = x_array[-1] - x_array[-2]
-            if denominator == 0:
-                raise ValueError("Cannot extrapolate: last two temperature values are equal.")
-            slope = (y_array[-1] - y_array[-2]) / denominator
-            return float(y_array[-1] + slope * (T - x_array[-1]))
-    else:
-        return float(np.interp(T, x_array, y_array))
-
+    logger.debug("Interpolating value at T=%.1f with bounds: lower=%s, upper=%s",
+                 T, lower_bound_type, upper_bound_type)
+    logger.debug("Data range: T∈[%.1f, %.1f], y∈[%.3e, %.3e]",
+                 x_array[0], x_array[-1], np.min(y_array), np.max(y_array))
+    try:
+        if T < x_array[0]:
+            logger.debug("T below data range, applying lower bound: %s", lower_bound_type)
+            if lower_bound_type == CONSTANT_KEY:
+                result = float(y_array[0])
+                logger.debug("Lower constant extrapolation: %.6f", result)
+                return result
+            else:  # 'extrapolate'
+                denominator = x_array[1] - x_array[0]
+                if denominator == 0:
+                    logger.error("Cannot extrapolate: first two temperature values are equal")
+                    raise ValueError("Cannot extrapolate: first two temperature values are equal.")
+                slope = (y_array[1] - y_array[0]) / denominator
+                result = float(y_array[0] + slope * (T - x_array[0]))
+                logger.debug("Lower linear extrapolation: slope=%.6f, result=%.6f", slope, result)
+                return result
+        elif T >= x_array[-1]:
+            logger.debug("T above data range, applying upper bound: %s", upper_bound_type)
+            if upper_bound_type == CONSTANT_KEY:
+                result = float(y_array[-1])
+                logger.debug("Upper constant extrapolation: %.6f", result)
+                return result
+            else:  # 'extrapolate'
+                denominator = x_array[-1] - x_array[-2]
+                if denominator == 0:
+                    logger.error("Cannot extrapolate: last two temperature values are equal")
+                    raise ValueError("Cannot extrapolate: last two temperature values are equal.")
+                slope = (y_array[-1] - y_array[-2]) / denominator
+                result = float(y_array[-1] + slope * (T - x_array[-1]))
+                logger.debug("Upper linear extrapolation: slope=%.6f, result=%.6f", slope, result)
+                return result
+        else:
+            logger.debug("T within data range, using linear interpolation")
+            result = float(np.interp(T, x_array, y_array))
+            logger.debug("Linear interpolation result: %.6f", result)
+            return result
+    except Exception as e:
+        logger.error("Interpolation failed at T=%.1f: %s", T, e, exc_info=True)
+        raise ValueError(f"Interpolation failed at T={T}: {str(e)}") from e
 
 def ensure_ascending_order(temp_array: np.ndarray, *value_arrays: np.ndarray) -> Tuple[np.ndarray, ...]:
     """Ensure temperature array is in ascending order, flipping all provided arrays if needed."""
-    diffs = np.diff(temp_array)
-    if np.all(diffs > 0):
+    logger.debug("Checking array order for %d arrays (temp + %d value arrays)",
+                 len(value_arrays) + 1, len(value_arrays))
+    if len(temp_array) < 2:
+        logger.debug("Array too short for order check: length=%d", len(temp_array))
         return (temp_array,) + value_arrays
-    elif np.all(diffs < 0):
-        flipped_temp = np.flip(temp_array)
-        flipped_values = tuple(np.flip(arr) for arr in value_arrays)
-        return (flipped_temp,) + flipped_values
-    else:
-        raise ValueError(f"Array is not strictly ascending or strictly descending: {temp_array}")
+    try:
+        diffs = np.diff(temp_array)
+        ascending_count = np.sum(diffs > 0)
+        descending_count = np.sum(diffs < 0)
+        zero_count = np.sum(diffs == 0)
+        logger.debug("Array differences: %d ascending, %d descending, %d zero",
+                     ascending_count, descending_count, zero_count)
+        if np.all(diffs > 0):
+            logger.debug("Array already in ascending order")
+            return (temp_array,) + value_arrays
+        elif np.all(diffs < 0):
+            logger.debug("Array in descending order, flipping all arrays")
+            flipped_temp = np.flip(temp_array)
+            flipped_values = tuple(np.flip(arr) for arr in value_arrays)
+            logger.debug("Flipped arrays: temp range [%.1f, %.1f] -> [%.1f, %.1f]",
+                         temp_array[0], temp_array[-1], flipped_temp[0], flipped_temp[-1])
+            return (flipped_temp,) + flipped_values
+        else:
+            logger.error("Array is neither strictly ascending nor descending")
+            logger.error("Temperature array: %s", temp_array.tolist() if len(temp_array) <= 20 else f"[{temp_array[0]}, ..., {temp_array[-1]}] (length={len(temp_array)})")
+            raise ValueError(f"Array is not strictly ascending or strictly descending: {temp_array}")
+    except Exception as e:
+        logger.error("Error checking array order: %s", e, exc_info=True)
+        raise ValueError(f"Failed to ensure ascending order: {str(e)}") from e

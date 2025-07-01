@@ -42,14 +42,15 @@ def create_material(yaml_path: Union[str, Path], T: Union[float, sp.Symbol], ena
         u_C = sp.Symbol('u_C')
         material = create_material('copper.yaml', u_C)
     """
-    logger.info(f"Creating material from: {yaml_path}")
+    logger.info("Creating material from: %s with T=%s, plotting=%s", yaml_path, T, enable_plotting)
     try:
         parser = MaterialYAMLParser(yaml_path=yaml_path)
         material = parser.create_material(T=T, enable_plotting=enable_plotting)
-        logger.info(f"Successfully created material: {material.name}\n")
+        logger.info("Successfully created material: %s with %d properties",
+                    material.name, len([attr for attr in dir(material) if not attr.startswith('_')]))
         return material
     except Exception as e:
-        logger.error(f"Failed to create material from {yaml_path}: {e}", exc_info=True)
+        logger.error("Failed to create material from %s: %s", yaml_path, e, exc_info=True)
         raise
 
 
@@ -73,17 +74,22 @@ def validate_yaml_file(yaml_path: Union[str, Path]) -> bool:
         FileNotFoundError: If the file doesn't exist
         ValueError: If the YAML content is invalid
     """
+    logger.info("Validating YAML file: %s", yaml_path)
     try:
         _ = MaterialYAMLParser(yaml_path)
+        logger.info("YAML validation successful for: %s", yaml_path)
         return True
     except FileNotFoundError as e:
         # Re-raise with more context
+        logger.error("YAML file not found: %s", yaml_path)
         raise FileNotFoundError(f"YAML file not found: {yaml_path}") from e
     except ValueError as e:
         # Provide more specific error
+        logger.error("YAML validation failed for %s: %s", yaml_path, e)
         raise ValueError(f"YAML validation failed: {str(e)}") from e
     except Exception as e:
         # Catch other errors
+        logger.error("Unexpected error validating YAML %s: %s", yaml_path, e, exc_info=True)
         raise ValueError(f"Unexpected error validating YAML: {str(e)}") from e
 
 

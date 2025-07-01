@@ -1,5 +1,8 @@
+import logging
 from pymatlib.data.constants import PhysicalConstants
 from pymatlib.core.elements import ChemicalElement
+
+logger = logging.getLogger(__name__)
 
 # NIST: National Institute of Standards and Technology
 # RSC: Royal Society of Chemistry
@@ -168,6 +171,13 @@ element_map = {
 
 def get_element(symbol: str) -> ChemicalElement:
     """Get element by symbol with error handling."""
+    logger.debug("Looking up element: %s", symbol)
     if symbol not in element_map:
-        raise KeyError(f"Element with symbol '{symbol}' not found")
-    return element_map[symbol]
+        available_symbols = list(element_map.keys())
+        logger.error("Element symbol '%s' not found. Available: %s", symbol, available_symbols)
+        raise KeyError(f"Element with symbol '{symbol}' not found. Available elements: {available_symbols}")
+    element = element_map[symbol]
+    logger.debug("Found element: %s (atomic number: %d)", element.name, element.atomic_number)
+    return element
+# Log available elements on module import
+logger.info("Element database loaded with %d elements: %s", len(element_map), list(element_map.keys()))
