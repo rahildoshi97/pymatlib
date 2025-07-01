@@ -13,12 +13,10 @@ class DependencyError(PropertyError):
         self.expression = expression
         self.missing_deps = missing_deps
         self.available_props = available_props or []
-
         message = f"Missing dependencies in expression '{expression}': {', '.join(missing_deps)}"
         if available_props:
             message += f"\nAvailable properties: {', '.join(available_props)}"
             message += f"\nPlease check for typos or add the missing properties to your configuration."
-
         super().__init__(message)
 
 

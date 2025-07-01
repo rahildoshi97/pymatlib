@@ -10,6 +10,7 @@ from pymatlib.parsing.processors.temperature_resolver import TemperatureResolver
 from pymatlib.parsing.validation.property_validator import validate_monotonic_energy_density
 from pymatlib.parsing.validation.errors import DependencyError, CircularDependencyError
 from pymatlib.parsing.config.yaml_keys import EQUATION_KEY, TEMPERATURE_KEY
+from pymatlib.parsing.utils.utilities import handle_numeric_temperature
 
 logger = logging.getLogger(__name__)
 
@@ -50,13 +51,16 @@ class DependencyProcessor:
             except Exception as e:
                 logger.error(f"Failed to parse expression for property '{prop_name}': {e}", exc_info=True)
                 raise ValueError(f"Failed to process computed property '{prop_name}' \n -> {str(e)}") from e
-            # Evaluate the expression
+            # Handle numeric temperature case using utility function
+            if handle_numeric_temperature(self, material, prop_name, material_property, T):
+                return
+            # Evaluate the expression for symbolic temperature
             T_standard = sp.Symbol('T')
             if isinstance(T, sp.Symbol) and str(T) != 'T':
                 standard_expr = material_property.subs(T, T_standard)
                 f_pw = sp.lambdify(T_standard, standard_expr, 'numpy')
             else:
-                f_pw = sp.lambdify(T, material_property, 'numpy')
+                f_pw = sp.lambdify(T_standard, material_property, 'numpy')  # Use T_standard instead of T
             try:
                 y_dense = f_pw(temp_array)
                 if not np.all(np.isfinite(y_dense)):

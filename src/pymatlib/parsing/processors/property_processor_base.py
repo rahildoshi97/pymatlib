@@ -14,6 +14,7 @@ from pathlib import Path
 
 from pymatlib.algorithms.piecewise_builder import PiecewiseBuilder
 from pymatlib.core.materials import Material
+from pymatlib.parsing.utils.utilities import handle_numeric_temperature
 
 logger = logging.getLogger(__name__)
 
@@ -59,17 +60,9 @@ class PropertyProcessorBase:
         Returns True if processing is complete (numeric case), False if symbolic.
         """
         logger.debug(f"Finalizing property '{prop_name}' with existing piecewise function")
-        # Handle numeric temperature case
-        if not isinstance(T, sp.Symbol):
-            try:
-                T_standard = sp.Symbol('T')
-                value = float(piecewise_func.subs(T_standard, T).evalf())
-                setattr(material, prop_name, sp.Float(value))
-                self.processed_properties.add(prop_name)
-                logger.debug(f"Numeric evaluation completed for '{prop_name}': {value}")
-                return True
-            except Exception as e:
-                raise ValueError(f"Failed to evaluate {prop_name} at T={T}: {str(e)}")
+        # Handle numeric temperature case using utility function
+        if handle_numeric_temperature(self, material, prop_name, piecewise_func, T):
+            return True
         # Assign symbolic piecewise function
         setattr(material, prop_name, piecewise_func)
         # Generate visualization

@@ -23,6 +23,7 @@ def demonstrate_material_properties():
     """Demonstrate material property evaluation."""
     setup_logging()
     T = sp.Symbol('u_C')
+    T = 300.15
     current_file = Path(__file__)
     yaml_path_Al = current_file.parent.parent / "src" / "pymatlib" / "data" / "materials" / "pure_metals" / "Al" / "Al.yaml"
     yaml_path_SS304L = current_file.parent.parent / "src" / "pymatlib" / "data" / "materials" / "alloys" / "SS304L" / "SS304L.yaml"
@@ -57,7 +58,7 @@ def demonstrate_material_properties():
         if hasattr(mat, 'boiling_temperature'):
             print(f"Boiling Temperature: {mat.boiling_temperature}")
         # Test computed properties at specific temperature
-        test_temp = 273.15  # Kelvin
+        test_temp = 300.15  # Kelvin
         valid_properties = get_supported_properties()
         print(f"\n{'=' * 80}")
         print(f"PROPERTIES FOR '{mat.name}'")
@@ -81,7 +82,7 @@ def demonstrate_material_properties():
             except Exception as e:
                 print(f"{valid_prop_name:<30}: Error - {str(e)}")
         print(f"\n{'=' * 80}")
-        print(f"PROPERTY VALUES AT {test_temp}K")
+        print(f"PROPERTY VALUES FOR '{mat.name}' AT {test_temp}K")
         print(f"{'=' * 80}")
         for valid_prop_name in sorted(valid_properties):
             try:
