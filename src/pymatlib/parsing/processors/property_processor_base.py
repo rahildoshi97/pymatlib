@@ -156,6 +156,10 @@ class PropertyProcessorBase:
         if self.visualizer is None:
             logger.debug(f"No visualizer available for property '{prop_name}'")
             return
+        # Skip visualization for numeric temperature
+        if not isinstance(T, sp.Symbol):
+            logger.debug(f"Skipping visualization for property '{prop_name}' - numeric temperature")
+            return
         # Check if visualization is enabled
         if not hasattr(self.visualizer, 'is_visualization_enabled') or \
                 not self.visualizer.is_visualization_enabled():

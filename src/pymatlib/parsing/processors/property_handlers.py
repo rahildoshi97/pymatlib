@@ -43,8 +43,12 @@ class ConstantPropertyHandler(BasePropertyHandler):
             prop_value = sp.Float(value)
             setattr(material, prop_name, prop_value)
             logger.debug(f"Set constant property {prop_name} = {value}")
-            self._visualize_if_enabled(material=material, prop_name=prop_name, T=T, prop_type='CONSTANT',
-                                       x_data=None, y_data=None)
+            # Only visualize for symbolic temperature
+            if isinstance(T, sp.Symbol):
+                self._visualize_if_enabled(material=material, prop_name=prop_name, T=T,
+                                           prop_type='CONSTANT', x_data=None, y_data=None)
+            else:
+                logger.debug(f"Skipping visualization for constant property '{prop_name}' - numeric temperature")
             self.processed_properties.add(prop_name)
         except (ValueError, TypeError) as e:
             logger.error(f"Failed to process constant property '{prop_name}': {e}", exc_info=True)

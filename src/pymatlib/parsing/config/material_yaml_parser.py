@@ -105,12 +105,19 @@ class MaterialYAMLParser(YAMLFileParser):
                     initial_boiling_temperature=sp.Float(self.config[INITIAL_BOILING_TEMPERATURE_KEY]),
                     final_boiling_temperature=sp.Float(self.config[FINAL_BOILING_TEMPERATURE_KEY]),
                 )
-            # Initialize visualizer only if plotting is enabled
+            # Initialize visualizer only if plotting is enabled AND T is symbolic
             visualizer = None
-            if enable_plotting:
+            should_visualize = enable_plotting and isinstance(T, sp.Symbol)
+            if should_visualize:
                 self.visualizer.initialize_plots()
                 self.visualizer.reset_visualization_tracking()
                 visualizer = self.visualizer
+                logger.debug("Visualization enabled for symbolic temperature")
+            else:
+                if not isinstance(T, sp.Symbol):
+                    logger.debug("Visualization disabled - numeric temperature provided")
+                else:
+                    logger.debug("Visualization disabled - plotting not enabled")
             self.property_processor.process_properties(
                 material=material,
                 T=T,
@@ -119,9 +126,10 @@ class MaterialYAMLParser(YAMLFileParser):
                 base_dir=self.base_dir,
                 visualizer=visualizer
             )
-            # Save plots only if plotting was enabled
-            if enable_plotting:
+            # Save plots only if visualization was actually enabled
+            if should_visualize and visualizer is not None:
                 self.visualizer.save_property_plots()
+                logger.info(f"Property plots saved for {material}")
             logger.info(f"Successfully created material: {name}")
             return material
         except KeyError as e:

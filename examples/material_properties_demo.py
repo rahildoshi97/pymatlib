@@ -23,7 +23,7 @@ def demonstrate_material_properties():
     """Demonstrate material property evaluation."""
     setup_logging()
     T = sp.Symbol('u_C')
-    T = 300.15
+    # T = 300.15
     current_file = Path(__file__)
     yaml_path_Al = current_file.parent.parent / "src" / "pymatlib" / "data" / "materials" / "pure_metals" / "Al" / "Al.yaml"
     yaml_path_SS304L = current_file.parent.parent / "src" / "pymatlib" / "data" / "materials" / "alloys" / "SS304L" / "SS304L.yaml"
@@ -97,7 +97,7 @@ def demonstrate_material_properties():
                     print(f"{valid_prop_name:<30}: Not defined in YAML")
             except Exception as e:
                 print(f"{valid_prop_name:<30}: Error - {str(e)}")
-    # test_inverse_functions(materials, T)
+    test_inverse_functions(materials, T)
 
 
 def test_inverse_functions(materials, T):
