@@ -42,9 +42,9 @@ properties:
 
   # Example with temperature reference arithmetic:
   # latent_heat_of_fusion:
-  #   temperature: melting_temperature - 10  # Arithmetic expressions supported
-  #   value: [0.0, 171401.0]                # [before_transition, after_transition]
-  #   bounds: [constant, constant]           # Required for all non-constant properties
+  #   temperature: solidus_temperature - 1 # Arithmetic expressions supported
+  #   value: [0.0, 171401.0]               # [before_transition, after_transition]
+  #   bounds: [constant, constant]         # Required for all non-constant properties
 
   # ====================================================================================================
   # PROPERTY TYPE 3: KEY_VAL
@@ -62,7 +62,7 @@ properties:
     value: [1.2632e-5, 1.468e-5, 1.524e-5, 1.581e-5, 1.639e-5, 1.699e-5, 1.759e-5, 1.821e-5, 1.885e-5, 2.1e-5, 2.3e-5, 2.5e-5, 2.7e-5]
     bounds: [constant, constant]
     regression:                            # Optional regression configuration
-      simplify: pre                       # 'pre' (before processing) or 'post' (after processing)
+      simplify: pre                        # 'pre' (before processing) or 'post' (after processing)
       degree: 1                            # Polynomial degree for regression
       segments: 2                          # Number of piecewise segments
 
