@@ -145,7 +145,7 @@ def create_heat_equation_workflow_visualization():
         u, u_tmp = ps.fields(f"u, u_tmp: {data_type}[2D]", layout='fzyx')
 
         # Load material
-        yaml_path = Path(__file__).parent / 'SS304L_HeatEquationKernelWithMaterial.yaml'
+        yaml_path = Path(__file__).parent / 'SS304L_HeatEquationKernelWithMaterialBM.yaml'
         if not yaml_path.exists():
             yaml_path = Path(
                 __file__).parent.parent / "src" / "pymatlib" / "data" / "materials" / "alloys" / "SS304L" / "SS304L.yaml"

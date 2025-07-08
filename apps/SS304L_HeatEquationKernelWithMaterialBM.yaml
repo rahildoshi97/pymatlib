@@ -70,7 +70,7 @@ properties:
     bounds: [extrapolate, extrapolate]
     regression:
       simplify: post
-      degree: 1
+      degree: 2
       segments: 3
 
   ##################################################
@@ -82,5 +82,5 @@ properties:
     bounds: [extrapolate, extrapolate]
     regression:
       simplify: post
-      degree: 1  # 2
-      segments: 3  # 4
+      degree: 2
+      segments: 3

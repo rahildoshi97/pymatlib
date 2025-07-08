@@ -35,3 +35,21 @@ walberla_generate_sources( HeatEquationWithMaterial
         SCRIPTS HeatEquationKernelWithMaterial.py
         FILE_EXTENSIONS .cpp .hpp
 )
+
+add_executable ( HeatEquationWithMaterialCPU )
+target_sources( HeatEquationWithMaterialCPU PRIVATE CodegenHeatEquationWithMaterialCPU.cpp)
+target_link_libraries( HeatEquationWithMaterialCPU PRIVATE walberla::blockforest walberla::core walberla::field walberla::stencil walberla::timeloop walberla::vtk walberla::pde )
+
+walberla_generate_sources( HeatEquationWithMaterialCPU
+        SCRIPTS HeatEquationKernelWithMaterialCPU.py
+        FILE_EXTENSIONS .cpp .hpp
+)
+
+add_executable ( HeatEquationWithMaterialGPU )
+target_sources( HeatEquationWithMaterialGPU PRIVATE CodegenHeatEquationWithMaterialGPU.cpp)
+target_link_libraries( HeatEquationWithMaterialGPU PRIVATE walberla::blockforest walberla::core walberla::field walberla::stencil walberla::timeloop walberla::vtk walberla::pde )
+
+walberla_generate_sources( HeatEquationWithMaterialGPU
+        SCRIPTS HeatEquationKernelWithMaterialGPU.py
+        FILE_EXTENSIONS .cpp .hpp
+)
