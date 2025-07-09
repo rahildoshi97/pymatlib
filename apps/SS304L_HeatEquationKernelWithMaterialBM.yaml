@@ -57,9 +57,9 @@ properties:
     value_header: Specific heat (J/(Kg K))
     bounds: [extrapolate, extrapolate]
     regression:
-      simplify: pre  # TODO: 'post' causes errors: <lambdifygenerated-8>:2: RuntimeWarning: divide by zero encountered in reciprocal
-      degree: 1
-      segments: 4
+      simplify: post  # TODO: 'post' causes errors: <lambdifygenerated-8>:2: RuntimeWarning: divide by zero encountered in reciprocal
+      degree: 2
+      segments: 6
 
   ##################################################
 

@@ -57,7 +57,8 @@ void initDirichletBoundaryNorth(shared_ptr< StructuredBlockForest > blocks, Bloc
          {
             const Vector3< real_t > p = blocks->getBlockLocalCellCenter(*block, *cell);
             //  Set the dirichlet boundary to f(x) = 1 + sin(x) * x^2
-            real_t v          = real_c(3400.0 + 1700 * std::sin(2 * math::pi * p[0]) * p[1] * p[2]);
+            // real_t v          = real_c(3400.0 + 1700 * std::sin(2 * math::pi * p[0]) * p[1] * p[2]);
+            real_t v          = real_c(3800.0);
             u->get(*cell)     = v;
             u_tmp->get(*cell) = v;
          }
@@ -100,7 +101,7 @@ int main(int argc, char** argv)
 
    const real_t dt    = real_c(1);
    uint_t timeSteps = uint_c(2e4);
-   uint_t vtkWriteFrequency = uint_c(0);
+   uint_t vtkWriteFrequency = uint_c(200);
 
    ///////////////////////////
    /// BLOCK STORAGE SETUP ///
@@ -156,7 +157,7 @@ int main(int argc, char** argv)
 
    if (vtkWriteFrequency > 0)
    {
-      auto vtkOutput = vtk::createVTKOutput_BlockData(*blocks, "vtk3d", vtkWriteFrequency, 0, false, "vtk_out_3d",
+      auto vtkOutput = vtk::createVTKOutput_BlockData(*blocks, "vtkCPU3d", vtkWriteFrequency, 0, false, "vtk_out_cpu_3d",
                                                       "simulation_step", false, true, true, false, 0);
 
       auto tempWriter = make_shared< field::VTKWriter< ScalarField > >(uFieldId, "temperature");
@@ -165,7 +166,7 @@ int main(int argc, char** argv)
       auto alphaWriter = make_shared< field::VTKWriter< ScalarField > >(alphaFieldId, "thermal_diffusivity");
       vtkOutput->addCellDataWriter(alphaWriter);
 
-      timeloop.addFuncAfterTimeStep(vtk::writeFiles(vtkOutput), "VTK Output 3D");
+      timeloop.addFuncAfterTimeStep(vtk::writeFiles(vtkOutput), "VTK Output CPU 3D");
    }
 
    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
