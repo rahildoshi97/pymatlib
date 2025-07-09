@@ -206,6 +206,8 @@ test_yaml_config.hpp
 
 # VTK output
 vtk_out/
+apps/vtk_out_cpu_3d/
+apps/vtk_out_gpu_3d/
 
 # Generated code
 _gen/

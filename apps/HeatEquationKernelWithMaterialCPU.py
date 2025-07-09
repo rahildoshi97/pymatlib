@@ -6,7 +6,6 @@ from pystencils import SymbolCreator
 from walberla.codegen import Sweep
 
 from pymatlib.parsing.api import create_material
-from pymatlib.algorithms.piecewise_inverter import PiecewiseInverter
 
 logging.basicConfig(
     level=logging.WARNING,  # DEBUG/INFO/WARNING/ERROR/CRITICAL
@@ -59,5 +58,7 @@ with SourceFileGenerator() as sfg:
 
     print(f"ac:\n{ac}")
 
-    sweep = Sweep("HeatEquationKernelWithMaterialCPU", ac)
+    cpu_config = ps.CreateKernelConfig(target=ps.Target.CPU)
+
+    sweep = Sweep("HeatEquationKernelWithMaterialCPU", ac, config=cpu_config)
     sfg.generate(sweep)

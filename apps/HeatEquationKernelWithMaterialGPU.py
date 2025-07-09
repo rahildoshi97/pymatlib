@@ -59,5 +59,7 @@ with SourceFileGenerator() as sfg:
 
     print(f"ac:\n{ac}")
 
-    sweep = Sweep("HeatEquationKernelWithMaterialGPU", ac)
+    gpu_config = ps.CreateKernelConfig(target=ps.Target.GPU)
+
+    sweep = Sweep("HeatEquationKernelWithMaterialGPU", ac, config=gpu_config)
     sfg.generate(sweep)
