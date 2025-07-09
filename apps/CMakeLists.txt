@@ -1,6 +1,7 @@
 cmake_minimum_required( VERSION 3.24 )
 
 project ( test_pymatlib )
+enable_language(CUDA)
 
 SET( CMAKE_CXX_STANDARD 20 )
 SET( CMAKE_CXX_STANDARD_REQUIRED ON )
@@ -18,6 +19,9 @@ SET ( WALBERLA_BUILD_WITH_CODEGEN OFF CACHE BOOL "" )
 SET ( WALBERLA_BUILD_WITH_OPENMP ON CACHE BOOL "" )
 SET ( WALBERLA_BUILD_WITH_MPI OFF CACHE BOOL "" )
 
+# GPU-related options
+SET ( WALBERLA_BUILD_WITH_GPU_SUPPORT ON CACHE BOOL "" )
+SET ( WALBERLA_BUILD_WITH_CUDA ON CACHE BOOL "" )
 
 add_subdirectory(walberla)
 add_subdirectory(sfg-walberla)
@@ -47,9 +51,17 @@ walberla_generate_sources( HeatEquationWithMaterialCPU
 
 add_executable ( HeatEquationWithMaterialGPU )
 target_sources( HeatEquationWithMaterialGPU PRIVATE CodegenHeatEquationWithMaterialGPU.cpp)
-target_link_libraries( HeatEquationWithMaterialGPU PRIVATE walberla::blockforest walberla::core walberla::field walberla::stencil walberla::timeloop walberla::vtk walberla::pde )
+target_link_libraries( HeatEquationWithMaterialGPU PRIVATE walberla::blockforest walberla::core walberla::gpu walberla::field walberla::stencil walberla::timeloop walberla::vtk walberla::pde )
+
+# Set CUDA properties
+set_property(TARGET HeatEquationWithMaterialGPU PROPERTY CUDA_SEPARABLE_COMPILATION ON)
 
 walberla_generate_sources( HeatEquationWithMaterialGPU
         SCRIPTS HeatEquationKernelWithMaterialGPU.py
-        FILE_EXTENSIONS .cpp .hpp
+        FILE_EXTENSIONS .cu .hpp
+)
+
+set_source_files_properties(
+        ${CMAKE_CURRENT_BINARY_DIR}/_gen/HeatEquationWithMaterialGPU/gen/HeatEquationKernelWithMaterialGPU.cu
+        PROPERTIES LANGUAGE CUDA
 )
