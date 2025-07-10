@@ -24,8 +24,8 @@ properties:
     bounds: [ extrapolate, extrapolate ]
     regression:
       simplify: post
-      degree: 1
-      segments: 3
+      degree: 3
+      segments: 6
 
   ##################################################
 
