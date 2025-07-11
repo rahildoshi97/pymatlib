@@ -6,7 +6,6 @@ from pystencils import SymbolCreator
 from walberla.codegen import Sweep
 
 from pymatlib.parsing.api import create_material
-from pymatlib.algorithms.piecewise_inverter import PiecewiseInverter
 
 logging.basicConfig(
     level=logging.WARNING,  # DEBUG/INFO/WARNING/ERROR/CRITICAL
@@ -17,7 +16,7 @@ logging.getLogger('matplotlib').setLevel(logging.WARNING)
 logging.getLogger('PIL').setLevel(logging.WARNING)
 logging.getLogger('fontTools').setLevel(logging.WARNING)
 
-material_library = 0
+material_library = 1 # Set to 1 to use material library, 0 to use hardcoded values
 
 with SourceFileGenerator() as sfg:
     data_type = "float64"

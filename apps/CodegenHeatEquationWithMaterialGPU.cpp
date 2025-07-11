@@ -79,6 +79,31 @@ void initDirichletBoundaryNorth(const shared_ptr<StructuredBlockForest>& blocks,
     gpu::fieldCpy<GPUScalarField, ScalarField>(blocks, uTmpId, uTmpCpuId);
 }
 
+// Initialize alpha field properly
+/*void initAlphaField(const shared_ptr<StructuredBlockForest>& blocks,
+                   BlockDataID alphaId, BlockDataID alphaCpuId)
+{
+    // Initialize thermal diffusivity on CPU
+    for (auto block = blocks->begin(); block != blocks->end(); ++block)
+    {
+        ScalarField* alpha = block->getData<ScalarField>(alphaCpuId);
+        CellInterval xyz = alpha->xyzSize();
+
+        for (auto cell = xyz.begin(); cell != xyz.end(); ++cell)
+        {
+            // Same thermal diffusivity calculation as in the kernel
+            real_t k = real_c(35.3375739419170);
+            real_t rho = real_c(6824.46293263393);
+            real_t cp = real_c(835.533555786031);
+            real_t alpha_val = k / (rho * cp);
+            alpha->get(*cell) = alpha_val;
+        }
+    }
+
+    // Copy to GPU
+    gpu::fieldCpy<GPUScalarField, ScalarField>(blocks, alphaId, alphaCpuId);
+}*/
+
 int main(int argc, char** argv)
 {
     mpi::Environment env(argc, argv);
@@ -90,7 +115,7 @@ int main(int argc, char** argv)
     /// SIMULATION PARAMETERS ///
     /////////////////////////////
 
-    // Ensure matching aspect ratios of cells and domain.
+    // Use same parameters as CPU version
     constexpr uint_t x = 128;
     const uint_t xCells = uint_c(x);
     const uint_t yCells = uint_c(x);
@@ -150,17 +175,24 @@ int main(int argc, char** argv)
     auto packInfo = make_shared<gpu::communication::MemcpyPackInfo<GPUScalarField>>(uFieldId);
     commScheme.addPackInfo(packInfo);
 
+    ////////////////////////////
+    /// FIELD INITIALIZATION ///
+    ////////////////////////////
+
+    // Initialize alpha field properly
+    //initAlphaField(blocks, alphaFieldId, alphaFieldCpuId);
+
     //////////////////////////
     /// DIRICHLET BOUNDARY ///
     //////////////////////////
 
+    // Initialize boundary conditions
     initDirichletBoundaryNorth(blocks, uFieldId, uTmpFieldId, uFieldCpuId, uTmpFieldCpuId);
 
     ////////////////////////
     /// NEUMANN BOUNDARY ///
     ////////////////////////
 
-    // Note: GPU version of Neumann boundary would need to be implemented
     pde::NeumannDomainBoundary<ScalarField> neumann(*blocks, uFieldCpuId);
     neumann.excludeBoundary(stencil::N);
 
@@ -171,14 +203,29 @@ int main(int argc, char** argv)
     SweepTimeloop timeloop(blocks, timeSteps);
 
     timeloop.add() << BeforeFunction([&]() {
-        neumann(); // Apply Neumann boundaries on CPU
-        gpu::fieldCpy<GPUScalarField, ScalarField>(blocks, uFieldId, uFieldCpuId); // Copy updated boundary values to GPU
-        commScheme.communicate(); // GPU communication
+        // Apply Neumann boundaries on CPU
+        neumann();
+
+        // Copy updated boundary values to GPU
+        gpu::fieldCpy<GPUScalarField, ScalarField>(blocks, uFieldId, uFieldCpuId);
+
+        // Also copy boundary conditions to u_tmp field
+        gpu::fieldCpy<GPUScalarField, ScalarField>(blocks, uTmpFieldId, uTmpFieldCpuId);
+
+        // GPU communication
+        commScheme.communicate();
     }, "Communication and Boundaries")
     << Sweep(HeatEquationKernelWithMaterialGPU(alphaFieldId, uFieldId, uTmpFieldId, dt, dx), "HeatEquationKernelWithMaterialGPU")
-    << AfterFunction([blocks, uFieldId, uTmpFieldId]() {
+    << AfterFunction([&]() {
         swapFields(*blocks, uFieldId, uTmpFieldId);
-    }, "Swap");
+
+        // Copy results back to CPU for boundary condition updates
+        gpu::fieldCpy<ScalarField, GPUScalarField>(blocks, uFieldCpuId, uFieldId);
+        gpu::fieldCpy<ScalarField, GPUScalarField>(blocks, uTmpFieldCpuId, uTmpFieldId);
+
+        // Reapply Dirichlet boundaries on CPU
+        initDirichletBoundaryNorth(blocks, uFieldId, uTmpFieldId, uFieldCpuId, uTmpFieldCpuId);
+    }, "Swap and Boundary Update");
 
     if (vtkWriteFrequency > 0)
     {
@@ -192,7 +239,7 @@ int main(int argc, char** argv)
         vtkOutput->addCellDataWriter(alphaWriter);
 
         vtkOutput->addBeforeFunction([&]() {
-            // Copy GPU data to CPU for VTK output with correct template parameters
+            // Copy GPU data to CPU for VTK output
             gpu::fieldCpy<ScalarField, GPUScalarField>(blocks, uFieldCpuId, uFieldId);
             gpu::fieldCpy<ScalarField, GPUScalarField>(blocks, alphaFieldCpuId, alphaFieldId);
         });
