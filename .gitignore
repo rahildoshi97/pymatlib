@@ -149,7 +149,7 @@ pymatlib_reports/
 *.pdf
 
 # Data files (unless specifically needed)
-*.xlsx
+# *.xlsx
 *.csv
 *.dat
 *.txt
@@ -169,8 +169,6 @@ pymatlib_reports/
 .vscode/
 *.sublime-project
 *.sublime-workspace
-.spyderproject
-.spyproject
 
 # OS generated files
 .DS_Store
