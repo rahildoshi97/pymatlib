@@ -48,3 +48,6 @@ PROPERTIES_KEY = "properties"
 
 # Material name key
 NAME_KEY = "name"
+
+# Automatically export all constants (those that don't start with underscore)
+__all__ = [name for name in globals() if not name.startswith('_') and name.isupper()]
