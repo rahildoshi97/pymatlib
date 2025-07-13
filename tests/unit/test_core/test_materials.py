@@ -53,6 +53,7 @@ class TestMaterial:
                 melting_temperature=sp.Float(933.47),
                 boiling_temperature=sp.Float(2792.0)
             )
+
     def test_pure_metal_multiple_elements(self, sample_steel_elements):
         """Test pure metal with multiple elements raises error."""
         with pytest.raises(MaterialCompositionError, match="Pure metals must have exactly 1 element"):
@@ -64,6 +65,7 @@ class TestMaterial:
                 melting_temperature=sp.Float(933.47),
                 boiling_temperature=sp.Float(2792.0)
             )
+
     def test_alloy_single_element(self, sample_aluminum_element):
         """Test alloy with single element raises error."""
         with pytest.raises(MaterialCompositionError, match="Alloys must have at least 2 elements"):

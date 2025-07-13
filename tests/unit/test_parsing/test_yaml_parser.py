@@ -100,7 +100,6 @@ class TestMaterialYAMLParser:
             T = sp.Symbol('T')
             parser = MaterialYAMLParser(yaml_path)
             material = parser.create_material(T=T, enable_plotting=False)
-
             assert material.name == "Parser Test Material"
             assert material.material_type == "pure_metal"
             assert len(material.elements) == 1
@@ -124,7 +123,6 @@ class TestMaterialYAMLParser:
             'boiling_temperature': 2792.0,
             'properties': {}
         }
-
         with tempfile.NamedTemporaryFile(mode='w', suffix='.yaml', delete=False) as f:
             yaml = YAML()
             yaml.dump(invalid_config, f)

@@ -187,7 +187,7 @@ class TestEndToEnd:
             yaml.dump(invalid_config, f)
             yaml_path = Path(f.name)
         try:
-            # Fix: Update the regex pattern to match the actual error message
+            # Update the regex pattern to match the actual error message
             with pytest.raises(ValueError, match=r"Composition fractions must sum to 1\.0"):
                 create_material(yaml_path, temp_symbol, enable_plotting=False)
         finally:

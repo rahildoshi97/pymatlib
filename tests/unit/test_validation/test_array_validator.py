@@ -40,6 +40,5 @@ class TestArrayValidator:
         """Test monotonicity with realistic temperature arrays."""
         temp_array = np.array([273.15, 373.15, 473.15, 573.15, 673.15])
         assert is_monotonic(temp_array, mode="strictly_increasing") is True
-
         temp_array_equal = np.array([273.15, 373.15, 373.15, 473.15])
         assert is_monotonic(temp_array_equal, mode="strictly_increasing", raise_error=False) is False

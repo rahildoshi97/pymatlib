@@ -189,7 +189,6 @@ class TestDependencyProcessor:
         # Test the expression parsing method directly
         expression = "density * heat_capacity"
         result = processor._parse_and_process_expression(expression, material, T, 'thermal_mass')
-
         assert isinstance(result, sp.Expr)
 
     def test_get_temperature_value_from_material(self, sample_aluminum_element):
