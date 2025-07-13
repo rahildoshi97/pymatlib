@@ -82,7 +82,7 @@ def ensure_ascending_order(temp_array: np.ndarray, *value_arrays: np.ndarray) ->
         else:
             logger.error("Array is neither strictly ascending nor descending")
             logger.error("Temperature array: %s", temp_array.tolist() if len(temp_array) <= 20
-                else f"[{temp_array[0]}, ..., {temp_array[-1]}] (length={len(temp_array)})")
+                         else f"[{temp_array[0]}, ..., {temp_array[-1]}] (length={len(temp_array)})")
             raise ValueError(f"Array is not strictly ascending or strictly descending: {temp_array}")
     except Exception as e:
         logger.error("Error checking array order: %s", e, exc_info=True)

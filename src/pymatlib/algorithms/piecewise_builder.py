@@ -99,7 +99,7 @@ class PiecewiseBuilder:
         logger.info("Building piecewise function from %d formulas and %d breakpoints",
                     len(equations), len(temp_points))
         logger.debug("Temperature breakpoints: %s", temp_points.tolist() if len(temp_points) <= 10
-            else f"[{temp_points[0]}, ..., {temp_points[-1]}]")
+                     else f"[{temp_points[0]}, ..., {temp_points[-1]}]")
         logger.debug("Boundary types: lower=%s, upper=%s", lower_bound_type, upper_bound_type)
         if len(equations) != len(temp_points) - 1:
             logger.error("Equation count mismatch: %d equations for %d breakpoints",

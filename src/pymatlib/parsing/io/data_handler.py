@@ -197,7 +197,8 @@ def _convert_to_numeric_arrays(temp_series: pd.Series, prop_series: pd.Series,
         prop_array = np.asarray(prop_numeric, dtype=np.float64)
         # Validate conversion success
         if not np.issubdtype(temp_array.dtype, np.number):
-            raise ValueError(f"Temperature column could not be converted to numeric type. Got dtype: {temp_array.dtype}")
+            raise ValueError(f"Temperature column could not be converted to numeric type."
+                             f"Got dtype: {temp_array.dtype}")
         if not np.issubdtype(prop_array.dtype, np.number):
             raise ValueError(f"Property column could not be converted to numeric type. Got dtype: {prop_array.dtype}")
         # Log conversion statistics

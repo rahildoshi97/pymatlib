@@ -7,8 +7,7 @@ import sympy as sp
 
 from pymatlib.core.elements import (ChemicalElement,
                                     interpolate_atomic_mass,
-                                    interpolate_atomic_number,
-                                    interpolate_boiling_temperature)
+                                    interpolate_atomic_number)
 from pymatlib.core.exceptions import MaterialCompositionError, MaterialTemperatureError
 
 logger = logging.getLogger(__name__)

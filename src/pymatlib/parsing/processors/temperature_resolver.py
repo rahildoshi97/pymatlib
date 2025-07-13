@@ -303,8 +303,8 @@ class TemperatureResolver:
             if abs(increment) <= TemperatureResolver.EPSILON:
                 raise ValueError("Temperature increment/decrement cannot be zero")
             if start <= TemperatureResolver.ABSOLUTE_ZERO:
-                raise ValueError(f"Start temperature must be above absolute zero ({TemperatureResolver.ABSOLUTE_ZERO}K),"
-                                 f"got {start}K")
+                raise ValueError(f"Start temperature must be above absolute zero"
+                                 f"({TemperatureResolver.ABSOLUTE_ZERO}K), got {start}K")
             # Generate temperature array
             temp_array = np.array([start + i * increment for i in range(n_values)])
             # Validate all temperatures are above absolute zero
