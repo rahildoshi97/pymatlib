@@ -250,8 +250,12 @@ class PropertyVisualizer:
                 ax.text(0.5, 0.95, f"Simplify: {simplify_type} | Degree: {degree} | Segments: {segments}",
                         transform=ax.transAxes, horizontalalignment='center',
                         bbox=dict(facecolor='white', alpha=0.7, boxstyle='round'))
+            # Check if there are any labeled artists before creating legend
+            handles, labels = ax.get_legend_handles_labels()
+            if handles:  # Only create legend if there are plot elements
+                ax.legend(loc='best', framealpha=0.8, fancybox=True, shadow=True)
             # Add legend
-            ax.legend(loc='best', framealpha=0.8, fancybox=True, shadow=True)
+            # ax.legend(loc='best', framealpha=0.8, fancybox=True, shadow=True)
             # Add property to visualized set
             self.visualized_properties.add(prop_name)
             logger.info("Successfully visualized property: %s", prop_name)
