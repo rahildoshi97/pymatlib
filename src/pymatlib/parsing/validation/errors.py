@@ -16,7 +16,7 @@ class DependencyError(PropertyError):
         message = f"Missing dependencies in expression '{expression}': {', '.join(missing_deps)}"
         if available_props:
             message += f"\nAvailable properties: {', '.join(available_props)}"
-            message += f"\nPlease check for typos or add the missing properties to your configuration."
+            message += "\nPlease check for typos or add the missing properties to your configuration."
         super().__init__(message)
 
 

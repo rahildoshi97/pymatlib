@@ -5,6 +5,7 @@ from typing import List, Union
 
 logger = logging.getLogger(__name__)
 
+
 @dataclass
 class ChemicalElement:
     name: str
@@ -14,6 +15,7 @@ class ChemicalElement:
     boiling_temperature: float
     latent_heat_of_fusion: float
     latent_heat_of_vaporization: float
+
 
 # Utility functions for element property interpolation
 def interpolate(values: List[float], composition: List[float]) -> Union[float, sp.Expr]:
@@ -38,6 +40,7 @@ def interpolate(values: List[float], composition: List[float]) -> Union[float, s
     logger.debug("Interpolation result: %.6f", result)
     return result
 
+
 def interpolate_atomic_number(elements: List[ChemicalElement], composition: List[float]) -> float:
     """
     Interpolates the atomic number based on the elements and their composition.
@@ -52,6 +55,7 @@ def interpolate_atomic_number(elements: List[ChemicalElement], composition: List
     result = interpolate(values, composition)
     logger.info("Interpolated atomic number: %.3f", result)
     return result
+
 
 def interpolate_atomic_mass(elements: List[ChemicalElement], composition: List[float]) -> float:
     """
@@ -68,6 +72,7 @@ def interpolate_atomic_mass(elements: List[ChemicalElement], composition: List[f
     logger.info("Interpolated atomic mass: %.3f g/mol", result)
     return result
 
+
 def interpolate_melting_temperature(elements: List[ChemicalElement], composition: List[float]) -> float:
     """
     Interpolates the melting temperature based on the elements and their composition.
@@ -77,6 +82,7 @@ def interpolate_melting_temperature(elements: List[ChemicalElement], composition
     result = interpolate(values, composition)
     logger.info("Interpolated melting temperature: %.1f K", result)
     return result
+
 
 def interpolate_boiling_temperature(elements: List[ChemicalElement], composition: List[float]) -> float:
     """

@@ -97,7 +97,7 @@ class TemperatureResolver:
             temp_def = prop_config[TEMPERATURE_KEY]
             n_values = len(prop_config[VALUE_KEY]) if VALUE_KEY in prop_config else None
             return TemperatureResolver.resolve_temperature_definition(temp_def, n_values, material)
-        raise ValueError(f"Cannot extract temperature array: no temperature information in config")
+        raise ValueError("Cannot extract temperature array: no temperature information in config")
 
     # --- Temperature Reference Resolution ---
     @staticmethod
@@ -256,8 +256,8 @@ class TemperatureResolver:
         if material is not None:
             return np.array([TemperatureResolver.resolve_temperature_reference(temp_str, material)])
         else:
-            raise ValueError(
-                f"String temperature definition must be enclosed in parentheses or require material for reference: {temp_str}")
+            raise ValueError(f"String temperature definition must be enclosed in parentheses"
+                             f"or require material for reference: {temp_str}")
 
     @staticmethod
     def _process_temperature_range_format(temp_str: str, n_values: Optional[int] = None) -> np.ndarray:
@@ -303,8 +303,8 @@ class TemperatureResolver:
             if abs(increment) <= TemperatureResolver.EPSILON:
                 raise ValueError("Temperature increment/decrement cannot be zero")
             if start <= TemperatureResolver.ABSOLUTE_ZERO:
-                raise ValueError(
-                    f"Start temperature must be above absolute zero ({TemperatureResolver.ABSOLUTE_ZERO}K), got {start}K")
+                raise ValueError(f"Start temperature must be above absolute zero ({TemperatureResolver.ABSOLUTE_ZERO}K),"
+                                 f"got {start}K")
             # Generate temperature array
             temp_array = np.array([start + i * increment for i in range(n_values)])
             # Validate all temperatures are above absolute zero

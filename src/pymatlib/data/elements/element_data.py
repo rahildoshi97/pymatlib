@@ -149,7 +149,8 @@ MOLYBDENUM = ChemicalElement(
 )
 
 # This dictionary maps chemical symbols (strings) to their corresponding ChemicalElement instances,
-# allowing the parser to convert composition keys from the YAML file (like 'Fe': 0.675) to actual ChemicalElement objects needed by the Alloy class.
+# allowing the parser to convert composition keys from the YAML file (like 'Fe': 0.675)
+# to actual ChemicalElement objects needed by the Alloy class.
 # TODO: Update dictionary as more elements are added!
 element_map = {
     'C': CARBON,
@@ -179,5 +180,7 @@ def get_element(symbol: str) -> ChemicalElement:
     element = element_map[symbol]
     logger.debug("Found element: %s (atomic number: %d)", element.name, element.atomic_number)
     return element
+
+
 # Log available elements on module import
 logger.info("Element database loaded with %d elements: %s", len(element_map), list(element_map.keys()))

@@ -177,8 +177,8 @@ class PropertyTypeDetector:
         if not isinstance(val_list, list):
             raise ValueError("'value' for a key-val property must be a list.")
         if isinstance(temp_def, list) and len(temp_def) != len(val_list):
-            raise ValueError(
-                f"temperature list (length {len(temp_def)}) and value list (length {len(val_list)}) must have the same length")
+            raise ValueError(f"temperature list (length {len(temp_def)}) and value list (length {len(val_list)}) "
+                             f"must have the same length")
 
     @staticmethod
     def _validate_piecewise_equation_property(prop_name: str, config: Dict[str, Any]) -> None:

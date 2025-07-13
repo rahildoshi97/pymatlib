@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 def create_material(yaml_path: Union[str, Path], T: Union[float, sp.Symbol], enable_plotting: bool = True) -> Material:
     """
     Create material instance from YAML configuration file.
-    
+
     This function serves as the main entry point for creating material (pure metal or alloy) objects
     from YAML configuration files. It handles the parsing of the configuration
     and creation of the material with the specified temperature.
@@ -95,7 +95,7 @@ def validate_yaml_file(yaml_path: Union[str, Path]) -> bool:
 
 # --- Internal/Test Helper ---
 def _test_api():
-    T = sp.Symbol('T')
+    # T = sp.Symbol('T')
     try:
         assert validate_yaml_file('example.yaml') is True
     except (FileNotFoundError, ValueError, AssertionError) as e:

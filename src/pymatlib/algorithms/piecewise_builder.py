@@ -98,13 +98,14 @@ class PiecewiseBuilder:
         """
         logger.info("Building piecewise function from %d formulas and %d breakpoints",
                     len(equations), len(temp_points))
-        logger.debug("Temperature breakpoints: %s", temp_points.tolist() if len(temp_points) <= 10 else f"[{temp_points[0]}, ..., {temp_points[-1]}]")
+        logger.debug("Temperature breakpoints: %s", temp_points.tolist() if len(temp_points) <= 10
+            else f"[{temp_points[0]}, ..., {temp_points[-1]}]")
         logger.debug("Boundary types: lower=%s, upper=%s", lower_bound_type, upper_bound_type)
         if len(equations) != len(temp_points) - 1:
             logger.error("Equation count mismatch: %d equations for %d breakpoints",
                          len(equations), len(temp_points))
-            raise ValueError(
-                f"Number of equations ({len(equations)}) must be one less than temperature/break points ({len(temp_points)})")
+            raise ValueError(f"Number of equations ({len(equations)}) must be one less than temperature/break points "
+                             f"({len(temp_points)})")
         if len(temp_points) < 2:
             logger.error("Insufficient breakpoints: %d (minimum 2 required)", len(temp_points))
             raise ValueError("At least 2 temperature points required for piecewise equations")

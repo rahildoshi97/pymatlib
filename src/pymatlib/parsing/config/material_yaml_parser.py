@@ -164,8 +164,8 @@ class MaterialYAMLParser(YAMLFileParser):
         logger.debug("Starting configuration validation")
         if not isinstance(self.config, dict):
             logger.error("Invalid YAML structure - expected dictionary at root level")
-            raise ValueError(
-                "The YAML file must start with a dictionary/object structure with key-value pairs, not a list or scalar value")
+            raise ValueError("The YAML file must start with a dictionary/object structure with key-value pairs,"
+                             "not a list or scalar value")
         self._validate_required_fields()
         properties = self.config.get(PROPERTIES_KEY, {})
         if not isinstance(properties, dict):

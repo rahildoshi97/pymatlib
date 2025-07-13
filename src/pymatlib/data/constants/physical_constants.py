@@ -8,9 +8,12 @@ class PhysicalConstants:
 
     Attributes:
         ROOM_TEMPERATURE (float): Room temperature in Kelvin.
-        N_A (float): Avogadro's number, the number of constituent particles (usually atoms or molecules) in one mole of a given substance.
+        N_A (float): Avogadro's number,
+            the number of constituent particles (usually atoms or molecules) in one mole of a given substance.
         AMU (float): Atomic mass unit in kilograms.
-        E (float): Elementary charge, the electric charge carried by a single proton or the magnitude of the electric charge carried by a single electron.
+        E (float): Elementary charge,
+            the electric charge carried by a single proton
+            or the magnitude of the electric charge carried by a single electron.
         SPEED_OF_LIGHT (float): Speed of light in vacuum in meters per second.
         BOLTZMANN_CONSTANT (float): Boltzmann constant in J/K.
         GAS_CONSTANT (float): Universal gas constant in J/(mol·K).

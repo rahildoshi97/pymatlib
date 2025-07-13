@@ -8,8 +8,7 @@ import sympy as sp
 from pymatlib.core.elements import (ChemicalElement,
                                     interpolate_atomic_mass,
                                     interpolate_atomic_number,
-                                    interpolate_boiling_temperature,
-                                    interpolate_melting_temperature)
+                                    interpolate_boiling_temperature)
 from pymatlib.core.exceptions import MaterialCompositionError, MaterialTemperatureError
 
 logger = logging.getLogger(__name__)
@@ -194,8 +193,8 @@ class Material:
         # Initial boiling <= Final boiling
         if float(self.initial_boiling_temperature) > float(self.final_boiling_temperature):
             raise MaterialTemperatureError(
-                f"initial_boiling_temperature ({float(self.initial_boiling_temperature)}K) must be less than or equal to "
-                f"final_boiling_temperature ({float(self.final_boiling_temperature)}K)"
+                f"initial_boiling_temperature ({float(self.initial_boiling_temperature)}K) must be "
+                f"less than or equal to final_boiling_temperature ({float(self.final_boiling_temperature)}K)"
             )
         # Liquidus < Initial boiling
         if float(self.liquidus_temperature) >= float(self.initial_boiling_temperature):

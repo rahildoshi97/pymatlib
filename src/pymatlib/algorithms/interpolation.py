@@ -6,6 +6,7 @@ from pymatlib.parsing.config.yaml_keys import CONSTANT_KEY
 
 logger = logging.getLogger(__name__)
 
+
 def interpolate_value(T: float, x_array: np.ndarray, y_array: np.ndarray,
                       lower_bound_type: str, upper_bound_type: str) -> float:
     """Interpolate a value at temperature T using the provided data arrays."""
@@ -53,6 +54,7 @@ def interpolate_value(T: float, x_array: np.ndarray, y_array: np.ndarray,
         logger.error("Interpolation failed at T=%.1f: %s", T, e, exc_info=True)
         raise ValueError(f"Interpolation failed at T={T}: {str(e)}") from e
 
+
 def ensure_ascending_order(temp_array: np.ndarray, *value_arrays: np.ndarray) -> Tuple[np.ndarray, ...]:
     """Ensure temperature array is in ascending order, flipping all provided arrays if needed."""
     logger.debug("Checking array order for %d arrays (temp + %d value arrays)",
@@ -79,7 +81,8 @@ def ensure_ascending_order(temp_array: np.ndarray, *value_arrays: np.ndarray) ->
             return (flipped_temp,) + flipped_values
         else:
             logger.error("Array is neither strictly ascending nor descending")
-            logger.error("Temperature array: %s", temp_array.tolist() if len(temp_array) <= 20 else f"[{temp_array[0]}, ..., {temp_array[-1]}] (length={len(temp_array)})")
+            logger.error("Temperature array: %s", temp_array.tolist() if len(temp_array) <= 20
+                else f"[{temp_array[0]}, ..., {temp_array[-1]}] (length={len(temp_array)})")
             raise ValueError(f"Array is not strictly ascending or strictly descending: {temp_array}")
     except Exception as e:
         logger.error("Error checking array order: %s", e, exc_info=True)
