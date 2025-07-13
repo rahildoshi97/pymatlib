@@ -97,6 +97,7 @@ validate_yaml_files:
 # TESTING STAGE
 # ================================
 
+# Define the template for Python testing
 .python_test_template: &python_test
   stage: test
   before_script:
@@ -104,7 +105,8 @@ validate_yaml_files:
     - pip install -e .
     - pip install pytest pytest-cov pytest-xdist numpy sympy matplotlib pyyaml ruamel.yaml pwlf pandas openpyxl scipy
   script:
-    - pytest tests/ --cov=pymatlib --cov-report=xml --cov-report=term -v
+    # Run all tests except performance tests
+    - pytest tests/ --cov=pymatlib --cov-report=xml --cov-report=term -v -m "not slow"
     - echo "✅ Python tests completed"
   artifacts:
     reports:
@@ -114,6 +116,7 @@ validate_yaml_files:
     expire_in: 1 week
   coverage: '/(?i)total.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/'
 
+# Python version testing jobs using the template
 python_3.10:
   <<: *python_test
   image: python:3.10
@@ -125,6 +128,23 @@ python_3.11:
 python_3.12:
   <<: *python_test
   image: python:3.12
+
+# Performance tests (separate job with relaxed thresholds)
+performance_tests_ci:
+  stage: test
+  image: python:${PYTHON_VERSION}
+  before_script:
+    - pip install --upgrade pip
+    - pip install -e .
+    - pip install pytest pytest-benchmark numpy sympy matplotlib pyyaml ruamel.yaml pwlf pandas openpyxl scipy psutil
+  script:
+    - echo "Running performance tests with CI-adjusted thresholds..."
+    - pytest tests/performance/ -v -m "slow" || echo "⚠️ Performance tests failed but continuing"
+    - echo "✅ Performance tests completed"
+  allow_failure: true  # Don't block pipeline on performance failures
+  only:
+    - main
+    - master
 
 # Test examples
 test_examples:

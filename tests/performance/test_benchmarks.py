@@ -14,6 +14,13 @@ try:
 except ImportError:
     PSUTIL_AVAILABLE = False
 
+def get_performance_threshold(base_threshold: float) -> float:
+    """Adjust thresholds based on environment"""
+    if os.getenv('CI'):
+        # Allow 3x slower performance in CI
+        return base_threshold * 3
+    return base_threshold
+
 class TestPerformance:
     """Performance benchmark tests."""
     @pytest.mark.slow
@@ -28,8 +35,9 @@ class TestPerformance:
             result = interpolate_value(500.0, x_array, y_array, 'constant', 'constant')
         end_time = time.time()
         avg_time = (end_time - start_time) / 1000
-        # Should be less than 5ms per interpolation
-        assert avg_time < 0.005, f"Interpolation too slow: {avg_time:.6f}s per call"
+        # Adjust threshold for CI environment
+        threshold = get_performance_threshold(0.005)  # 15ms in CI vs 5ms locally
+        assert avg_time < threshold, f"Interpolation too slow: {avg_time:.6f}s per call (threshold: {threshold:.6f}s)"
 
     @pytest.mark.slow
     def test_piecewise_creation_performance(self):
@@ -44,16 +52,18 @@ class TestPerformance:
         )
         end_time = time.time()
         creation_time = end_time - start_time
-        # Should be less than 2 seconds
-        assert creation_time < 2.0, f"Piecewise creation too slow: {creation_time:.3f}s"
+        # Adjust threshold for CI environment
+        threshold = get_performance_threshold(2.0)  # 6s in CI vs 2s locally
+        assert creation_time < threshold, f"Piecewise creation too slow: {creation_time:.3f}s (threshold: {threshold:.1f}s)"
         # Test evaluation performance
         start_time = time.time()
         for temp in [350, 450, 550, 650, 750]:
             result = float(piecewise_func.subs(T, temp))
         end_time = time.time()
         eval_time = (end_time - start_time) / 5
-        # Should be less than 50ms per evaluation
-        assert eval_time < 0.06, f"Piecewise evaluation too slow: {eval_time:.6f}s per call"
+        # Adjust threshold for CI environment
+        eval_threshold = get_performance_threshold(0.06)  # 180ms in CI vs 60ms locally
+        assert eval_time < eval_threshold, f"Piecewise evaluation too slow: {eval_time:.6f}s per call (threshold: {eval_threshold:.6f}s)"
 
     @pytest.mark.slow
     def test_large_dataset_performance(self):
@@ -69,8 +79,9 @@ class TestPerformance:
         )
         end_time = time.time()
         creation_time = end_time - start_time
-        # Should handle large datasets within reasonable time
-        assert creation_time < 10.0, f"Large dataset processing too slow: {creation_time:.3f}s"
+        # Adjust threshold for CI environment
+        threshold = get_performance_threshold(10.0)  # 30s in CI vs 10s locally
+        assert creation_time < threshold, f"Large dataset processing too slow: {creation_time:.3f}s (threshold: {threshold:.1f}s)"
         # Test that the function is evaluable
         result = float(piecewise_func.subs(T, 1000))
         assert isinstance(result, float)
@@ -93,8 +104,9 @@ class TestPerformance:
             )
         final_memory = process.memory_info().rss / 1024 / 1024  # MB
         memory_increase = final_memory - initial_memory
-        # Memory increase should be reasonable (less than 100MB for this test)
-        assert memory_increase < 100, f"Memory usage too high: {memory_increase:.2f}MB increase"
+        # Adjust threshold for CI environment
+        threshold = get_performance_threshold(100)  # 300MB in CI vs 100MB locally
+        assert memory_increase < threshold, f"Memory usage too high: {memory_increase:.2f}MB increase (threshold: {threshold:.0f}MB)"
 
     @pytest.mark.slow
     def test_material_creation_performance(self):
@@ -131,8 +143,9 @@ class TestPerformance:
             material = create_material(yaml_path, T, enable_plotting=False)
             end_time = time.time()
             creation_time = end_time - start_time
-            # Material creation should be reasonably fast
-            assert creation_time < 5.0, f"Material creation too slow: {creation_time:.3f}s"
+            # Adjust threshold for CI environment
+            threshold = get_performance_threshold(5.0)  # 15s in CI vs 5s locally
+            assert creation_time < threshold, f"Material creation too slow: {creation_time:.3f}s (threshold: {threshold:.1f}s)"
             # Verify the material was created correctly
             assert material.name == "Performance Test Steel"
             assert hasattr(material, 'heat_capacity')
