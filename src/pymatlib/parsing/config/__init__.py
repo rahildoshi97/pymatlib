@@ -9,6 +9,6 @@ globals().update({k: getattr(_yk, k) for k in _yk.__all__})
 __all__ = [
     "MaterialYAMLParser",
     "YAMLFileParser",
-    "BaseFileParser"
+    "BaseFileParser",
     *_yk.__all__,
 ]
