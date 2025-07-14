@@ -3,6 +3,7 @@ import numpy as np
 from typing import Tuple
 
 from pymatlib.parsing.config.yaml_keys import CONSTANT_KEY
+from pymatlib.data.constants import ProcessingConstants
 
 logger = logging.getLogger(__name__)
 
@@ -10,11 +11,22 @@ logger = logging.getLogger(__name__)
 def interpolate_value(T: float, x_array: np.ndarray, y_array: np.ndarray,
                       lower_bound_type: str, upper_bound_type: str) -> float:
     """Interpolate a value at temperature T using the provided data arrays."""
+    # Input validation
+    if not np.isfinite(T):
+        raise ValueError(f"Temperature T must be finite, got {T}")
+    if len(x_array) == 0 or len(y_array) == 0:
+        raise ValueError("Input arrays cannot be empty")
+    if len(x_array) != len(y_array):
+        raise ValueError(f"Array length mismatch: x_array({len(x_array)}) != y_array({len(y_array)})")
     logger.debug("Interpolating value at T=%.1f with bounds: lower=%s, upper=%s",
                  T, lower_bound_type, upper_bound_type)
     logger.debug("Data range: T∈[%.1f, %.1f], y∈[%.3e, %.3e]",
                  x_array[0], x_array[-1], np.min(y_array), np.max(y_array))
     try:
+        # Handle single-point arrays
+        if len(x_array) == 1:
+            logger.debug("Single-point array: returning constant value %.6f", y_array[0])
+            return float(y_array[0])
         if T < x_array[0]:
             logger.debug("T below data range, applying lower bound: %s", lower_bound_type)
             if lower_bound_type == CONSTANT_KEY:
@@ -64,16 +76,20 @@ def ensure_ascending_order(temp_array: np.ndarray, *value_arrays: np.ndarray) ->
         return (temp_array,) + value_arrays
     try:
         diffs = np.diff(temp_array)
-        ascending_count = np.sum(diffs > 0)
-        descending_count = np.sum(diffs < 0)
-        zero_count = np.sum(diffs == 0)
-        logger.debug("Array differences: %d ascending, %d descending, %d zero",
-                     ascending_count, descending_count, zero_count)
-        if np.all(diffs > 0):
-            logger.debug("Array already in ascending order")
+        # Use tolerance for floating-point comparisons
+        tolerance = ProcessingConstants.FLOATING_POINT_TOLERANCE
+        ascending_count = np.sum(diffs > tolerance)
+        descending_count = np.sum(diffs < -tolerance)
+        constant_count = np.sum(np.abs(diffs) <= tolerance)
+        logger.debug("Array differences: %d ascending, %d descending, %d constant",
+                     ascending_count, descending_count, constant_count)
+        # Check for strictly ascending (with tolerance)
+        if ascending_count == len(diffs) or (ascending_count > 0 and constant_count == len(diffs) - ascending_count):
+            logger.debug("Array is ascending (within tolerance)")
             return (temp_array,) + value_arrays
-        elif np.all(diffs < 0):
-            logger.debug("Array in descending order, flipping all arrays")
+        # Check for strictly descending (with tolerance)
+        elif descending_count == len(diffs) or (descending_count > 0 and constant_count == len(diffs) - descending_count):
+            logger.debug("Array is descending, flipping all arrays")
             flipped_temp = np.flip(temp_array)
             flipped_values = tuple(np.flip(arr) for arr in value_arrays)
             logger.debug("Flipped arrays: temp range [%.1f, %.1f] -> [%.1f, %.1f]",

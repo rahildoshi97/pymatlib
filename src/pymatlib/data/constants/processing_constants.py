@@ -7,6 +7,7 @@ class ProcessingConstants:
     """Processing constants used throughout the YAML parser."""
     # Tolerance and precision
     DEFAULT_TOLERANCE: Final[float] = 1e-8
+    FLOATING_POINT_TOLERANCE: Final[float] = 1e-12
     TEMPERATURE_EPSILON: Final[float] = 1e-8
     MONOTONICITY_THRESHOLD: Final[float] = 1e-8
     # Composition
