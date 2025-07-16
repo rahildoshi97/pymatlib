@@ -27,20 +27,22 @@ cd pymatlib
 pip install -e .
 ```
 
+
 ## Basic Concepts
 
-pymatlib organizes material data around a few key concepts:
+PyMatLib organizes material data around these key concepts:
 
-1. **Alloys**: Compositions of multiple elements with specific properties
-2. **Material Properties**: Physical characteristics that can vary with temperature
-3. **Interpolation**: Methods to estimate property values between known data points
+1. **Materials**: Pure metals and alloys with temperature-dependent properties
+2. **Property Types**: Six different ways to define material properties
+3. **Symbolic Processing**: SymPy-based symbolic mathematics for property relationships
+4. **Temperature Dependencies**: Automatic handling of temperature-dependent evaluations
 
-## Your First Alloy
+## Your First Material
 
-Let's create a simple alloy definition:
+Let's create a simple steel alloy definition:
 
-1. Create a file named `simple_steel.yaml` with the following content:
-```python
+1. Create a file named `simple_steel.yaml`:
+```yaml
 name: SimpleSteel
 
 composition:
@@ -49,51 +51,67 @@ composition:
 
 solidus_temperature: 1450
 liquidus_temperature: 1520
+initial_boiling_temperature: 3000
+final_boiling_temperature: 3100
 
 properties:
     density:
-        key:[300, 800, 1300, 1800]
-        val:[7850, 7800, 7750, 7700]
+        temperature: [300, 800, 1300, 1800]
+        value: [7850, 7800, 7750, 7700]
+        bounds: [constant, constant]
 
     heat_conductivity:
-        key: [300, 800, 1300, 1800]
-        val: [18.5, 25, 32, 36.5]
+        temperature: [300, 800, 1300, 1800]
+        value: [18.5, 25, 32, 36.5]
+        bounds: [constant, constant]
 
     heat_capacity:
-        key: [300, 800, 1300, 1800]
-        val: [450, 500, 550, 600]
+        temperature: [300, 800, 1300, 1800]
+        value: [450, 500, 550, 600]
+        bounds: [constant, constant]
 
-    thermal_diffusivity: compute    
+    thermal_diffusivity:
+        temperature: (300, 3000, 5.0)
+        equation: heat_conductivity / (density * heat_capacity)
+        bounds: [extrapolate, extrapolate]
 ```
 
-2. Load the alloy in Python:
+2. Load the material in Python:
 ```python
-from pymatlib.core.yaml_parser import create_alloy_from_yaml
+import sympy as sp
+from pymatlib.parsing.api import create_material
 
-# Load the alloy definition
-alloy = create_alloy_from_yaml("simple_steel.yaml")
+# Create symbolic temperature variable
+T = sp.Symbol('T')
+
+# Load the material definition
+material = create_material("simple_steel.yaml", T)
 
 # Print basic information
-print(f"Alloy: {alloy.name}")
-print(f"Composition: {alloy.composition}")
-print(f"Temperature range: {alloy.temperature_solidus}K - {alloy.temperature_liquidus}K")
+print(f"Material: {material.name}")
+print(f"Composition: {material.composition}")
+print(f"Temperature range: {material.solidus_temperature}K - {material.liquidus_temperature}K")
 
-# Get property values at specific temperatures
-temp = 500 # Kelvin
-density = alloy.get_property("density", temp)
-conductivity = alloy.get_property("heat_conductivity", temp)
-capacity = alloy.get_property("heat_capacity", temp)
+# Evaluate properties at specific temperatures
+temperature = 500 # Kelvin
+density = material.density.evalf(T, temperature)
+conductivity = material.heat_conductivity.evalf(T, temperature)
+capacity = material.heat_capacity.evalf(T, temperature)
+diffusivity = material.thermal_diffusivity.evalf(T, temperature)
 
-print(f"At {temp}K:")
-print(f" Density: {density} kg/m³")
-print(f" Thermal Conductivity: {conductivity} W/(m·K)")
-print(f" Heat Capacity: {capacity} J/(kg·K)")
+print(f"At {temperature}K:")
+print(f" Density: {density:.2f} kg/m³")
+print(f" Thermal Conductivity: {conductivity:.2f} W/(m·K)")
+print(f" Heat Capacity: {capacity:.2f} J/(kg·K)")
+print(f" Thermal Diffusivity: {diffusivity:.2e} m²/s")
 ```
+
 
 ## Next Steps
 
-Now that you've created your first alloy, you can:
+Now that you've created your first material, you can:
 
 - Learn how to [create your first simulation](first_simulation.md)
 - Explore [defining custom material properties](../how-to/define_materials.md)
-- Understand [interpolation methods](../explanation/interpolation_methods.md)
+- Understand the [YAML schema](../reference/yaml_schema.md)
+- Read about [energy-temperature conversion](../how-to/energy_temperature_conversion.md)

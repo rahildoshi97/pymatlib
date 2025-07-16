@@ -1,136 +1,234 @@
-# Design Philosophy of pymatlib
+# Design Philosophy of PyMatLib
 
-This document explains the core design principles, architectural decisions, and the rationale behind pymatlib's structure and implementation.
+This document explains the core design principles, architectural decisions, and the rationale behind PyMatLib's structure and implementation.
 
 ## Core Principles
 
-pymatlib is built upon several core principles:
+PyMatLib is built upon several core principles:
 
-- **Modularity**: Clearly separated components for ease of maintenance, testing, and extensibility.
-- **Flexibility**: Allow users to define material properties in various intuitive ways.
-- **Performance**: Leverage symbolic computation and optimized C++ code generation for high-performance simulations.
-- **Transparency and Reproducibility**: Clearly document material property definitions and computations to ensure reproducibility.
+- **Modularity**: Clearly separated components for ease of maintenance, testing, and extensibility
+- **Flexibility**: Allow users to define material properties in various intuitive ways
+- **Performance**: Leverage symbolic computation for high-performance simulations
+- **Transparency and Reproducibility**: Clearly document material property definitions and computations to ensure reproducibility
 
 ## Layered Architecture
 
-pymatlib follows a layered architecture to separate concerns clearly:
+PyMatLib follows a layered architecture to separate concerns clearly:
 
-1. User Interface Layer (YAML Configuration)
+### 1. User Interface Layer (YAML Configuration)
 
-- Provides a simple, human-readable format for defining alloys and their properties.
-- Allows users to specify properties using multiple intuitive methods (constants, interpolation points, file-based data, computed properties).
+- Provides a simple, human-readable format for defining materials and their properties
+- Allows users to specify properties using multiple intuitive methods (constants, interpolation points, file-based data, computed properties)
 - Ensures clarity, readability, and ease of use
 
-2. Symbolic Representation Layer (SymPy)
+### 2. Parsing Layer (Python)
 
-- Uses symbolic mathematics (via SymPy) internally to represent material properties.
-- Enables symbolic manipulation, simplification, and validation of property definitions.
-- Facilitates automatic computation of derived properties.
+- **Configuration Processing**: Handles YAML parsing and validation through `MaterialConfigParser`
+- **Property Type Detection**: Automatically determines property definition types using `PropertyConfigAnalyzer`
+- **Temperature Resolution**: Processes various temperature definition formats via `TemperatureResolver`
+- **Data Handling**: Manages file I/O for external data sources through `read_data_from_file`
 
-3. Interpolation and Computation Layer (Python)
+### 3. Symbolic Representation Layer (SymPy)
 
-- Implements robust interpolation methods (`interpolate_equidistant`, `interpolate_lookup`) for evaluating temperature-dependent properties.
-- Automatically analyzes input arrays (`prepare_interpolation_arrays`) to determine the optimal interpolation method based on data characteristics.
-- Provides symbolic manipulation capabilities through SymPy for computed properties.
+- Uses symbolic mathematics (via SymPy) internally to represent material properties
+- Enables symbolic manipulation, simplification, and validation of property definitions
+- Facilitates automatic computation of derived properties through symbolic expressions
 
-4. Code Generation Layer (C++)
+### 4. Algorithms Layer (Python)
 
-- Uses InterpolationArrayContainer to generate optimized C++ code for efficient energy-to-temperature conversions.
-- Automatically selects the best interpolation method (Binary Search or Double Lookup) based on data analysis results from Python.
-- Integrates seamlessly with pystencils and waLBerla for high-performance simulations.
+- **Interpolation**: Robust interpolation methods for evaluating temperature-dependent properties
+- **Regression**: Data simplification and piecewise function generation via `RegressionManager`
+- **Piecewise Functions**: Creating piecewise expressions through `PiecewiseBuilder`
+- **Inversion**: Creating inverse functions for specialized applications
 
-## Separation Between Python and C++ Components
+### 5. Visualization Layer (Python)
 
-pymatlib separates responsibilities clearly between Python and C++ components:
+- Automatic plot generation for material properties through `PropertyVisualizer`
+- Property visualization and validation
+- Integration with matplotlib for scientific plotting
 
-| Component                      | Responsibility                                                  | Implementation Language |
-|--------------------------------|--------------------------------------------------|----------|
-| YAML Configuration             | User-friendly material property definitions     | YAML     |
-| Symbolic Computation & Validation| Parsing YAML files, symbolic computations and validations (sympy) | Python   |
-| Interpolation Analysis           | Determining optimal interpolation method based on data characteristics (`prepare_interpolation_arrays`)       | Python   |
-| Code Generation                  | Generating optimized interpolation code (`InterpolationArrayContainer`) for high-performance simulations       | C++      |
-| Simulation Execution             | Running generated kernels within simulation frameworks (waLBerla/pystencils)   | C++      |
+### 6. Core Layer (Python)
 
-This separation ensures:
+- **Material**: Fundamental material representation with validation
+- **ChemicalElement**: Element data and properties
+- **Interfaces**: Abstract base classes for extensibility
+- **Symbol Registry**: SymPy symbol management for consistency
 
-- Flexibility in defining materials through easily editable YAML files
-- Powerful symbolic manipulation capabilities in Python
-- High-performance numerical computations in C++
+## Modular Architecture
+
+PyMatLib's architecture is organized into distinct modules:
+
+### Core Module (`pymatlib.core`)
+- **Material**: Fundamental material representation with composition validation
+- **ChemicalElement**: Element data and properties from periodic table
+- **Interfaces**: Abstract base classes for extensibility (`PropertyProcessor`, `TemperatureResolver`, etc.)
+- **Symbol Registry**: SymPy symbol management to ensure uniqueness
+
+### Parsing Module (`pymatlib.parsing`)
+- **API**: Main entry points (`create_material`, `validate_yaml_file`, `get_supported_properties`)
+- **Configuration**: YAML parsing and validation through `MaterialConfigParser`
+- **Processors**: Property and temperature processing (`PropertyManager`, `TemperatureResolver`)
+- **I/O**: File handling for external data (`read_data_from_file`)
+- **Validation**: Type detection and error handling (`PropertyConfigAnalyzer`)
+
+### Algorithms Module (`pymatlib.algorithms`)
+- **Interpolation**: Temperature-dependent property evaluation
+- **Regression**: Data simplification and fitting through `RegressionManager`
+- **Piecewise**: Piecewise function construction via `PiecewiseBuilder`
+- **Inversion**: Inverse function creation for specialized applications
+
+### Visualization Module (`pymatlib.visualization`)
+- **Property Plots**: Automatic visualization generation through `PropertyVisualizer`
+- **Scientific Plotting**: Integration with matplotlib for publication-quality plots
+
+### Data Module (`pymatlib.data`)
+- **Elements**: Chemical element database with periodic table data
+- **Constants**: Physical and processing constants
+- **Materials**: Pre-defined material configurations (SS304L, aluminum, etc.)
 
 ## Why YAML?
 
 YAML was chosen as the primary configuration format because:
 
-- It is human-readable and easy to edit manually
-- It naturally supports nested structures required by complex material definitions
-- It integrates smoothly with Python's ecosystem via libraries like PyYAML
-- It allows referencing previously defined variables within the file (e.g., `solidus_temperature`, `liquidus_temperature`), reducing redundancy.
+- **Human-readable**: Easy to edit manually and understand
+- **Structured**: Naturally supports nested structures required by complex material definitions
+- **Ecosystem Integration**: Seamless integration with Python via ruamel.yaml
+- **Reference Support**: Allows referencing previously defined variables within the file (e.g., `solidus_temperature`, `liquidus_temperature`)
+- **Version Control Friendly**: Text-based format works well with git and other VCS
 
-## Integration with pystencils and waLBerla
+## Integration with pystencils
 
-pymatlib integrates closely with [pystencils](https://pycodegen.pages.i10git.cs.fau.de/pystencils/) and [waLBerla](https://walberla.net/) through the following workflow:
+PyMatLib integrates with [pystencils](https://pycodegen.pages.i10git.cs.fau.de/pystencils/) through the following workflow:
 
-1. **Symbolic Definition**: Material properties are defined symbolically in pymatlib using YAML configurations.
-2. **Assignment Conversion**: The assignment_converter function converts pymatlib's symbolic assignments into pystencils-compatible assignments.
-3. **Code Generation**: pystencils generates optimized kernels from these assignments for numerical simulations.
-4. **Simulation execution**: Generated kernels are executed within waLBerla frameworks for large-scale parallel simulations.
+1. **Symbolic Definition**: Material properties are defined symbolically in PyMatLib using YAML configurations
+2. **Property Processing**: The parsing system converts YAML definitions into SymPy expressions
+3. **Symbolic Evaluation**: Material properties can be evaluated at specific temperatures or kept as symbolic expressions
+4. **Simulation Integration**: Symbolic expressions can be used directly in pystencils-based simulations
 
-This integration allows pymatlib to leverage:
+This integration allows PyMatLib to leverage:
+- Symbolic mathematics from SymPy for property relationships
+- Temperature-dependent material properties in numerical simulations
+- Flexible property definitions that adapt to simulation needs
 
-- Symbolic mathematics from sympy via pystencils
-- Optimized stencil-based numerical kernels generated by pystencils-sfg
-- High-performance parallel computing capabilities provided by waLBerla
+## Property Type System
 
-## Automatic Method Selection for Interpolation
+PyMatLib uses a sophisticated property type detection system with six distinct types:
 
-A key design decision in pymatlib is automatic method selection for interpolation between energy density and temperature:
+### Six Property Types
 
-1. **Analysis Phase (Python)**: 
+1. **CONSTANT**: Simple numeric values for temperature-independent properties
+2. **STEP_FUNCTION**: Discontinuous changes at phase transitions
+3. **FILE**: Data loaded from external files (Excel, CSV, text)
+4. **KEY_VAL**: Explicit temperature-property pairs
+5. **PIECEWISE_EQUATION**: Multiple equations for different temperature ranges
+6. **COMPUTE**: Properties calculated from other properties
 
-- The function prepare_interpolation_arrays() analyzes input arrays to determine if they're equidistant or not.
-- Based on this analysis, it selects either Binary Search or Double Lookup as the preferred interpolation method.
+### Automatic Type Detection
 
-2. **Code Generation Phase (C++)**:
+The `PropertyConfigAnalyzer` automatically detects property types based on configuration structure:
+- Rule-based detection with priority ordering
+- Comprehensive validation for each type
+- Clear error messages for invalid configurations
 
-- The InterpolationArrayContainer class generates optimized C++ code that includes both interpolation methods (interpolateBS, interpolateDL) if applicable.
-- A wrapper method (interpolate) is automatically generated to select the best available method at runtime without user intervention.
+## Dependency Resolution
 
-This ensures optimal performance without burdening users with manual selection decisions.
+PyMatLib automatically handles property dependencies:
 
-## Extensibility
+### Dependency Analysis
+- Extracts dependencies from symbolic expressions using SymPy
+- Validates that all required properties are available
+- Detects and prevents circular dependencies through graph analysis
 
-pymatlib is designed with extensibility in mind:
+### Processing Order
+- Automatically determines correct processing order using topological sorting
+- Processes dependencies before dependent properties
+- Handles complex dependency chains transparently
 
-- Users can easily define new material properties or extend existing ones through YAML files without changing core code.
-- New computational models or interpolation methods can be added at the Python layer without affecting existing functionality.
-- The modular design allows easy integration with additional simulation frameworks beyond pystencils or waLBerla if needed.
+## Extensibility Framework
 
-## Robustness and Error Handling
+PyMatLib is designed for extensibility through abstract interfaces:
 
-pymatlib includes comprehensive validation checks at every step:
+### Abstract Interfaces
+- `PropertyProcessor`: For custom property processing logic
+- `TemperatureResolver`: For custom temperature handling
+- `DataHandler`: For custom file formats
+- `Visualizer`: For custom visualization approaches
 
-### YAML Parser Validation
+### Plugin Architecture
+- Users can extend functionality without modifying core code
+- New property types can be added through the type detection system
+- Custom algorithms can be integrated through the algorithms module
 
-- Ensures consistent units (SI units recommended).
-- Checks monotonicity of temperature-energy arrays.
-- Validates dependencies among computed properties.
+## Error Handling Philosophy
 
-### Interpolation Validation
+PyMatLib emphasizes clear, actionable error messages:
 
-The interpolation functions validate:
+### Validation at Every Layer
+- YAML syntax and structure validation
+- Property configuration validation through `PropertyConfigAnalyzer`
+- Data quality validation in file processing
+- Dependency validation with circular dependency detection
 
-- Array lengths match
-- Arrays contain sufficient elements
-- Arrays are strictly monotonic
-- Energy density increases consistently with temperature
+### Contextual Error Messages
+- Specific error locations and suggestions for fixes
+- Available options and corrections
+- Clear explanation of what went wrong and how to fix it
 
-If any validation fails, clear error messages guide users toward correcting their configurations.
+## Performance Optimization
 
-## Performance Optimization Philosophy
+Performance-critical operations are optimized:
 
-Performance-critical numerical operations are implemented in optimized C++ code generated automatically from Python definitions. This approach provides:
+### Symbolic Computation
+- Efficient SymPy expression handling
+- Optimized property evaluation methods
+- Minimal symbolic overhead for numeric evaluations
 
-1. **Ease of use**: Users define materials symbolically or numerically without worrying about low-level optimization details.
-2. **Automatic Optimization**: pymatlib automatically selects optimal algorithms (Double Lookup vs Binary Search) based on data characteristics without user intervention.
-3. **High Performance**: Generated kernels provide near-native performance suitable for large-scale simulations while maintaining flexibility in material definitions.
+### Memory Efficiency
+- Efficient data structures for large datasets
+- Optional regression for memory reduction
+- Streaming processing for large files
 
+### Caching and Optimization
+- Symbol registry prevents duplicate symbol creation
+- Efficient temperature array processing
+- Optimized interpolation algorithms
+
+## Testing and Validation
+
+PyMatLib includes comprehensive testing:
+
+### Unit Testing
+- Individual component testing for all modules
+- Property type validation testing
+- Algorithm correctness verification
+
+### Integration Testing
+- End-to-end workflow testing
+- File format compatibility testing
+- Property dependency resolution testing
+
+### Validation Testing
+- Physical property validation against known values
+- Monotonicity checking for energy density
+- Composition validation for materials
+
+## Scientific Computing Integration
+
+PyMatLib is designed to integrate seamlessly with the scientific Python ecosystem:
+
+### SymPy Integration
+- Properties as SymPy expressions enable symbolic manipulation
+- Automatic differentiation and integration capabilities
+- Mathematical expression validation and simplification
+
+### NumPy Integration
+- Efficient array processing for temperature and property data
+- Vectorized operations for performance
+- Seamless conversion between symbolic and numeric representations
+
+### Matplotlib Integration
+- Automatic plot generation for property visualization
+- Publication-quality scientific plots
+- Customizable visualization options
+
+This design philosophy ensures PyMatLib is both powerful and user-friendly, suitable for research applications while maintaining the flexibility needed for diverse materials science applications.

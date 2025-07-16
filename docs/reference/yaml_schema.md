@@ -1,175 +1,197 @@
 # YAML Schema for Material Definition
-
-This document defines the schema for material definition YAML files in pymatlib.
+This document defines the schema for material definition YAML files in pymatlib v0.3.0.
 
 ## Schema Overview
 
-A valid material definition must include:
+### A valid `pure metal` definition must include:
+- `name`: String identifier for the material
+- `composition`: Map of element symbols to their mass fractions
+- `melting_temperature`: Numeric value in Kelvin
+- `boiling_temperature`: Numeric value in Kelvin
+- `properties`: Map of property names to their definitions
+### A valid `alloy` definition must include:
 - `name`: String identifier for the material
 - `composition`: Map of element symbols to their mass fractions
 - `solidus_temperature`: Numeric value in Kelvin
 - `liquidus_temperature`: Numeric value in Kelvin
+- `initial_boiling_temperature`: Numeric value in Kelvin
+- `final_boiling_temperature`: Numeric value in Kelvin
 - `properties`: Map of property names to their definitions
 
-## Top-Level Structure
-
-```yaml
-name: <string> # Required: Material name
-composition: # Required: Chemical composition
-<element>: <mass_fraction> # At least one element required
-solidus_temperature: <float> # Required: Solidus temperature in K
-liquidus_temperature: <float> # Required: Liquidus temperature in K
-properties: # Required: Material properties
-<property_name>: <definition> # At least one property required
-```
-
-## Property Definition Types
-
-Properties can be defined in four different ways:
-
+## 🔧 Property Definition Types
+Properties can be defined in six different ways:
 ### 1. Constant Value
-
-For properties that don't vary with temperature:
-
+Simple numeric values, for properties that don't vary with temperature:
 ```yaml
-properties:
-    thermal_expansion_coefficient: 16.3e-6 # Single numeric value
+thermal_expansion_coefficient: 16.3e-6 # Single numeric value
+```
+### 2. Step Function
+Phase transitions with before/after values:
+```yaml
+latent_heat_of_fusion:
+  temperature: melting_temperature - 10
+  value: [0.0, 10790.0]
+  bounds: [constant, constant]
+```
+### 3. File
+Data from Excel, CSV, or text files:
+```yaml
+heat_capacity:
+  file_path: ./data.xlsx
+  temperature_header: T (K)
+  value_header: Cp (J/kg·K)
+  bounds: [constant, constant]
+```
+### 4. Key-Value Pairs
+Explicit temperature-property pairs:
+```yaml
+thermal_expansion_coefficient:
+  temperature: [300, 400, 500, 600]
+  value: [1.2e-5, 1.4e-5, 1.6e-5, 1.8e-5]
+  bounds: [constant, constant]
+```
+### 5. Piecewise Equation
+Multiple equations for different temperature ranges:
+```yaml
+heat_conductivity:
+  temperature: [500, 1700, 3000]
+  equation: ["0.012*T + 13", "0.015*T + 5"]
+  bounds: [constant, constant]
+```
+### 6. Compute
+Properties calculated from other properties:
+```yaml
+thermal_diffusivity:
+  temperature: (300, 3000, 5.0)
+  equation: heat_conductivity / (density * heat_capacity)
+  bounds: [extrapolate, extrapolate]
 ```
 
-### 2. File-Based Properties
-
-#### 2.1 Simple Format
-
+## 📊 Temperature Definition Formats
+### Explicit Lists
 ```yaml
-properties:
-    density: ./density_temperature.txt # Path to file with two columns
+temperature: [300, 400, 500, 600]  # Explicit values
+```
+### Tuple Formats
+```yaml
+# (start, increment) - requires matching value list length
+temperature: (300, 50)  # 300, 350, 400, ... (length from values)
+
+# (start, stop, step) - step size
+temperature: (300, 1000, 10.0)  # 300, 310, 320, ..., 1000
+
+# (start, stop, points) - number of points
+temperature: (300, 1000, 71)  # 71 evenly spaced points
+
+# Decreasing temperature
+temperature: (1000, 300, -5.0)  # 1000, 995, 990, ..., 300
+```
+### Temperature References
+```yaml
+# Direct references
+temperature: melting_temperature
+temperature: solidus_temperature
+
+# Arithmetic expressions
+temperature: melting_temperature + 50
+temperature: liquidus_temperature - 10
 ```
 
-The simple format assigns the first column to temperature data (K) and the second column to the corresponding property values.
-
-#### 2.2 Advanced Format
-
+## 🎯 Advanced Features
+### Regression Configuration
+Control data simplification and memory usage:
+```yam
+regression:
+  simplify: pre    # Apply before symbolic processing
+  degree: 1        # Linear regression
+  segments: 3      # Number of piecewise segments
+```
+- `simplify: pre`: Apply regression to raw data before processing
+- `simplify: post`: Apply regression after symbolic expressions are evaluated
+- `degree`: Polynomial degree (1=linear, 2=quadratic, etc.)
+- `segments`: Number of segments for piecewise functions
+### Boundary Behavior
+Control extrapolation outside data range:
 ```yaml
-properties:
-    density:
-        file: ./path/to/file.xlsx
-        temp_col: Temperature # Name of the temperature column
-        prop_col: Property # Name of the property column
+bounds: [constant, extrapolate]
+```
+- `constant`: Use boundary values as constants outside range
+- `extrapolate`: Linear extrapolation outside range
+### Dependency Resolution
+Properties are automatically processed in correct order:
+```yaml
+# These will be processed in dependency order automatically
+specific_enthalpy:
+  equation: Integral(heat_capacity, T)
+
+energy_density:
+  equation: density * specific_enthalpy  # Depends on specific_enthalpy
+
+thermal_diffusivity:
+  equation: heat_conductivity / (density * heat_capacity)  # Multiple dependencies
 ```
 
-Advanced format is required when you have a file with multiple columns.
-Supported file formats: .txt (space/tab separated), .csv, and .xlsx.
+## 📈 Visualization
+Automatic plot generation when using symbolic temperature:
 
-### 3. Key-Value Pairs
+```python
+import sympy as sp
+from pymatlib.parsing.api import create_material
 
-For properties defined at specific temperature points:
-
-```yaml
-properties:
-    density:
-        key: [1605, 1735] # Temperature values in K
-        val: [7262.34, 7037.47] # Corresponding property values
+T = sp.Symbol('T')
+material = create_material('steel.yaml', T, enable_plotting=True)
+# Plots automatically saved to 'pymatlib_plots/' directory
 ```
 
-Three ways to specify temperature points:
+## 🧪 Energy-Temperature Inversion
+For applications requiring temperature from energy density:
 
-#### 3.1 Explicit List
+```python
+import sympy as sp
+from pymatlib.parsing.api import create_material
+from pymatlib.algorithms.piecewise_inverter import PiecewiseInverter
 
-```yaml
-key: [1735.00, 1730.00, 1720.00, 1715.00] # Explicit temperature list
-val: [7037.470, 7060.150, 7110.460, 7127.680] # Corresponding values
+# Create inverse function T = f_inv(E)
+T = sp.Symbol('T')
+E = sp.Symbol('E')
+material = create_material('steel.yaml', T)
+
+# Create inverse (only for linear piecewise functions)
+inverse_func = PiecewiseInverter.create_energy_density_inverse(material, 'E')
+
+# Use inverse function
+energy_value = 1.5e9  # J/m³
+temperature = float(inverse_func.subs(E, energy_value))
 ```
 
-#### 3.2 Reference to Defined Temperatures
+## 🔍 Supported Properties
 
-```yaml
-key: [solidus_temperature, liquidus_temperature] # References
-val: [7262.34, 7037.47] # Corresponding values
+```python
+from pymatlib.parsing.api import get_supported_properties
+
+print(get_supported_properties())
 ```
-
-#### 3.3 Tuple with Start and Increment
-
-```yaml
-key: (1735.00, -5) # Start at 1735.00K and decrement by 5K
-val: [7037.470, 7060.150, 7088.800, 7110.460, 7127.680]
-```
-
-When using a tuple for key, the generated temperature points will be:
-`[start, start+increment, start+2*increment, ...]` until matching the length of val.
-
-### 4. Computed Properties
-
-#### 4.1 Simple Format
-
-```yaml
-properties:
-    density: compute
-    thermal_diffusivity: compute
-    energy_density: compute
-```
-
-Simple format uses the default model to compute the property.
-
-#### 4.2 Advanced Format
-
-```yaml
-properties:
-    energy_density:
-        compute: enthalpy_based # Specific computation model
-```
-
-#### 4.3 Energy Density Temperature Array
-
-When energy_density is computed, you must specify the temperature array:
-
-```yaml
-properties:
-    energy_density: compute
-    energy_density_temperature_array: (300, 3000, 541) # 541 points
-```
-
-The third parameter can be:
-- An integer: Total number of points to generate
-- A float: Temperature increment/decrement between points
-
-## Computation Models and Required Properties
-
-### Density (by thermal expansion)
-- **Equation**: ρ(T) = ρ₀ / (1 + tec * (T - T₀))³
-- **Required properties**: base_temperature, base_density, thermal_expansion_coefficient
-
-### Thermal Diffusivity
-- **Equation**: α(T) = k(T) / (ρ(T) * cp(T))
-- **Required properties**: heat_conductivity, density, heat_capacity
-
-### Energy Density (standard model)
-- **Equation**: ρ(T) * (cp(T) * T + L)
-- **Required properties**: density, heat_capacity, latent_heat_of_fusion
-
-### Energy Density (enthalpy_based model)
-- **Equation**: ρ(T) * (h(T) + L)
-- **Required properties**: density, specific_enthalpy, latent_heat_of_fusion
-
-### Energy Density (total_enthalpy model)
-- **Equation**: ρ(T) * h(T)
-- **Required properties**: density, specific_enthalpy
 
 ## Validation Rules
 
 1. All required top-level fields must be present
-2. Composition fractions must sum to approximately 1.0
-3. Liquidus temperature must be greater than or equal to solidus temperature
-4. Properties cannot be defined in multiple ways or multiple times
-5. Required dependencies for computed properties must be present
-6. Temperature arrays must be monotonic
-7. Energy density arrays must be monotonic with respect to temperature
-8. File paths must be valid and files must exist
-9. For key-value pairs, key and val must have the same length
-10. When using tuple notation for temperature arrays, the increment must be non-zero
+2. Material type must be "pure_metal" or "alloy"
+3. Composition fractions must sum to approximately 1.0
+4. Pure metals must have exactly one element with composition 1.0
+5. Alloys must have at least 2 elements with non-zero composition
+6. Liquidus temperature must be greater than or equal to solidus temperature
+7. Properties cannot be defined in multiple ways or multiple times
+8. Required dependencies for computed properties must be present
+9. Temperature arrays must be monotonic
+10. Energy density arrays must be monotonic with respect to temperature
+11. File paths must be valid and files must exist
+12. For key-value pairs, temperature and value arrays must have the same length
+13. When using tuple notation for temperature arrays, the increment must be non-zero
 
 ## Important Notes
 
 1. All numerical values must use period (.) as decimal separator, not comma
-2. Interpolation between data points is performed automatically for file-based and key-val properties
+2. Interpolation between data points is performed automatically for file-based and key-value properties
 3. Properties will be computed in the correct order regardless of their position in the file
-4. To retrieve temperature from energy_density, use the default "interpolate" method from within the generated class
+4. To retrieve temperature from energy_density, use the interpolation methods from the generated InterpolationArrayContainer class
+5. The new architecture provides enhanced error messages and validation compared to previous versions
