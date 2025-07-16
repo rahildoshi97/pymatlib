@@ -147,6 +147,7 @@ pymatlib_plots/
 # Report outputs
 pymatlib_reports/
 *.pdf
+!paper/*.pdf
 
 # Data files (unless specifically needed)
 # *.xlsx
