@@ -23,9 +23,9 @@ authors:
     # surname: Beethoven
     # affiliation: 3
 affiliations:
-  - name: Friedrich-Alexander-Universität Erlangen-Nürnberg, Erlangen, Bavaria, Germany
+  - name: Friedrich-Alexander-Universität Erlangen-Nürnberg, Germany
     index: 1
-date: 15 July 2025
+date: 16 July 2025
 bibliography: paper.bib
 
 # Optional fields if submitting to a AAS journal too, see this blog post:
@@ -54,7 +54,7 @@ and heat transfer applications.
 # Statement of Need
 
 Accurate representation of temperature-dependent material properties is fundamental to computational materials science, 
-thermal analysis, and multi-physics simulations [@lewis1982finite][@zienkiewicz2013finite]. 
+thermal analysis, and multi-physics simulations [@lewis1996finite; @zienkiewicz2013finite]. 
 Traditional approaches often require manual interpolation, custom scripting, 
 or proprietary software solutions that lack flexibility and reproducibility [@ashby2013materials]. 
 Existing materials databases like NIST [@nist_webbook] and CoolProp [@coolprop] typically provide tabular data 
@@ -119,7 +119,7 @@ This prevents common configuration errors and ensures reproducible material defi
 with the option to disable visualization for production workflows after validation.
 
 Unlike existing tools, PyMatLib uniquely combines symbolic mathematics [@sympy], automatic dependency resolution, 
-and seamless integration with scientific computing workflows [@numpy][@matplotlib]. 
+and seamless integration with scientific computing workflows [@numpy; @matplotlib]. 
 The library integrates directly with simulation frameworks 
 like pystencils [@pystencils] and waLBerla [@walberla] for high-performance computing applications.
 
