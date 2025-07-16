@@ -4,7 +4,7 @@ A high-performance Python library for material simulation and analysis with a fo
 
 [![Python](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![Latest Release](https://i10git.cs.fau.de/rahil.doshi/pymatlib/-/badges/release.svg)](https://i10git.cs.fau.de/rahil.doshi/pymatlib/-/releases)
-[![License](https://img.shields.io/badge/license-GPLv3-blue.svg)](LICENSE)
+[![License](https://img.shields.io/badge/license-BSD%203--Clause-blue.svg)](LICENSE)
 [![Pipeline Status](https://i10git.cs.fau.de/rahil.doshi/pymatlib/badges/master/pipeline.svg)](https://i10git.cs.fau.de/rahil.doshi/pymatlib/-/pipelines)
 [![Code Coverage](https://i10git.cs.fau.de/rahil.doshi/pymatlib/badges/master/coverage.svg)](https://i10git.cs.fau.de/rahil.doshi/pymatlib/-/commits/master)
 
@@ -123,12 +123,7 @@ Our documentation follows the _Diátaxis_ framework with four distinct types:
 - [Design Philosophy](docs/explanation/design_philosophy.md)
 
 ## 🤝 Contributing
-Contributions are welcome! Please follow these steps:
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+Contributions are welcome! Please see our [Contributing Guide](CONTRIBUTING.md) for details on how to get started.
 
 ## 🐛 Known Limitations
 - **Piecewise Inverter**: Currently supports only linear piecewise functions
@@ -137,20 +132,10 @@ Contributions are welcome! Please follow these steps:
 - **Regression**: Maximum 8 segments recommended for stability
 
 ## 📄 License
-This project is licensed under the GNU General Public License v3 (GPLv3). See the [LICENSE](https://i10git.cs.fau.de/rahil.doshi/pymatlib/-/blob/master/LICENSE?ref_type=heads) file for details.
+This project is licensed under the BSD 3-Clause License. See the [LICENSE](LICENSE) file for details.
 
 ## 📖 Citation
-If you use PyMatLib in your research, please cite it as:
-```bibtex
-@software{doshi2025pymatlib,
-author = {Doshi, Rahil},
-title = {PyMatLib: A Python Library for Temperature-Dependent Materials Property Modeling},
-version = {0.3.0},
-year = {2025},
-url = {https://i10git.cs.fau.de/rahil.doshi/pymatlib}
-}
-```
-For the latest citation information, see [CITATION.cff](CITATION.cff).
+If you use PyMatLib in your research, please cite it using the information in our [CITATION.cff](CITATION.cff) file.
 
 ## 📞 Support
 - **Author**: Rahil Doshi
@@ -163,7 +148,7 @@ For the latest citation information, see [CITATION.cff](CITATION.cff).
 - Data handling powered by [pandas](https://pandas.pydata.org/)
 - Uses [pwlf](https://github.com/cjekel/piecewise_linear_fit_py) for piecewise linear fitting
 - Visualization powered by [Matplotlib](https://matplotlib.org/)
-- YAML parsing with [ruamel.yaml](https://yaml.readthedocs.io/)
+- YAML parsing with [ruamel.yaml](https://yaml.dev/doc/ruamel.yaml/)
 
 #### PyMatLib - Empowering material simulation with Python 🚀
 
