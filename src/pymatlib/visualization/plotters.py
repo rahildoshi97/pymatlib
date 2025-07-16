@@ -171,33 +171,39 @@ class PropertyVisualizer:
                 offset = (y_range[1] - y_range[0]) * 0.1
                 _y_value = value + offset
             elif prop_type == 'STEP_FUNCTION':
-                if x_data is not None and y_data is not None:
-                    # Step function visualization
-                    ax.plot(x_data, y_data, color=colors['raw'], linestyle='-',
-                            linewidth=2.5, marker='o', markersize=6,
-                            label='step function', zorder=3, alpha=0.8)
-                    # Add vertical line at transition point
-                    transition_idx = len(x_data) // 2
-                    transition_temp = x_data[transition_idx]
-                    ax.axvline(x=transition_temp, color='red', linestyle='--',
-                               alpha=0.7, linewidth=2, label='transition point')
-                    # Annotations
-                    ax.text(transition_temp, y_data[0], f' Before: {y_data[0]:.2e}',
-                            verticalalignment='bottom', horizontalalignment='left',
-                            fontweight='bold',
-                            bbox=dict(facecolor='white', alpha=0.8, boxstyle='round,pad=0.3'))
-                    ax.text(transition_temp, y_data[-1], f' After: {y_data[-1]:.2e}',
-                            verticalalignment='top', horizontalalignment='left',
-                            fontweight='bold',
-                            bbox=dict(facecolor='white', alpha=0.8, boxstyle='round,pad=0.3'))
-                    _y_value = np.mean(y_data)
-                else:  # Fallback for step function without data
-                    try:
-                        f_current = sp.lambdify(T, current_prop, 'numpy')
+                try:
+                    f_current = sp.lambdify(T, current_prop, 'numpy')
+                    # Always plot the extended behavior first (background)
+                    y_extended = f_current(extended_temp)
+                    ax.plot(extended_temp, y_extended, color=colors['extended'],
+                            linestyle='-', linewidth=2.5, label='extended behavior',
+                            zorder=1, alpha=0.6)
+                    # Overlay data points if available (foreground)
+                    if x_data is not None and y_data is not None:
+                        ax.plot(x_data, y_data, color=colors['raw'], linestyle='-',
+                                linewidth=2.5, marker='o', markersize=6,
+                                label='step function', zorder=3, alpha=0.8)
+                        # Add vertical line at transition point
+                        transition_idx = len(x_data) // 2
+                        transition_temp = x_data[transition_idx]
+                        ax.axvline(x=transition_temp, color='red', linestyle='--',
+                                   alpha=0.7, linewidth=2, label='transition point')
+                        # Annotations
+                        ax.text(transition_temp, y_data[0], f' Before: {y_data[0]:.2e}',
+                                verticalalignment='bottom', horizontalalignment='left',
+                                fontweight='bold',
+                                bbox=dict(facecolor='white', alpha=0.8, boxstyle='round,pad=0.3'))
+                        ax.text(transition_temp, y_data[-1], f' After: {y_data[-1]:.2e}',
+                                verticalalignment='top', horizontalalignment='left',
+                                fontweight='bold',
+                                bbox=dict(facecolor='white', alpha=0.8, boxstyle='round,pad=0.3'))
+                        _y_value = np.mean(y_data)
+                    else:
+                        # No data points available, use function evaluation
                         _y_value = f_current(lower_bound)
-                    except Exception as e:
-                        logger.warning(f"Could not evaluate step function: {e}")
-                        _y_value = 0.0
+                except Exception as e:
+                    logger.warning(f"Could not evaluate step function: {e}")
+                    _y_value = 0.0
             else:  # Handle all other property types (FILE, KEY_VAL, PIECEWISE_EQUATION, COMPUTE)
                 try:
                     f_current = sp.lambdify(T, current_prop, 'numpy')
