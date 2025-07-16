@@ -71,7 +71,7 @@ class PropertyVisualizer:
         fig_width = 12
         fig_height = max(4 * property_count, 8)  # Minimum height for readability
         self.fig = plt.figure(figsize=(fig_width, fig_height))
-        self.gs = GridSpec(property_count, 1, figure=self.fig,)
+        self.gs = GridSpec(property_count, 1, figure=self.fig, )
         self.current_subplot = 0
         self.plot_directory.mkdir(exist_ok=True)
 
@@ -166,7 +166,10 @@ class PropertyVisualizer:
                         bbox=dict(facecolor='white', alpha=0.8, boxstyle='round,pad=0.5',
                                   edgecolor=colors['constant']))
                 ax.set_ylim(value * 0.9, value * 1.1)
-                _y_value = value
+                # Add small offset to avoid overlap with horizontal line
+                y_range = ax.get_ylim()
+                offset = (y_range[1] - y_range[0]) * 0.1
+                _y_value = value + offset
             elif prop_type == 'STEP_FUNCTION':
                 if x_data is not None and y_data is not None:
                     # Step function visualization
@@ -222,14 +225,17 @@ class PropertyVisualizer:
                         # ax.scatter(x_data, y_data, color=colors['raw'], marker='o', s=marker_size**2,
                         #            alpha=0.7, label='data points', zorder=3)
                         pass
-                    # Set y_value for boundary annotations
+                    # Set y_value for boundary annotations to avoid overlap
                     if y_data is not None and len(y_data) > 0:
-                        _y_value = np.max(y_data)
+                        # Use 25th percentile instead of max to avoid high regions
+                        _y_value = np.percentile(y_data, 25)
                     else:
                         try:
-                            _y_value = f_current(upper_bound)
+                            # Use midpoint instead of upper_bound
+                            midpoint = (lower_bound + upper_bound) / 2
+                            _y_value = f_current(midpoint)
                         except (ValueError, TypeError, AttributeError) as e:
-                            logger.error(f"Could not evaluate function at boundary: {e}")
+                            logger.error(f"Could not evaluate function at midpoint: {e}")
                             _y_value = 0.0
                     # Post-regression overlay
                     if has_regression and simplify_type == POST_KEY and x_data is not None and y_data is not None:
@@ -321,20 +327,21 @@ class PropertyVisualizer:
                 # Save settings
                 self.fig.savefig(
                     str(filepath),
-                    dpi=300,                    # High resolution
-                    bbox_inches="tight",        # Cropping
-                    facecolor='white',          # Clean background
-                    edgecolor='none',           # No border
-                    pad_inches=0.4              # Padding
+                    dpi=300,  # High resolution
+                    bbox_inches="tight",  # Cropping
+                    facecolor='white',  # Clean background
+                    edgecolor='none',  # No border
+                    pad_inches=0.4  # Padding
                 )
-                if len(self.visualized_properties) != sum(len(props) for props in self.parser.categorized_properties.values()):
+                total_properties = sum(len(props) for props in self.parser.categorized_properties.values())
+                if len(self.visualized_properties) != total_properties:
                     logger.warning(
                         f"Not all properties visualized! "
                         f"Visualized: {len(self.visualized_properties)}, "
-                        f"Total: {sum(len(props) for props in self.parser.categorized_properties.values())}"
+                        f"Total: {total_properties}"
                     )
                 else:
-                    logger.info(f"All properties ({sum(len(props) for props in self.parser.categorized_properties.values())}) visualized successfully.")
+                    logger.info(f"All properties ({total_properties}) visualized successfully.")
                 logger.info(f"All property plots saved as {filepath}")
         finally:  # Always close the figure to prevent memory leaks
             if hasattr(self, 'fig') and self.fig is not None:
