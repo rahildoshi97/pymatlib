@@ -93,8 +93,54 @@ def validate_yaml_file(yaml_path: Union[str, Path]) -> bool:
         raise ValueError(f"Unexpected error validating YAML: {str(e)}") from e
 
 
+def get_material_info(yaml_path: Union[str, Path]) -> dict:
+    """
+    Get basic information about a material configuration without full processing.
+    Args:
+        yaml_path: Path to the YAML configuration file
+    Returns:
+        Dictionary containing material information
+    Example:
+        info = get_material_info('steel.yaml')
+        print(f"Material: {info['name']}")
+        print(f"Properties: {info['total_properties']}")
+    """
+    try:
+        parser = MaterialYAMLParser(yaml_path=yaml_path)
+        material_type = parser.config.get('material_type', 'Unknown')
+        # Base information
+        info = {
+            'name': parser.config.get('name', 'Unknown'),
+            'material_type': material_type,
+            'composition': parser.config.get('composition', {})
+        }
+        # Add temperature properties based on material type
+        if material_type == 'pure_metal':
+            info['melting_temperature'] = parser.config.get('melting_temperature', 'Undefined')
+            info['boiling_temperature'] = parser.config.get('boiling_temperature', 'Undefined')
+        elif material_type == 'alloy':
+            info['solidus_temperature'] = parser.config.get('solidus_temperature', 'Undefined')
+            info['liquidus_temperature'] = parser.config.get('liquidus_temperature', 'Undefined')
+            info['initial_boiling_temperature'] = parser.config.get('initial_boiling_temperature', 'Undefined')
+            info['final_boiling_temperature'] = parser.config.get('final_boiling_temperature', 'Undefined')
+        # Add remaining properties information
+        info.update({
+            'total_properties': sum(len(props) for props in parser.categorized_properties.values()),
+            'property_types': {prop_type: len(props)
+                               for prop_type, props in parser.categorized_properties.items()
+                               if len(props) > 0},
+            'properties': [prop_name for prop_list in parser.categorized_properties.values()
+                           for prop_name, _ in prop_list]
+        })
+        return info
+    except Exception as e:
+        logger.error(f"Failed to get material info from {yaml_path}: {e}", exc_info=True)
+        raise
+
+
 # --- Internal/Test Helper ---
 def _test_api():
+    """Test function for API validation."""
     # T = sp.Symbol('T')
     try:
         assert validate_yaml_file('example.yaml') is True

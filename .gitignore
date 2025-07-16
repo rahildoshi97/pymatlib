@@ -144,7 +144,7 @@ pymatlib_plots/
 *.gif
 *.svg
 
-# Plot outputs
+# Report outputs
 pymatlib_reports/
 *.pdf
 
