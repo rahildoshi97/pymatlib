@@ -119,7 +119,7 @@ pymatlib = [
 write_to = "src/pymatlib/_version.py"
 version_scheme = "python-simplified-semver"
 local_scheme = "node-and-date"
-fallback_version = "0.2.0"
+fallback_version = "0.4.1"
 
 [tool.pytest.ini_options]
 addopts = [
