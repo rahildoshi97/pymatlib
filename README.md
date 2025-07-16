@@ -2,9 +2,16 @@
 
 A high-performance Python library for material simulation and analysis with a focus on temperature-dependent properties. PyMatLib enables efficient modeling of pure metals and alloys through YAML configuration files, providing symbolic and numerical property evaluation for various material properties.
 
+<<<<<<< HEAD
 [![Python](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![Latest Release](https://i10git.cs.fau.de/rahil.doshi/pymatlib/-/badges/release.svg)](https://i10git.cs.fau.de/rahil.doshi/pymatlib/-/releases)
 [![License](https://img.shields.io/badge/license-GPLv3-blue.svg)](LICENSE)
+||||||| 5cbcbff
+=======
+[![Python](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![Latest Release](https://i10git.cs.fau.de/rahil.doshi/pymatlib/-/badges/release.svg)](https://i10git.cs.fau.de/rahil.doshi/pymatlib/-/releases)
+[![License](https://img.shields.io/badge/license-BSD%203--Clause-blue.svg)](LICENSE)
+>>>>>>> release/v0.4.1
 [![Pipeline Status](https://i10git.cs.fau.de/rahil.doshi/pymatlib/badges/master/pipeline.svg)](https://i10git.cs.fau.de/rahil.doshi/pymatlib/-/pipelines)
 [![Code Coverage](https://i10git.cs.fau.de/rahil.doshi/pymatlib/badges/master/coverage.svg)](https://i10git.cs.fau.de/rahil.doshi/pymatlib/-/commits/master)
 
@@ -122,6 +129,7 @@ Our documentation follows the _Diátaxis_ framework with four distinct types:
 - [Material Properties Concepts](docs/explanation/material_properties.md)
 - [Design Philosophy](docs/explanation/design_philosophy.md)
 
+<<<<<<< HEAD
 ## 🤝 Contributing
 Contributions are welcome! Please follow these steps:
 1. Fork the repository
@@ -151,12 +159,79 @@ url = {https://i10git.cs.fau.de/rahil.doshi/pymatlib}
 }
 ```
 For the latest citation information, see [CITATION.cff](CITATION.cff).
+||||||| 5cbcbff
+## Key Features
+
+| Feature | Description |
+|---------|-------------|
+| **Material Modeling** | Define complex alloys and their properties using simple YAML configurations |
+| **Temperature-dependent Properties** | Model how material properties change with temperature through various interpolation methods |
+| **Energy-Temperature Conversion** | Perform efficient bilateral conversion between energy density and temperature |
+| **High Performance** | Generate optimized C++ code for computationally intensive simulations |
+| **Extensible Design** | Easily add custom material properties and interpolation methods |
+
+## Core Components
+
+### Alloy
+
+A dataclass representing a material alloy with properties like:
+- Elements and composition
+- Solidus and liquidus temperatures
+- Temperature-dependent material properties
+
+### MaterialProperty
+
+A dataclass for material properties that can be:
+- Defined as constant values
+- Specified as key-value pairs for interpolation
+- Loaded from external data files
+- Computed from other properties
+
+### InterpolationArrayContainer
+
+Manages data for efficient interpolation between energy density and temperature using:
+- Binary search interpolation for non-uniform data
+- Double lookup interpolation for uniform data
+
+## Contributing
+
+Contributions are welcome! Please follow these steps:
+
+1. Fork the repository
+2. Clone your fork locally: `git clone https://github.com/yourusername/pymatlib.git`
+3. Create a new branch: `git checkout -b feature/your-feature`
+4. Make your changes and commit: `git commit -m "Add new feature"`
+5. Push to the branch: `git push origin feature/your-feature`
+6. Open a pull request
+
+## License
+
+This project is licensed under the GNU General Public License v3 (GPLv3). See the [LICENSE](https://i10git.cs.fau.de/rahil.doshi/pymatlib/-/blob/master/LICENSE?ref_type=heads) file for details.
+
+## Contact
+=======
+## 🤝 Contributing
+Contributions are welcome! Please see our [Contributing Guide](CONTRIBUTING.md) for details on how to get started.
+
+## 🐛 Known Limitations
+- **Piecewise Inverter**: Currently supports only linear piecewise functions
+- **File Formats**: Limited to CSV, Excel, and text files
+- **Memory Usage**: Large datasets may require optimization for very high-resolution data
+- **Regression**: Maximum 8 segments recommended for stability
+
+## 📄 License
+This project is licensed under the BSD 3-Clause License. See the [LICENSE](LICENSE) file for details.
+
+## 📖 Citation
+If you use PyMatLib in your research, please cite it using the information in our [CITATION.cff](CITATION.cff) file.
+>>>>>>> release/v0.4.1
 
 ## 📞 Support
 - **Author**: Rahil Doshi
 - **Email**: rahil.doshi@fau.de
 - **Project Homepage**: [pymatlib](https://i10git.cs.fau.de/rahil.doshi/pymatlib)
 - **Bug Tracker**: [Issues](https://i10git.cs.fau.de/rahil.doshi/pymatlib/-/issues)
+<<<<<<< HEAD
 
 ## 🙏 Acknowledgments
 - Built with [SymPy](https://www.sympy.org/) for symbolic mathematics
@@ -168,3 +243,17 @@ For the latest citation information, see [CITATION.cff](CITATION.cff).
 #### PyMatLib - Empowering material simulation with Python 🚀
 
 ---
+||||||| 5cbcbff
+=======
+
+## 🙏 Acknowledgments
+- Built with [SymPy](https://www.sympy.org/) for symbolic mathematics
+- Data handling powered by [pandas](https://pandas.pydata.org/)
+- Uses [pwlf](https://github.com/cjekel/piecewise_linear_fit_py) for piecewise linear fitting
+- Visualization powered by [Matplotlib](https://matplotlib.org/)
+- YAML parsing with [ruamel.yaml](https://yaml.dev/doc/ruamel.yaml/)
+
+#### PyMatLib - Empowering material simulation with Python 🚀
+
+---
+>>>>>>> release/v0.4.1
