@@ -10,33 +10,17 @@ tags:
 authors:
   - name: Rahil Miten Doshi
     orcid: 0009-0008-3570-9841
-    # equal-contrib: true
-    affiliation: 1 # "1, 2" # (Multiple affiliations must be quoted)
-  # - name: Author Without ORCID
-    # equal-contrib: true # (This is how you can denote equal contributions between multiple authors)
-    # affiliation: 2
-  # - name: Author with no affiliation
-    # corresponding: true # (This is how to denote the corresponding author)
-    # affiliation: 3
-  # - given-names: Ludwig
-    # dropping-particle: van
-    # surname: Beethoven
-    # affiliation: 3
+    affiliation: 1
 affiliations:
   - name: Friedrich-Alexander-Universität Erlangen-Nürnberg, Germany
     index: 1
 date: 16 July 2025
 bibliography: paper.bib
-
-# Optional fields if submitting to a AAS journal too, see this blog post:
-# https://blog.joss.theoj.org/2018/12/a-new-collaboration-with-aas-publishing
-# aas-doi: 10.3847/xxxxx <- update this with the DOI from AAS once you know it.
-# aas-journal: Astrophysical Journal <- The name of the AAS journal.
 ---
 
 # Summary
 
-PyMatLib is a Python library that helps scientists and engineers handle materials that change their properties with temperature. 
+PyMatLib is a Python library that helps scientists and engineers handle materials whose properties change with temperature. 
 When materials are heated or cooled, their physical characteristics like 
 thermal conductivity, density, and heat capacity change significantly. 
 This creates challenges for computer simulations of processes like metal casting, heat treatment, or thermal analysis.
@@ -47,9 +31,8 @@ PyMatLib supports both pure metals and alloys,
 handles six different ways of defining properties (from simple constants to complex equations), 
 and automatically manages dependencies between different material properties.
 
-The library integrates with popular scientific computing tools including pandas [@pandas] for data processing, 
-and has been designed specifically for high-performance simulations in computational materials science 
-and heat transfer applications.
+The library has been designed specifically for high-performance simulations in computational materials science 
+and heat transfer applications, integrating seamlessly with existing scientific computing workflows.
 
 # Statement of Need
 
@@ -83,8 +66,8 @@ with extensibility for additional material types.
 Pure metals use melting/boiling temperatures, while alloys use solidus/liquidus temperature ranges.
 
 **Robust Data Quality Assurance**: Built-in data validation includes duplicate temperature removal,
-missing value handling with configurable thresholds, automatic data sorting and 
-support for various file encodings and missing value representations commonly found in experimental datasets.
+missing value handling with configurable thresholds, automatic data sorting, 
+and support for various file encodings and missing value representations commonly found in experimental datasets. 
 This ensures data integrity and prevents common errors in materials property processing.
 
 **Optional Data Simplification**: The library supports regression-based data simplification using pwlf [@pwlf] for large complex datasets,
@@ -100,12 +83,12 @@ choosing between constant extrapolation or linear extrapolation based on their p
 
 ![Boundary behavior options in PyMatLib showing the same thermal conductivity property with different extrapolation settings: constant boundaries (left) maintain edge values outside the defined range, while extrapolate boundaries (right) use linear extrapolation.\label{fig:boundary_behavior}](figures/boundary_behavior.png)
 
-**Automatic Dependency Resolution**: Intelligent processing order determination for computed properties,
-ensuring mathematical dependencies are resolved correctly without manual intervention.
+**Automatic Dependency Resolution**: Intelligent processing order determination for computed properties ensures 
+mathematical dependencies are resolved correctly without manual intervention. 
 The library automatically detects circular dependencies and provides clear error messages for invalid configurations.
 
-**Bidirectional Property-Temperature Conversion**: The library automatically generates inverse piecewise functions 
-enabling temperature = f(property) calculations alongside the standard property = f(temperature) relationships. 
+**Bidirectional Property-Temperature Conversion**: The library automatically generates inverse piecewise functions enabling 
+temperature = f(property) calculations alongside the standard property = f(temperature) relationships. 
 This bidirectional capability is essential for energy-based numerical methods [@voller1987fixed], phase-change simulations, 
 and iterative solvers where temperature must be determined from known property values.
 The inverse function generation supports linear piecewise segments 
@@ -120,8 +103,8 @@ with the option to disable visualization for production workflows after validati
 
 Unlike existing tools, PyMatLib uniquely combines symbolic mathematics [@sympy], automatic dependency resolution, 
 and seamless integration with scientific computing workflows [@numpy; @matplotlib]. 
-The library integrates directly with simulation frameworks 
-like pystencils [@pystencils] and waLBerla [@walberla] for high-performance computing applications.
+The library integrates directly with simulation frameworks like 
+pystencils [@pystencils] and waLBerla [@walberla] for high-performance computing applications.
 
 The library can be applied in research projects involving alloy design 
 and optimization with accurate representation of solidus-liquidus temperature ranges [@callister2018materials], 
@@ -134,9 +117,9 @@ enabling reproducible research across different simulation codes and research gr
 # Acknowledgements
 
 The development of PyMatLib was supported by the Friedrich-Alexander-Universität Erlangen-Nürnberg. 
-We acknowledge the contributions of the SymPy [@sympy], NumPy [@numpy], pandas [@pandas], and matplotlib [@matplotlib] 
+We acknowledge the contributions of the SymPy [@sympy], NumPy [@numpy], pandas [@pandas], matplotlib [@matplotlib],
 and ruamel.yaml [@ruamel-yaml] development communities, whose libraries provide 
-the symbolic mathematics, numerical computing, data processing, visualization and configuration parsing capabilities 
+the symbolic mathematics, numerical computing, data processing, visualization, and configuration parsing capabilities 
 that form the foundation of PyMatLib.
 
 # References
