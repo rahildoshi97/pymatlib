@@ -11,12 +11,15 @@ A high-performance Python library for material simulation and analysis with a fo
 ## Table of Contents
 - [Key Features](#-key-features)
 - [Installation](#-installation)
+- [Quick Sart](#-quick-start)
 - [YAML Configuration Format](#-yaml-configuration-format)
 - [Documentation](#-documentation)
 - [Contributing](#-contributing)
 - [Known Limitations](#-known-limitations)
 - [License](#-license)
+- [Citation](#-citation)
 - [Support](#-support)
+- [Acknowledgments](#-acknowledgments)
 
 ## 🚀 Key Features
 - **Modular Architecture**: Clean separation with algorithms, parsing, and visualization modules
