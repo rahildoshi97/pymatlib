@@ -75,6 +75,14 @@ allowing users to reduce computational overhead and memory usage while maintaini
 Piecewise linear fitting with configurable polynomial degrees enables efficient approximation of complex property relationships
 while preserving essential physical behavior (\autoref{fig:regression_options}).
 
+**Intelligent Simplification Timing**: PyMatLib provides sophisticated control over when data simplification occurs in the dependency chain 
+through the `simplify` parameter (`pre` or `post`). When set to `pre`, properties are simplified before being passed to dependent properties, 
+optimizing computational performance for complex dependency networks. 
+When set to `post`, the raw piecewise function with all data points is preserved during dependency resolution, 
+with simplification applied only after all dependent calculations are complete. 
+This ensures maximum accuracy in interdependent property calculations while still providing the benefits of data simplification. 
+This timing control allows users to balance computational efficiency with numerical accuracy based on their specific simulation requirements.
+
 ![Regression capabilities showing data simplification effects: raw experimental data (points) fitted with different polynomial degrees and segment configurations, demonstrating how PyMatLib can reduce complexity while maintaining physical accuracy.\label{fig:regression_options}](figures/regression_options.png)
 
 **Configurable Boundary Behavior**: Users can specify how properties behave outside defined temperature ranges, 
