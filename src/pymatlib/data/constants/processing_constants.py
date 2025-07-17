@@ -23,7 +23,7 @@ class ProcessingConstants:
     DEFAULT_REGRESSION_SEED: Final[int] = 13579
     # Visualization
     DEFAULT_VISUALIZATION_POINTS: Final[int] = 1000
-    TEMPERATURE_PADDING_FACTOR: Final[float] = 0.1
+    TEMPERATURE_PADDING_FACTOR: Final[float] = 0.0  #
     STEP_FUNCTION_OFFSET: Final[float] = 100.0
     # File processing
     MAX_MISSING_VALUE_PERCENTAGE: Final[float] = 50.0

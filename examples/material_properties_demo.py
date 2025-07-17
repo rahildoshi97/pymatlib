@@ -10,7 +10,7 @@ from pymatlib.algorithms.piecewise_inverter import PiecewiseInverter
 def setup_logging():
     """Setup logging configuration."""
     logging.basicConfig(
-        level=logging.INFO,  # DEBUG/INFO/WARNING/ERROR/CRITICAL
+        level=logging.WARNING,  # DEBUG/INFO/WARNING/ERROR/CRITICAL
         format="%(asctime)s %(levelname)s %(name)s -> %(message)s"
     )
     # Silence noisy libraries
@@ -30,7 +30,7 @@ def demonstrate_material_properties():
     materials = []
     print(f"\n{'=' * 80}")
     if yaml_path_Al.exists():
-        mat_Al = create_material(yaml_path=yaml_path_Al, T=T, enable_plotting=True)
+        mat_Al = create_material(yaml_path=yaml_path_Al, T=T, enable_plotting=False)
         materials.append(mat_Al)
     else:
         raise FileNotFoundError(f"Aluminum YAML file not found: {yaml_path_Al}")
@@ -103,7 +103,7 @@ def demonstrate_material_properties():
                     print(f"{valid_prop_name:<30}: Not defined in YAML")
             except Exception as e:
                 print(f"{valid_prop_name:<30}: Error - {str(e)}")
-    test_inverse_functions(materials, T)
+    # test_inverse_functions(materials, T)
 
 
 def test_inverse_functions(materials, T):
