@@ -1,2 +1,3 @@
 apps/
 cmake-build-*/
+.idea/
