@@ -228,7 +228,7 @@ class PropertyVisualizer:
                         y_extended = f_current(extended_temp)
                         ax.plot(extended_temp, y_extended, color='#bcbd22',  # Yellow-Green
                                 linestyle='None', linewidth=2.5, label=main_label,
-                                marker='o', markersize=4, zorder=2, alpha=0.8)  # markersize=3.5 for boundary_behavior.png
+                                marker='o', markersize=3.5, zorder=2, alpha=0.8)  # markersize=3.5 for boundary_behavior.png
                         logger.debug("Plotted extended range for property '%s'", prop_name)
                     except Exception as e:
                         logger.warning("Could not evaluate function over extended range for '%s': %s",
@@ -264,7 +264,7 @@ class PropertyVisualizer:
                                 degree=degree, segments=segments, seed=ProcessingConstants.DEFAULT_REGRESSION_SEED
                             )
                             f_preview = sp.lambdify(T, preview_pw, 'numpy')
-                            # extended_temp = np.linspace(lower_bound - 270.0, upper_bound + 270.0, num_points)  # For boundary_behavior.png
+                            extended_temp = np.linspace(lower_bound - 270.0, upper_bound + 270.0, num_points)  # For boundary_behavior.png
                             y_preview = f_preview(extended_temp)
                             print(f"x_data: {x_data.tolist()}")
                             print(f"y_data: {y_data.tolist()}")
@@ -306,7 +306,7 @@ class PropertyVisualizer:
                     _y_value = 0.0
                     logger.warning("Could not determine y_value for annotations for property '%s'", prop_name)
             # Add boundary type annotations
-            """ax.text(lower_bound, _y_value, f' {lower_bound_type}',
+            ax.text(lower_bound, _y_value, f' {lower_bound_type}',
                     verticalalignment='top', horizontalalignment='right',
                     fontweight='bold',
                     bbox=dict(facecolor='white', alpha=0.8, boxstyle='round,pad=0.3',
@@ -317,7 +317,7 @@ class PropertyVisualizer:
                     bbox=dict(facecolor='white', alpha=0.8, boxstyle='round,pad=0.3',
                               edgecolor=colors['bounds']))
             # Add regression info
-            if has_regression and degree is not None:
+            """if has_regression and degree is not None:
                 ax.text(0.5, 0.98, f"Simplify: {simplify_type} | Degree: {degree} | Segments: {segments}",
                         transform=ax.transAxes, horizontalalignment='center',
                         fontweight='bold',

@@ -68,7 +68,7 @@ properties:
     file_path: ./SS304L.xlsx
     temperature_header: T (K)
     value_header: Density (kg/(m)^3)
-    bounds: [constant, constant]
+    bounds: [constant, extrapolate]
     regression:
       simplify: post                       # Apply regression after processing
       degree: 1
