@@ -150,7 +150,7 @@ class PropertyVisualizer:
             num_points = int(np.ceil((padded_upper - padded_lower) / step)) + 1
             extended_temp = np.linspace(padded_lower, padded_upper, num_points)
             # Title and labels
-            ax.set_title(f"{prop_name} ({prop_type} Property)", fontweight='bold', pad=15)
+            ax.set_title(f"{prop_name} ({prop_type})", fontweight='bold', pad=15)
             ax.set_xlabel("Temperature (K)", fontweight='bold')
             ax.set_ylabel(f"{prop_name}", fontweight='bold')
             # Color scheme
@@ -164,7 +164,7 @@ class PropertyVisualizer:
             }
             # Initialize y_value for annotations
             _y_value = 0.0
-            if prop_type == 'CONSTANT':
+            if prop_type == 'CONSTANT_VALUE':
                 value = float(current_prop)
                 ax.axhline(y=value, color=colors['constant'], linestyle='-',
                            linewidth=2.5, label='constant', alpha=0.8)
@@ -215,7 +215,7 @@ class PropertyVisualizer:
                 except Exception as e:
                     logger.warning("Could not evaluate step function '%s': %s", prop_name, e)
                     _y_value = 0.0
-            else:  # Handle all other property types (FILE, KEY_VAL, PIECEWISE_EQUATION, COMPUTE)
+            else:  # Handle all other property types (FILE_IMPORT, TABULAR_DATA, PIECEWISE_EQUATION, COMPUTED_PROPERTY)
                 try:
                     f_current = sp.lambdify(T, current_prop, 'numpy')
                     # Determine the appropriate label and color based on regression status

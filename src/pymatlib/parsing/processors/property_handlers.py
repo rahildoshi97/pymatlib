@@ -32,7 +32,7 @@ class BasePropertyHandler(PropertyProcessorBase):
         logger.debug("BasePropertyHandler initialized")
 
 
-class ConstantPropertyHandler(BasePropertyHandler):
+class ConstantValuePropertyHandler(BasePropertyHandler):
     """Handler for constant properties."""
 
     def process_property(self, material: Material, prop_name: str,
@@ -46,7 +46,7 @@ class ConstantPropertyHandler(BasePropertyHandler):
             # Only visualize for symbolic temperature
             if isinstance(T, sp.Symbol):
                 self._visualize_if_enabled(material=material, prop_name=prop_name, T=T,
-                                           prop_type='CONSTANT', x_data=None, y_data=None)
+                                           prop_type='CONSTANT_VALUE', x_data=None, y_data=None)
             else:
                 logger.debug(f"Skipping visualization for constant property '{prop_name}' - numeric temperature")
             self.processed_properties.add(prop_name)
@@ -83,7 +83,7 @@ class StepFunctionPropertyHandler(BasePropertyHandler):
             raise ValueError(f"Failed to process step function property '{prop_name}'\n -> {str(e)}") from e
 
 
-class FilePropertyHandler(BasePropertyHandler):
+class FileImportPropertyHandler(BasePropertyHandler):
     """Handler for file-based properties."""
 
     def process_property(self, material: Material, prop_name: str,
@@ -99,7 +99,7 @@ class FilePropertyHandler(BasePropertyHandler):
             validate_monotonic_energy_density(prop_name, temp_array, prop_array)
             # Use data array finalization
             self.finalize_with_data_arrays(material=material, prop_name=prop_name, temp_array=temp_array,
-                                           prop_array=prop_array, T=T, config=file_config, prop_type='FILE')
+                                           prop_array=prop_array, T=T, config=file_config, prop_type='FILE_IMPORT')
         except FileNotFoundError as e:
             logger.error(f"File not found for property '{prop_name}': {file_path}", exc_info=True)
             raise ValueError(f"File not found for property '{prop_name}': {file_path}") from e
@@ -108,7 +108,7 @@ class FilePropertyHandler(BasePropertyHandler):
             raise ValueError(f"Failed to process file property {prop_name} \n -> {str(e)}") from e
 
 
-class KeyValPropertyHandler(BasePropertyHandler):
+class TabularDataPropertyHandler(BasePropertyHandler):
     """Handler for key-value properties."""
 
     def process_property(self, material: Material, prop_name: str,
@@ -124,7 +124,7 @@ class KeyValPropertyHandler(BasePropertyHandler):
             validate_monotonic_energy_density(prop_name, key_array, val_array)
             # Use data array finalization
             self.finalize_with_data_arrays(material=material, prop_name=prop_name, temp_array=key_array,
-                                           prop_array=val_array, T=T, config=prop_config, prop_type='KEY_VAL')
+                                           prop_array=val_array, T=T, config=prop_config, prop_type='TABULAR_DATA')
         except Exception as e:
             raise ValueError(f"Failed to process key-val property '{prop_name}' \n -> {str(e)}") from e
 
@@ -207,4 +207,4 @@ class ComputedPropertyHandler(BasePropertyHandler):
         """
         # Use data array finalization
         self.finalize_with_data_arrays(material=material, prop_name=prop_name, temp_array=temp_array,
-                                       prop_array=prop_array, T=T, config=config, prop_type='COMPUTE')
+                                       prop_array=prop_array, T=T, config=config, prop_type='COMPUTED_PROPERTY')

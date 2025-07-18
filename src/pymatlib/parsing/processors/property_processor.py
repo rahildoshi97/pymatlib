@@ -8,10 +8,10 @@ from pymatlib.core.materials import Material
 from pymatlib.parsing.validation.property_type_detector import PropertyType
 from pymatlib.parsing.processors.property_processor_base import PropertyProcessorBase
 from pymatlib.parsing.processors.property_handlers import (
-    ConstantPropertyHandler,
+    ConstantValuePropertyHandler,
     StepFunctionPropertyHandler,
-    FilePropertyHandler,
-    KeyValPropertyHandler,
+    FileImportPropertyHandler,
+    TabularDataPropertyHandler,
     PiecewiseEquationPropertyHandler,
     ComputedPropertyHandler
 )
@@ -33,12 +33,12 @@ class PropertyProcessor(PropertyProcessorBase):
         super().__init__()
         # Initialize property handlers
         self.handlers = {
-            PropertyType.CONSTANT: ConstantPropertyHandler(),
+            PropertyType.CONSTANT_VALUE: ConstantValuePropertyHandler(),
             PropertyType.STEP_FUNCTION: StepFunctionPropertyHandler(),
-            PropertyType.FILE: FilePropertyHandler(),
-            PropertyType.KEY_VAL: KeyValPropertyHandler(),
+            PropertyType.FILE_IMPORT: FileImportPropertyHandler(),
+            PropertyType.TABULAR_DATA: TabularDataPropertyHandler(),
             PropertyType.PIECEWISE_EQUATION: PiecewiseEquationPropertyHandler(),
-            PropertyType.COMPUTE: ComputedPropertyHandler()
+            PropertyType.COMPUTED_PROPERTY: ComputedPropertyHandler()
         }
         # Initialize post-processor
         self.post_processor = PropertyPostProcessor()
@@ -85,7 +85,7 @@ class PropertyProcessor(PropertyProcessorBase):
             handler.set_processing_context(self.base_dir, visualizer, self.processed_properties)
             logger.debug("Set processing context for handler: %s", handler_type.name)
         # Initialize dependency processor for computed properties
-        computed_handler = self.handlers.get(PropertyType.COMPUTE)
+        computed_handler = self.handlers.get(PropertyType.COMPUTED_PROPERTY)
         if computed_handler:
             computed_handler.set_dependency_processor(properties)
             logger.debug("Dependency processor initialized for computed properties")

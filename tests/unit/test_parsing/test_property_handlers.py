@@ -4,10 +4,10 @@ import sympy as sp
 import tempfile
 from pathlib import Path
 from pymatlib.parsing.processors.property_handlers import (
-    ConstantPropertyHandler,
+    ConstantValuePropertyHandler,
     StepFunctionPropertyHandler,
-    FilePropertyHandler,
-    KeyValPropertyHandler,
+    FileImportPropertyHandler,
+    TabularDataPropertyHandler,
     PiecewiseEquationPropertyHandler
 )
 
@@ -25,7 +25,7 @@ class TestConstantPropertyHandler:
             melting_temperature=sp.Float(933.47),
             boiling_temperature=sp.Float(2792.0)
         )
-        handler = ConstantPropertyHandler()
+        handler = ConstantValuePropertyHandler()
         handler.set_processing_context(Path("."), None, set())
         handler.process_property(material, "test_density", 2700.0, temp_symbol)
         assert hasattr(material, "test_density")
@@ -42,7 +42,7 @@ class TestConstantPropertyHandler:
             melting_temperature=sp.Float(933.47),
             boiling_temperature=sp.Float(2792.0)
         )
-        handler = ConstantPropertyHandler()
+        handler = ConstantValuePropertyHandler()
         handler.set_processing_context(Path("."), None, set())
         handler.process_property(material, "test_property", "3.14", temp_symbol)
         assert hasattr(material, "test_property")
@@ -66,7 +66,7 @@ class TestKeyValPropertyHandler:
             'value': [900, 950, 1000],
             'bounds': ['constant', 'constant']
         }
-        handler = KeyValPropertyHandler()
+        handler = TabularDataPropertyHandler()
         handler.set_processing_context(Path("."), None, set())
         handler.process_property(material, "heat_capacity", config, temp_symbol)
         assert hasattr(material, "heat_capacity")
@@ -163,7 +163,7 @@ class TestFilePropertyHandler:
                 'property_column': 'heat_capacity',
                 'bounds': ['constant', 'constant']
             }
-            handler = FilePropertyHandler()
+            handler = FileImportPropertyHandler()
             handler.set_processing_context(csv_path.parent, None, set())
             handler.process_property(material, "file_heat_capacity", config, temp_symbol)
             assert hasattr(material, "file_heat_capacity")

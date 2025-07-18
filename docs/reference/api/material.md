@@ -263,12 +263,12 @@ These are raised during property processing
 from pymatlib.parsing.validation.property_type_detector import PropertyType
 
 # Available property types:
-PropertyType.CONSTANT
+PropertyType.CONSTANT_VALUE
 PropertyType.STEP_FUNCTION
-PropertyType.FILE
-PropertyType.KEY_VAL
+PropertyType.FILE_IMPORT
+PropertyType.TABULAR_DATA
 PropertyType.PIECEWISE_EQUATION
-PropertyType.COMPUTE
+PropertyType.COMPUTED_PROPERTY
 ```
 
 This API provides a comprehensive interface for working with materials in PyMatLib,

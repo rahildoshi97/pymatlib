@@ -9,10 +9,10 @@ dependency resolution, and post-processing.
 from .property_processor import PropertyProcessor
 from .property_handlers import (
     BasePropertyHandler,
-    ConstantPropertyHandler,
+    ConstantValuePropertyHandler,
     StepFunctionPropertyHandler,
-    FilePropertyHandler,
-    KeyValPropertyHandler,
+    FileImportPropertyHandler,
+    TabularDataPropertyHandler,
     PiecewiseEquationPropertyHandler,
     ComputedPropertyHandler
 )
@@ -23,10 +23,10 @@ from .temperature_resolver import TemperatureResolver
 __all__ = [
     'PropertyProcessor',
     'BasePropertyHandler',
-    'ConstantPropertyHandler',
+    'ConstantValuePropertyHandler',
     'StepFunctionPropertyHandler',
-    'FilePropertyHandler',
-    'KeyValPropertyHandler',
+    'FileImportPropertyHandler',
+    'TabularDataPropertyHandler',
     'PiecewiseEquationPropertyHandler',
     'ComputedPropertyHandler',
     'DependencyProcessor',
