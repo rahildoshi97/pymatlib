@@ -59,7 +59,17 @@ allowing users to choose the most appropriate format for their data sources and 
 File-based data processing leverages pandas [@pandas] for robust handling of various formats 
 including Excel (.xlsx), CSV, and text files with comprehensive missing value detection, data cleaning, duplicate removal, and validation.
 
-![PyMatLib input flexibility demonstration showing different property definition methods: (a) constant values for simple properties, (b) step functions for phase transitions, (c) key-value pairs for experimental data, (d) piecewise equations for complex relationships, and (e) computed properties with automatic dependency resolution.\label{fig:input_methods}](figures/input_methods.png)
+![PyMatLib input flexibility demonstration showing different property definition methods: (a) constant values for simple properties.\label{fig:constant}](figures/constant.png)
+
+![PyMatLib input flexibility demonstration showing different property definition methods: (b) step functions for phase transitions.\label{fig:step function}](figures/step_function.png)
+
+![PyMatLib input flexibility demonstration showing different property definition methods: (c) file properties.\label{fig:file}](figures/file.png)
+
+![PyMatLib input flexibility demonstration showing different property definition methods: (d) key-value pairs for experimental data.\label{fig:key val}](figures/key_val.png)
+
+![PyMatLib input flexibility demonstration showing different property definition methods: (e) piecewise equations for complex relationships.\label{fig:piecewise}](figures/piecewise_equation.png)
+
+![PyMatLib input flexibility demonstration showing different property definition methods: (f) computed properties with automatic dependency resolution.\label{fig:compute}](figures/compute.png)
 
 **Universal Material Support**: The framework supports both pure metals and alloys through a unified interface,
 with extensibility for additional material types.
