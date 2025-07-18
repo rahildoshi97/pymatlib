@@ -189,11 +189,11 @@ enabling reproducible research across different simulation codes and research gr
 
 | Feature               | PyMatLib | CoolProp | NIST WebBook | Custom Scripts |
 |-----------------------|----------|----------|--------------|----------------|
-| Symbolic Integration  | ✅        | ❌        | ❌            | Limited        |
-| Dependency Resolution | ✅        | ❌        | ❌            | Manual         |
-| Solid Materials       | ✅        | Limited  | ✅            | Variable       |
-| Custom Properties     | ✅        | ❌        | ❌            | ✅              |
-| Data Validation       | ✅        | ✅        | ❌            | Variable       |
+| Symbolic Integration  | Yes      | No       | No           | Limited        |
+| Dependency Resolution | Yes      | No       | No           | Manual         |
+| Solid Materials       | Yes      | Limited  | Yes          | Variable       |
+| Custom Properties     | Yes      | No       | No           | Yes            |
+| Data Validation       | Yes      | Yes      | No           | Variable       |
 
 PyMatLib uniquely combines symbolic mathematics with intelligent dependency resolution, 
 addressing gaps in existing materials science software.
