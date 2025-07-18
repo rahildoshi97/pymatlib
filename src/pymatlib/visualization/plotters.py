@@ -287,9 +287,9 @@ class PropertyVisualizer:
                     f_current = sp.lambdify(T, current_prop, 'numpy')
                     # Always plot the extended behavior first (background)
                     y_extended = f_current(extended_temp)
-                    ax.plot(extended_temp, y_extended, color=colors['extended'],
+                    """ax.plot(extended_temp, y_extended, color=colors['extended'],
                             linestyle='-', linewidth=2.5, label='extended behavior',
-                            zorder=1, alpha=0.6)
+                            zorder=1, alpha=0.6)"""
                     # Overlay data points if available (foreground)
                     if x_data is not None and y_data is not None:
                         ax.plot(x_data, y_data, color=colors['raw'], linestyle='-',
