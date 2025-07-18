@@ -25,8 +25,8 @@ class TestLoadPropertyData:
         try:
             config = {
                 'file_path': str(csv_path),
-                'temperature_header': 'Temperature',
-                'value_header': 'Property'
+                'temperature_column': 'Temperature',
+                'property_column': 'Property'
             }
             temp_array, prop_array = load_property_data(config)
             assert len(temp_array) == 3
@@ -48,8 +48,8 @@ class TestLoadPropertyData:
             df.to_excel(excel_path, index=False)
             config = {
                 'file_path': str(excel_path),
-                'temperature_header': 'Temp',
-                'value_header': 'Value'
+                'temperature_column': 'Temp',
+                'property_column': 'Value'
             }
             temp_array, prop_array = load_property_data(config)
             assert len(temp_array) == 3
@@ -61,8 +61,8 @@ class TestLoadPropertyData:
         """Test error handling for missing files."""
         config = {
             'file_path': 'nonexistent.csv',
-            'temperature_header': 'Temperature',
-            'value_header': 'Property'
+            'temperature_column': 'Temperature',
+            'property_column': 'Property'
         }
         with pytest.raises(FileNotFoundError):
             load_property_data(config)
@@ -74,8 +74,8 @@ class TestLoadPropertyData:
         try:
             config = {
                 'file_path': str(xyz_path),
-                'temperature_header': 'Temperature',
-                'value_header': 'Property'
+                'temperature_column': 'Temperature',
+                'property_column': 'Property'
             }
             with pytest.raises(ValueError, match="Unsupported file type"):
                 load_property_data(config)
@@ -95,8 +95,8 @@ class TestLoadPropertyData:
         try:
             config = {
                 'file_path': str(csv_path),
-                'temperature_header': 'Temperature',
-                'value_header': 'Property'
+                'temperature_column': 'Temperature',
+                'property_column': 'Property'
             }
             temp_array, prop_array = load_property_data(config)
             # Should have cleaned out rows with missing values
@@ -118,8 +118,8 @@ class TestLoadPropertyData:
         try:
             config = {
                 'file_path': str(csv_path),
-                'temperature_header': 'NonexistentColumn',
-                'value_header': 'Property'
+                'temperature_column': 'NonexistentColumn',
+                'property_column': 'Property'
             }
             with pytest.raises(ValueError, match="not found"):
                 load_property_data(config)
@@ -134,8 +134,8 @@ class TestLoadPropertyData:
         try:
             config = {
                 'file_path': f.name,
-                'temperature_header': 'Temperature',
-                'value_header': 'Property'
+                'temperature_column': 'Temperature',
+                'property_column': 'Property'
             }
             with pytest.raises(ValueError, match="empty|No data"):
                 load_property_data(config)
@@ -205,7 +205,7 @@ class TestConfigValidation:
         """Test error handling for missing configuration keys."""
         config = {
             'file_path': 'test.csv',
-            # Missing temperature_header and value_header
+            # Missing temperature_column and property_column
         }
         with pytest.raises(ValueError, match="Missing required configuration keys"):
             load_property_data(config)
@@ -214,8 +214,8 @@ class TestConfigValidation:
         """Test error handling for empty file path."""
         config = {
             'file_path': '',
-            'temperature_header': 'Temperature',
-            'value_header': 'Property'
+            'temperature_column': 'Temperature',
+            'property_column': 'Property'
         }
         with pytest.raises(ValueError, match="File path cannot be empty"):
             load_property_data(config)

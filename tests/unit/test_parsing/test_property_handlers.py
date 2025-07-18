@@ -159,8 +159,8 @@ class TestFilePropertyHandler:
         try:
             config = {
                 'file_path': csv_path.name,
-                'temperature_header': 'temperature',
-                'value_header': 'heat_capacity',
+                'temperature_column': 'temperature',
+                'property_column': 'heat_capacity',
                 'bounds': ['constant', 'constant']
             }
             handler = FilePropertyHandler()
