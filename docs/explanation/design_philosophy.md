@@ -116,12 +116,12 @@ PyMatLib uses a sophisticated property type detection system with six distinct t
 
 ### Six Property Types
 
-1. **CONSTANT**: Simple numeric values for temperature-independent properties
+1. **CONSTANT_VALUE**: Simple numeric values for temperature-independent properties
 2. **STEP_FUNCTION**: Discontinuous changes at phase transitions
-3. **FILE**: Data loaded from external files (Excel, CSV, text)
-4. **KEY_VAL**: Explicit temperature-property pairs
+3. **FILE_IMPORT**: Data loaded from external files (Excel, CSV, text)
+4. **TABULAR_DATA**: Explicit temperature-property pairs
 5. **PIECEWISE_EQUATION**: Multiple equations for different temperature ranges
-6. **COMPUTE**: Properties calculated from other properties
+6. **COMPUTED_PROPERTY**: Properties calculated from other properties
 
 ### Automatic Type Detection
 

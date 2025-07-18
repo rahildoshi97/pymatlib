@@ -71,20 +71,20 @@ latent_heat_of_fusion:
 
 Represented as `sp.Piecewise` expressions with temperature-dependent conditions.
 
-### 3. File-Based Properties
+### 3. File Import Properties
 
 Properties loaded from external data files:
 ```python
 density:
     file_path: ./material_data.xlsx
-    temperature_header: T (K)
-    value_header: Density (kg/(m)^3)
+    temperature_column: T (K)
+    property_column: Density (kg/(m)^3)
     bounds: [constant, constant]
 ```
 
 Data is loaded via `read_data_from_file` and converted to piecewise interpolation functions.
 
-### 4. Key-Value Pairs
+### 4. Tabular Data
 
 Explicit temperature-property relationships:
 ```yaml

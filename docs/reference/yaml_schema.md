@@ -1,5 +1,5 @@
 # YAML Schema for Material Definition
-This document defines the schema for material definition YAML files in pymatlib v0.3.0.
+This document defines the schema for material definition YAML files in pymatlib v0.4.1.
 
 ## Schema Overview
 
@@ -33,16 +33,16 @@ latent_heat_of_fusion:
   value: [0.0, 10790.0]
   bounds: [constant, constant]
 ```
-### 3. File
+### 3. File Import
 Data from Excel, CSV, or text files:
 ```yaml
 heat_capacity:
   file_path: ./data.xlsx
-  temperature_header: T (K)
-  value_header: Cp (J/kg·K)
+  temperature_column: T (K)
+  property_column: Cp (J/kg·K)
   bounds: [constant, constant]
 ```
-### 4. Key-Value Pairs
+### 4. Tabular Data
 Explicit temperature-property pairs:
 ```yaml
 thermal_expansion_coefficient:
@@ -58,7 +58,7 @@ heat_conductivity:
   equation: ["0.012*T + 13", "0.015*T + 5"]
   bounds: [constant, constant]
 ```
-### 6. Compute
+### 6. Computed Property
 Properties calculated from other properties:
 ```yaml
 thermal_diffusivity:

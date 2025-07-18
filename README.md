@@ -98,12 +98,12 @@ if hasattr(material, 'energy_density'):
 
 ## 📋 YAML Configuration Format
 ### Supported Property Types
-- **CONSTANT**: Simple numeric values
-- **FILE**: Data loaded from CSV/Excel files
-- **KEY_VAL**: Temperature-value pairs
+- **CONSTANT_VALUE**: Simple numeric values
+- **FILE_IMPORT**: Data loaded from CSV/Excel/text files
+- **TABULAR_DATA**: Temperature and corresponding property value pairs
 - **STEP_FUNCTION**: Discontinuous transitions
 - **PIECEWISE_EQUATION**: Symbolic equations over temperature ranges
-- **COMPUTE**: Properties calculated from other properties
+- **COMPUTED_PROPERTY**: Properties calculated from other properties
 
 See [the YAML schema documentation](docs/reference/yaml_schema.md) for detailed configuration options.
 YAML configuration examples can be found here:

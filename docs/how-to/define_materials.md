@@ -15,7 +15,47 @@ properties:
     thermal_expansion_coefficient: 16.3e-6
 ```
 
-### 2. Key-Value Pairs for Interpolation
+### 2. Step Functions
+
+For properties that change abruptly at phase transitions:
+```YAML
+properties:
+    latent_heat_of_fusion:
+    temperature: solidus_temperature
+    value: [0.0, 171401.0]
+    bounds: [constant, constant]
+```
+
+### 3. Importing from External Files
+
+For properties defined in spreadsheets:
+
+```yaml
+properties:
+    # Excel file format
+    density:
+        file_path: ./304L_data.xlsx
+        temperature_column: T (K)
+        property_column: Density (kg/(m)^3)
+        bounds: [constant, constant]
+    
+    # CSV file format
+    heat_capacity:
+      file_path: ./heat_capacity_data.csv
+      temperature_column: Temperature
+      property_column: Cp
+      bounds: [constant, constant]
+    
+    # Text file format (space/tab separated)
+    thermal_conductivity:
+      file_path: ./conductivity_data.txt
+      temperature_column: 0  # Column index for headerless files
+      property_column: 1
+      bounds: [constant, constant]
+```
+Supported file formats include .txt (space/tab separated), .csv, and .xlsx.
+
+### 4. Tabular Data for Interpolation
 
 For properties that vary with temperature:
 
@@ -46,36 +86,18 @@ properties:
       bounds: [constant, constant]
 ```
 
-### 3. Loading from External Files
+### 5. Piecewise Equations
 
-For properties defined in spreadsheets:
-
+For properties with different equations in different temperature ranges:
 ```yaml
 properties:
-    # Excel file format
-    density:
-        file_path: ./304L_data.xlsx
-        temperature_header: T (K)
-        value_header: Density (kg/(m)^3)
-        bounds: [constant, constant]
-    
-    # CSV file format
-    heat_capacity:
-      file_path: ./heat_capacity_data.csv
-      temperature_header: Temperature
-      value_header: Cp
-      bounds: [constant, constant]
-    
-    # Text file format (space/tab separated)
-    thermal_conductivity:
-      file_path: ./conductivity_data.txt
-      temperature_header: 0  # Column index for headerless files
-      value_header: 1
-      bounds: [constant, constant]
+    heat_conductivity:
+    temperature: [1700][3000]
+    equation: ["0.012T + 13", "0.015T + 5"]
+    bounds: [constant, constant]
 ```
-Supported file formats include .txt (space/tab separated), .csv, and .xlsx.
 
-### 4. Computed Properties
+### 6. Computed Properties
 
 For properties that can be derived from others:
 
@@ -92,28 +114,6 @@ properties:
       temperature: (300, 3000, 541)  # 541 evenly spaced points
       equation: density * specific_enthalpy
       bounds: [extrapolate, extrapolate]
-```
-
-### 5. Piecewise Equations
-
-For properties with different equations in different temperature ranges:
-```yaml
-properties:
-    heat_conductivity:
-    temperature: [1700][3000]
-    equation: ["0.012T + 13", "0.015T + 5"]
-    bounds: [constant, constant]
-```
-
-### 6. Step Functions
-
-For properties that change abruptly at phase transitions:
-```YAML
-properties:
-    latent_heat_of_fusion:
-    temperature: solidus_temperature
-    value: [0.0, 171401.0]
-    bounds: [constant, constant]
 ```
 
 ## Temperature Definition Formats
@@ -177,9 +177,6 @@ bounds: [constant, extrapolate]
 
 Here's a complete example for stainless steel SS304L:
 
-
-
-
 ```yaml
 name: Stainless Steel 304L
 material_type: alloy  # Must be 'alloy' or 'pure_metal'
@@ -218,8 +215,8 @@ properties:
 
   heat_capacity:
     file_path: ./SS304L.xlsx              # Relative path from YAML file location
-    temperature_header: T (K)             # Column name for temperature data
-    value_header: Specific heat (J/(Kg K)) # Column name for property data
+    temperature_column: T (K)             # Column name for temperature data
+    property_column: Specific heat (J/(Kg K)) # Column name for property data
     bounds: [constant, constant]          # Required boundary behavior
     regression:                           # Optional regression for data simplification
       simplify: pre                       # Apply regression before processing
@@ -228,8 +225,8 @@ properties:
 
   density:
     file_path: ./SS304L.xlsx
-    temperature_header: T (K)
-    value_header: Density (kg/(m)^3)
+    temperature_column: T (K)
+    property_column: Density (kg/(m)^3)
     bounds: [constant, constant]
     regression:
       simplify: post                      # Apply regression after processing
