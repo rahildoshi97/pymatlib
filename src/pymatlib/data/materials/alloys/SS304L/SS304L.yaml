@@ -68,14 +68,14 @@ properties:
 
   # ====================================================================================================
   # PROPERTY TYPE 4: FILE
-  # Format: Uses 'file_path', 'temperature_header', 'value_header'
+  # Format: Uses 'file_path', 'temperature_column', 'property_column'
   # Supports .txt, .csv, .xlsx files with automatic missing value handling
   # ====================================================================================================
 
   heat_capacity:
     file_path: ./SS304L.xlsx               # Relative path from YAML file location
-    temperature_header: T (K)              # Column name for temperature data
-    value_header: Specific heat (J/(Kg K)) # Column name for property data
+    temperature_column: T (K)              # Column name for temperature data
+    property_column: Specific heat (J/(Kg K)) # Column name for property data
     bounds: [constant, constant]           # Required boundary behavior
     regression:                            # Optional regression for data simplification
       simplify: pre                        # Apply regression before processing
@@ -84,8 +84,8 @@ properties:
 
   density:
     file_path: ./SS304L.xlsx
-    temperature_header: T (K)
-    value_header: Density (kg/(m)^3)
+    temperature_column: T (K)
+    property_column: Density (kg/(m)^3)
     bounds: [constant, constant]
     regression:
       simplify: post                       # Apply regression after processing

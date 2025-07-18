@@ -2,8 +2,8 @@
 
 # File property keys
 FILE_PATH_KEY = "file_path"
-TEMPERATURE_HEADER_KEY = "temperature_header"
-VALUE_HEADER_KEY = "value_header"
+TEMPERATURE_COLUMN_KEY = "temperature_column"
+PROPERTY_COLUMN_KEY = "property_column"
 
 # Temperature and value keys
 TEMPERATURE_KEY = "temperature"

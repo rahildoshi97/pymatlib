@@ -6,7 +6,7 @@ from typing import Any, Dict, Set
 import sympy as sp
 
 from pymatlib.parsing.config.yaml_keys import (
-    FILE_PATH_KEY, TEMPERATURE_HEADER_KEY, VALUE_HEADER_KEY, BOUNDS_KEY,
+    FILE_PATH_KEY, TEMPERATURE_COLUMN_KEY, PROPERTY_COLUMN_KEY, BOUNDS_KEY,
     REGRESSION_KEY, TEMPERATURE_KEY, EQUATION_KEY, CONSTANT_KEY,
     EXTRAPOLATE_KEY, SIMPLIFY_KEY, DEGREE_KEY, SEGMENTS_KEY, PRE_KEY, POST_KEY,
     MELTING_TEMPERATURE_KEY, BOILING_TEMPERATURE_KEY, SOLIDUS_TEMPERATURE_KEY,
@@ -118,7 +118,7 @@ class PropertyTypeDetector:
 
     @staticmethod
     def _validate_file_property(prop_name: str, config: Dict[str, Any]) -> None:
-        required = {FILE_PATH_KEY, TEMPERATURE_HEADER_KEY, VALUE_HEADER_KEY, BOUNDS_KEY}
+        required = {FILE_PATH_KEY, TEMPERATURE_COLUMN_KEY, PROPERTY_COLUMN_KEY, BOUNDS_KEY}
         optional = {REGRESSION_KEY}
         PropertyTypeDetector._check_keys(config, required, optional, "FILE")
         PropertyTypeDetector._check_bounds(config[BOUNDS_KEY])
