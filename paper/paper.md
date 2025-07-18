@@ -122,6 +122,7 @@ PyMatLib uses a YAML-based configuration system for defining material properties
 allowing users to specify properties in a human-readable format.
 The YAML files can include pure metals with melting/boiling temperatures or alloys with solidus/liquidus temperature ranges.
 
+## Pure Metal Example
 ```yaml
 # ====================================================================================================
 # PYMATLIB MATERIAL CONFIGURATION FILE - PURE METAL
@@ -145,6 +146,7 @@ properties:
         bounds: [constant, constant]
 ```
 
+## Alloy Example
 ```yaml
 # ====================================================================================================
 # PYMATLIB MATERIAL CONFIGURATION FILE - ALLOY
