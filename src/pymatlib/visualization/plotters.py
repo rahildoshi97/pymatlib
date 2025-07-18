@@ -70,10 +70,10 @@ class PropertyVisualizer:
             raise ValueError("No properties to plot.")
         property_count = sum(len(props) for props in self.parser.categorized_properties.values())
         logger.info("Initializing visualization for %d properties", property_count)
-        fig_width = 12
-        fig_height = max(5 * property_count, 5)  # Minimum height for readability
+        fig_width = 12  # 16
+        fig_height = max(3 * property_count, 3)  # Minimum height for readability
         self.fig = plt.figure(figsize=(fig_width, fig_height))
-        self.gs = GridSpec(property_count, 1, figure=self.fig, )
+        self.gs = GridSpec(property_count, ncols=2, figure=self.fig, width_ratios=[1, 1], wspace=0.2)
         self.current_subplot = 0
         self.plot_directory.mkdir(exist_ok=True)
         logger.debug("Plot directory created: %s", self.plot_directory)
@@ -82,6 +82,59 @@ class PropertyVisualizer:
         logger.debug("Resetting visualization tracking - clearing %d tracked properties",
                      len(self.visualized_properties))
         self.visualized_properties = set()
+
+    def generate_yaml_snippet(self, prop_name: str, prop_type: str,
+                              has_regression: bool = False,
+                              simplify_type: Optional[str] = None,
+                              degree: int = 1, segments: int = 1) -> str:
+        """Generate YAML snippet based on property configuration."""
+
+        # Method-specific YAML templates
+        yaml_templates = {
+            'CONSTANT': f'''{prop_name.lower()}: 6950.0''',
+
+            'STEP_FUNCTION': f'''{prop_name.lower()}:
+      temperature: melting_temperature
+      value: [7500.0, 6500.0]
+      bounds: [extrapolate, extrapolate]''',
+
+            'KEY_VAL': f'''{prop_name.lower()}:
+      temperature: [300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1500, 2000, 2500, 3000]
+      value: [7747, 7716, 7685, 7652, 7617, 7582, 7545, 7508, 7469, 7305, 6825, 6388, 5925]
+      bounds: [extrapolate, extrapolate]''',
+
+            'FILE': f'''{prop_name.lower()}:
+      file_path: ./SS304L.xlsx
+      temperature_header: T (K)
+      value_header: Density (kg/(m)^3)
+      bounds: [extrapolate, extrapolate]''',
+
+            'PIECEWISE_EQUATION': f'''{prop_name.lower()}:
+      temperature: [300, 1660, 1736, 3000] 
+      equation: [7877.39163826692 - 0.377781577789007*T, 11816.6337569868 - 2.74041499241854*T, 8596.40178865677 - 0.885849240373116*T]
+      bounds: [extrapolate, extrapolate]''',
+
+            'COMPUTE': f'''{prop_name.lower()}:
+      temperature: (300, 3000, 5.0)
+      equation: 2700 * (1 - 3*thermal_expansion_coefficient * (T - 293))
+      bounds: [extrapolate, extrapolate]'''
+        }
+
+        # Get base YAML
+        yaml_snippet = yaml_templates.get(prop_type, f'''{prop_name.lower()}:
+      # Configuration for {prop_type} property
+      bounds: [constant, constant]''')
+
+        # Add regression configuration if applicable
+        if has_regression and prop_type != 'CONSTANT':
+            regression_config = f'''
+      regression:
+        simplify: {simplify_type}
+        degree: {degree}
+        segments: {segments}'''
+            yaml_snippet += regression_config
+
+        return yaml_snippet
 
     def visualize_property(
             self,
@@ -100,6 +153,8 @@ class PropertyVisualizer:
             lower_bound_type: str = CONSTANT_KEY,
             upper_bound_type: str = CONSTANT_KEY) -> None:
         """Visualize a single property."""
+        if prop_name == 'thermal_expansion_coefficient':
+            return
         if prop_name in self.visualized_properties:
             logger.debug("Property '%s' already visualized, skipping", prop_name)
             return
@@ -112,8 +167,57 @@ class PropertyVisualizer:
         logger.info("Visualizing property: %s (type: %s) for material: %s",
                     prop_name, prop_type, material.name)
         try:
-            # Create subplot
-            ax = self.fig.add_subplot(self.gs[self.current_subplot])
+            # Method-specific colors
+            method_colors = {
+                'CONSTANT': '#FF6B6B',
+                'STEP_FUNCTION': '#4ECDC4',
+                'KEY_VAL': '#45B7D1',
+                'FILE': '#96CEB4',
+                'PIECEWISE_EQUATION': '#FFEAA7',
+                'COMPUTE': '#DDA0DD'
+            }
+            plot_color = method_colors.get(prop_type, '#8c564b')
+
+            # LEFT PANEL: YAML Configuration
+            ax_yaml = self.fig.add_subplot(self.gs[self.current_subplot, 0])
+            ax_yaml.axis('off')
+
+            # Generate YAML snippet
+            yaml_text = self.generate_yaml_snippet(
+                prop_name=prop_name,
+                prop_type=prop_type,
+                has_regression=has_regression,
+                simplify_type=simplify_type,
+                degree=degree,
+                segments=segments
+            )
+
+            # Add YAML text
+            ax_yaml.text(0.05, 0.95, yaml_text,
+                         fontsize=10,
+                         family='monospace',
+                         verticalalignment='top',
+                         horizontalalignment='left',
+                         bbox=dict(boxstyle="round,pad=0.4",
+                                   facecolor="lightgray",
+                                   alpha=0.2,
+                                   edgecolor=plot_color,
+                                   linewidth=1.5))
+
+            # Add method type label
+            ax_yaml.text(0.05, 0.05, f"Method: {prop_type}",
+                         fontsize=10,
+                         fontweight='bold',
+                         color=plot_color,
+                         verticalalignment='bottom',
+                         horizontalalignment='left')
+
+            # Add title for YAML section
+            # ax_yaml.set_title(f"YAML Configuration\n{prop_name}", fontsize=12, fontweight='bold', pad=20)
+            ax_yaml.set_title(f"YAML Configuration", fontsize=12, fontweight='bold', pad=20)
+
+            # RIGHT PANEL: Property Plot
+            ax = self.fig.add_subplot(self.gs[self.current_subplot, 1])
             self.current_subplot += 1
             ax.set_aspect('auto')
             # Grid and border styling
@@ -194,7 +298,7 @@ class PropertyVisualizer:
                         # Add vertical line at transition point
                         transition_idx = len(x_data) // 2
                         transition_temp = x_data[transition_idx]
-                        ax.axvline(x=transition_temp, color='red', linestyle='--',
+                        """ax.axvline(x=transition_temp, color='red', linestyle='--',
                                    alpha=0.7, linewidth=2, label='transition point')
                         # Annotations
                         ax.text(transition_temp, y_data[0], f' Before: {y_data[0]:.2e}',
@@ -204,7 +308,7 @@ class PropertyVisualizer:
                         ax.text(transition_temp, y_data[-1], f' After: {y_data[-1]:.2e}',
                                 verticalalignment='top', horizontalalignment='left',
                                 fontweight='bold',
-                                bbox=dict(facecolor='white', alpha=0.8, boxstyle='round,pad=0.3'))
+                                bbox=dict(facecolor='white', alpha=0.8, boxstyle='round,pad=0.3'))"""
                         _y_value = np.mean(y_data)
                         logger.debug("Plotted step function '%s' with transition at %.1f K",
                                      prop_name, transition_temp)
@@ -291,10 +395,10 @@ class PropertyVisualizer:
                             bbox=dict(facecolor='red', alpha=0.2))
                     _y_value = 0.0
             # Add boundary lines and annotations
-            ax.axvline(x=lower_bound, color=colors['bounds'], linestyle='--',
+            """ax.axvline(x=lower_bound, color=colors['bounds'], linestyle='--',
                        alpha=0.6, linewidth=1.5, label='_nolegend_')
             ax.axvline(x=upper_bound, color=colors['bounds'], linestyle='--',
-                       alpha=0.6, linewidth=1.5, label='_nolegend_')
+                       alpha=0.6, linewidth=1.5, label='_nolegend_')"""
             # Ensure _y_value is valid for annotations
             if _y_value is None or not np.isfinite(_y_value):
                 try:
@@ -306,7 +410,7 @@ class PropertyVisualizer:
                     _y_value = 0.0
                     logger.warning("Could not determine y_value for annotations for property '%s'", prop_name)
             # Add boundary type annotations
-            ax.text(lower_bound, _y_value, f' {lower_bound_type}',
+            """ax.text(lower_bound, _y_value, f' {lower_bound_type}',
                     verticalalignment='top', horizontalalignment='right',
                     fontweight='bold',
                     bbox=dict(facecolor='white', alpha=0.8, boxstyle='round,pad=0.3',
@@ -315,7 +419,7 @@ class PropertyVisualizer:
                     verticalalignment='top', horizontalalignment='left',
                     fontweight='bold',
                     bbox=dict(facecolor='white', alpha=0.8, boxstyle='round,pad=0.3',
-                              edgecolor=colors['bounds']))
+                              edgecolor=colors['bounds']))"""
             # Add regression info
             """if has_regression and degree is not None:
                 ax.text(0.5, 0.98, f"Simplify: {simplify_type} | Degree: {degree} | Segments: {segments}",
@@ -342,7 +446,7 @@ class PropertyVisualizer:
             if hasattr(self, 'fig') and self.fig is not None:
                 material_type = self.parser.config[MATERIAL_TYPE_KEY]
                 title = f"Material Properties: {self.parser.config[NAME_KEY]} ({material_type})"
-                self.fig.suptitle(title, fontsize=16, fontweight='bold', y=0.98)
+                # self.fig.suptitle(title, fontsize=16, fontweight='bold', y=0.98)
                 try:
                     plt.tight_layout(rect=[0, 0.01, 1, 0.98], pad=1.0)
                 except Exception as e:
