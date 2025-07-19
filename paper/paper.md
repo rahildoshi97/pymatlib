@@ -87,7 +87,7 @@ with simplification applied only after all dependent calculations are complete.
 This ensures maximum accuracy in interdependent property calculations while still providing the benefits of data simplification. 
 This timing control allows users to balance computational efficiency with numerical accuracy based on their specific simulation requirements.
 
-Here is an example configuration for regression and simplification options in PyMatLib:
+    Here is an example configuration for regression and simplification options in PyMatLib:
 ```yaml
     regression:      # Optional regression configuration
       simplify: pre  # 'pre' (before processing) or 'post' (after processing)
@@ -101,7 +101,7 @@ choosing between constant extrapolation or linear extrapolation based on their p
 (\autoref{fig:boundary_behavior}).
 
 ```yaml
-bounds: [constant, extrapolate]  # Boundary behavior: 'constant' or 'extrapolate'
+    bounds: [constant, extrapolate]  # Boundary behavior: 'constant' or 'extrapolate'
 ```
 
 ![Boundary behavior options in PyMatLib showing the same thermal conductivity property with different extrapolation settings: constant boundaries (left) maintain edge values outside the defined range, while extrapolate boundaries (right) use linear extrapolation.\label{fig:boundary_behavior}](figures/boundary_behavior.png)
@@ -125,12 +125,12 @@ This prevents common configuration errors and ensures reproducible material defi
 with the option to disable visualization for production workflows after validation.
 
 ```python
-import sympy as sp
-from pymatlib.parsing.api import create_material
-
-# Create a material with symbolic temperature and enable plotting
-T = sp.Symbol('T')
-material_T = create_material('path/to/material.yaml', T, enable_plotting=True)
+    import sympy as sp
+    from pymatlib.parsing.api import create_material
+    
+    # Create a material with symbolic temperature and enable plotting
+    T = sp.Symbol('T')
+    material_T = create_material('path/to/material.yaml', T, enable_plotting=True)
 ```
 
 Unlike existing tools, PyMatLib uniquely combines symbolic mathematics [@sympy], automatic dependency resolution, 
@@ -148,57 +148,61 @@ The YAML files can include pure metals with melting/boiling temperatures or allo
 
 ## Pure Metal Example
 ```yaml
-# ====================================================================================================
+# =================================================
 # PYMATLIB MATERIAL CONFIGURATION FILE - PURE METAL
-# ====================================================================================================
+# =================================================
 
 name: Aluminum
-material_type: pure_metal  # Must be 'pure_metal' for single-element materials
+material_type: pure_metal
 
 # Composition must sum to 1.0 (for pure metals, single element = 1.0)
 composition:
   Al: 1.0  # Aluminum
 
 # Required temperature properties for pure metals
-melting_temperature: 933.47   # Temperature where solid becomes liquid (K)
-boiling_temperature: 2743.0   # Temperature where liquid becomes gas (K)
+melting_temperature: 933.47  # Solid becomes liquid (K)
+boiling_temperature: 2743.0  # Liquid becomes gas (K)
 
 properties:  
     density:
         temperature: (300, 3000, 541)
-        equation: 2700 * (1 - 3*thermal_expansion_coefficient * (T - 293))  # Thermal expansion model
+        equation: 2700 * (1 - 3*thermal_expansion_coefficient * (T - 293))
         bounds: [constant, constant]
 ```
 
 ## Alloy Example
 ```yaml
-# ====================================================================================================
+# ============================================
 # PYMATLIB MATERIAL CONFIGURATION FILE - ALLOY
-# ====================================================================================================
+# ============================================
 
 name: Stainless Steel 304L
-material_type: alloy  # Must be 'alloy' or 'pure_metal'
+material_type: alloy
 
 # Composition fractions must sum to 1.0
 composition:
-Fe: 0.675
-Cr: 0.170
-Ni: 0.120
-Mo: 0.025
-Mn: 0.01
+Fe: 0.675  # Iron
+Cr: 0.170  # Chromium
+Ni: 0.120  # Nickel
+Mo: 0.025  # Molybdenum
+Mn: 0.010  # Manganese
 
 # Required temperature properties for alloys
-solidus_temperature: 1605.          # Temperature where melting begins (K)
-liquidus_temperature: 1735.         # Temperature where material is completely melted (K)
-initial_boiling_temperature: 3090.  # Temperature where boiling begins (K)
-final_boiling_temperature: 3200.    # Temperature where material is completely vaporized (K)
+solidus_temperature: 1605.          # Melting begins (K)
+liquidus_temperature: 1735.         # Melting is completely melted (K)
+initial_boiling_temperature: 3090.  # Boiling begins (K)
+final_boiling_temperature: 3200.    # Material is completely vaporized (K)
 
 properties:
     density:
         file_path: ./SS304L.xlsx
         temperature_header: T (K)
         value_header: Density (kg/(m)^3)
-        bounds: [constant, constant]
+        bounds: [constant, extrapolate]
+        regression:  # Optional regression configuration
+            simplify: pre  # Simplify before processing
+            degree: 2      # Use quadratic regression for simplification
+            segments: 3    # Fit with 3 segments for piecewise linear approximation
 ```
 
 Complete YAML configurations are provided in the PyMatLib documentation for both 
