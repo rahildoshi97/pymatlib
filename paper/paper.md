@@ -86,8 +86,8 @@ When set to `post`, the raw piecewise function with all data points is preserved
 with simplification applied only after all dependent calculations are complete. 
 This ensures maximum accuracy in interdependent property calculations while still providing the benefits of data simplification. 
 This timing control allows users to balance computational efficiency with numerical accuracy based on their specific simulation requirements.
+Here is an example configuration for regression and simplification options in PyMatLib:
 
-    Here is an example configuration for regression and simplification options in PyMatLib:
 ```yaml
     regression:      # Optional regression configuration
       simplify: pre  # 'pre' (before processing) or 'post' (after processing)
