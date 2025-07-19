@@ -217,16 +217,23 @@ enabling reproducible research across different simulation codes and research gr
 
 # Comparison with Existing Tools
 
-| Feature               | PyMatLib | CoolProp | NIST WebBook | Custom Scripts |
-|-----------------------|----------|----------|--------------|----------------|
-| Symbolic Integration  | Yes      | No       | No           | Limited        |
-| Dependency Resolution | Yes      | No       | No           | Manual         |
-| Solid Materials       | Yes      | Limited  | Yes          | Variable       |
-| Custom Properties     | Yes      | No       | No           | Yes            |
-| Data Validation       | Yes      | Yes      | No           | Variable       |
+| Feature                    | PyMatLib      | CoolProp | NIST WebBook | Custom Scripts | Materials Project |
+|:---------------------------|:--------------|:---------|:-------------|:---------------|:------------------|
+| **Unique Combinations**    |
+| Symbolic Integration       | Yes           | No       | No           | Limited        | No                |
+| Dependency Resolution      | Yes           | No       | No           | Manual         | No                |
+| Multiple Input Methods     | Yes (6 types) | No       | No           | Variable       | No                |
+| **Material Support**       |
+| Solid Materials Focus      | Yes           | Limited  | Yes          | Variable       | Yes               |
+| Custom Property Definition | Yes           | No       | No           | Yes            | No                |
+| Temperature Dependencies   | Yes           | Yes      | Yes          | Variable       | Limited           |
+| **Scientific Rigor**       |
+| Data Validation            | Yes           | Yes      | No           | Variable       | Yes               |
+| Reproducibility            | Yes           | Yes      | Limited      | Variable       | Yes               |
+| Open Source                | Yes           | Yes      | No           | Yes            | Yes               |
 
-PyMatLib uniquely combines symbolic mathematics with intelligent dependency resolution, 
-addressing gaps in existing materials science software.
+**Key Advantage**: PyMatLib is the only tool that combines symbolic mathematics with intelligent dependency resolution, 
+enabling seamless integration with simulation frameworks while maintaining scientific reproducibility.
 
 # Acknowledgements
 
