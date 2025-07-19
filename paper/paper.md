@@ -20,7 +20,7 @@ bibliography: paper.bib
 
 # Summary
 
-PyMatLib is a Python library that revolutionizes how scientists and engineers handle temperature-dependent material properties in computational simulations.
+PyMatLib is an open-source Python library that revolutionizes how scientists and engineers handle temperature-dependent material properties in computational simulations.
 When materials are heated or cooled, their physical characteristics like 
 thermal conductivity, density, and heat capacity change significantly. 
 This creates challenges for computer simulations of processes like metal casting, heat treatment, or thermal analysis.
@@ -77,6 +77,8 @@ allowing users to reduce computational overhead and memory usage while maintaini
 Piecewise linear fitting with configurable polynomial degrees enables efficient approximation of complex property relationships
 while preserving essential physical behavior (\autoref{fig:regression_options}).
 
+![Regression capabilities showing data simplification effects: raw experimental data (points) fitted with different polynomial degrees and segment configurations, demonstrating how PyMatLib can reduce complexity while maintaining physical accuracy.\label{fig:regression_options}](figures/regression_options.png)
+
 - **Intelligent Simplification Timing**: PyMatLib provides sophisticated control over when data simplification occurs in the dependency chain 
 through the `simplify` parameter (`pre` or `post`). When set to `pre`, properties are simplified before being passed to dependent properties, 
 optimizing computational performance for complex dependency networks. 
@@ -85,11 +87,22 @@ with simplification applied only after all dependent calculations are complete.
 This ensures maximum accuracy in interdependent property calculations while still providing the benefits of data simplification. 
 This timing control allows users to balance computational efficiency with numerical accuracy based on their specific simulation requirements.
 
-![Regression capabilities showing data simplification effects: raw experimental data (points) fitted with different polynomial degrees and segment configurations, demonstrating how PyMatLib can reduce complexity while maintaining physical accuracy.\label{fig:regression_options}](figures/regression_options.png)
+Here is an example configuration for regression and simplification options in PyMatLib:
+```yaml
+    regression:      # Optional regression configuration
+      simplify: pre  # 'pre' (before processing) or 'post' (after processing)
+      degree: 2      # Polynomial degree for regression
+      segments: 3    # Number of piecewise segments
+
+```
 
 - **Configurable Boundary Behavior**: Users can specify how properties behave outside defined temperature ranges, 
 choosing between constant extrapolation or linear extrapolation based on their physical understanding of the material 
 (\autoref{fig:boundary_behavior}).
+
+```yaml
+bounds: [constant, extrapolate]  # Boundary behavior: 'constant' or 'extrapolate'
+```
 
 ![Boundary behavior options in PyMatLib showing the same thermal conductivity property with different extrapolation settings: constant boundaries (left) maintain edge values outside the defined range, while extrapolate boundaries (right) use linear extrapolation.\label{fig:boundary_behavior}](figures/boundary_behavior.png)
 
@@ -111,10 +124,21 @@ This prevents common configuration errors and ensures reproducible material defi
 - **Integrated Visualization**: Automatic plot generation enables users to verify their material definitions visually,
 with the option to disable visualization for production workflows after validation.
 
+```python
+import sympy as sp
+from pymatlib.parsing.api import create_material
+
+# Create a material with symbolic temperature and enable plotting
+T = sp.Symbol('T')
+material_T = create_material('path/to/material.yaml', T, enable_plotting=True)
+```
+
 Unlike existing tools, PyMatLib uniquely combines symbolic mathematics [@sympy], automatic dependency resolution, 
 and seamless integration with scientific computing workflows [@numpy; @matplotlib]. 
 The library integrates directly with simulation frameworks like 
-pystencils [@pystencils] and waLBerla [@walberla] for high-performance computing applications.
+pystencils [@pystencils] and waLBerla [@walberla] for high-performance computing applications. 
+PyMatLib is open-source, distributed under the BSD-3-Clause license.
+Code and documentation to use this package are available on [GitHub](https://github.com/rahildoshi97/pymatlib/tree/master).
 
 # Example YAML Configuration
 
@@ -176,6 +200,10 @@ properties:
         value_header: Density (kg/(m)^3)
         bounds: [constant, constant]
 ```
+
+Complete YAML configurations are provided in the PyMatLib documentation for both 
+[pure metals](https://github.com/rahildoshi97/pymatlib/blob/master/src/pymatlib/data/materials/pure_metals/Al/Al.yaml) and 
+[alloys](https://github.com/rahildoshi97/pymatlib/blob/master/src/pymatlib/data/materials/alloys/SS304L/SS304L.yaml).
 
 # Research Applications
 
