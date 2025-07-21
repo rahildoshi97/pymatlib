@@ -231,20 +231,19 @@ enabling reproducible research across different simulation codes and research gr
 
 # Comparison with Existing Tools
 
-| Feature                    | PyMatLib      | CoolProp | NIST WebBook | Custom Scripts | Materials Project |
-|:---------------------------|:--------------|:---------|:-------------|:---------------|:------------------|
-| **Unique Combinations**    |
-| Symbolic Integration       | Yes           | No       | No           | Limited        | No                |
-| Dependency Resolution      | Yes           | No       | No           | Manual         | No                |
-| Multiple Input Methods     | Yes (6 types) | No       | No           | Variable       | No                |
-| **Material Support**       |
-| Solid Materials Focus      | Yes           | Limited  | Yes          | Variable       | Yes               |
-| Custom Property Definition | Yes           | No       | No           | Yes            | No                |
-| Temperature Dependencies   | Yes           | Yes      | Yes          | Variable       | Limited           |
-| **Scientific Rigor**       |
-| Data Validation            | Yes           | Yes      | No           | Variable       | Yes               |
-| Reproducibility            | Yes           | Yes      | Limited      | Variable       | Yes               |
-| Open Source                | Yes           | Yes      | No           | Yes            | Yes               |
+| Feature                  | PyMatLib      | CoolProp | NIST WebBook | CALPHAD |
+|:-------------------------|:--------------|:---------|:-------------|:--------|
+| **Core Capabilities**    |
+| Symbolic Integration     | Yes           | No       | No           | No      |
+| Dependency Resolution    | Yes           | No       | No           | No      |
+| Multiple Input Methods   | Yes (6 types) | No       | No           | No      |
+| **Material Support**     |
+| Solid Materials          | Yes           | Limited  | Yes          | Yes     |
+| Custom Properties        | Yes           | No       | No           | Limited |
+| Temperature Dependencies | Yes           | Yes      | Yes          | Yes     |
+| **Accessibility**        |
+| Open Source              | Yes           | Yes      | No           | No      |
+| Python Integration       | Native        | Yes      | API only     | No      |
 
 **Key Advantage**: PyMatLib is the only tool that combines symbolic mathematics with intelligent dependency resolution, 
 enabling seamless integration with simulation frameworks while maintaining scientific reproducibility.
