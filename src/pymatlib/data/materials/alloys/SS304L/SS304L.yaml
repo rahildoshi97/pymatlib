@@ -46,6 +46,11 @@ properties:
     #value: [7500.0, 6500.0]               # [before_transition, after_transition]
     #bounds: [constant, constant]         # Required for all non-constant properties
 
+  #latent_heat_of_fusion:
+    #temperature: solidus_temperature # Arithmetic expressions supported
+    #value: [0.0, 171401.0]               # [before_transition, after_transition]
+    #bounds: [extrapolate, extrapolate]         # Required for all non-constant properties
+
   # ====================================================================================================
   # PROPERTY TYPE 3: KEY_VAL
   # Format: Uses 'temperature' (list/tuple) and 'value' (list) with same length
@@ -78,8 +83,13 @@ properties:
       #degree: 1       # Linear regression
       #segments: 3     # Use 5 segments for piecewise regression
 
+  #heat_capacity:
+    #file_path: ./SS304L.xlsx               # Relative path from YAML file location
+    #temperature_header: T (K)              # Column name for temperature data
+    #value_header: Specific heat (J/(Kg K)) # Column name for property data
+    #bounds: [constant, constant]
 
-  # ====================================================================================================
+    # ====================================================================================================
   # PROPERTY TYPE 5: PIECEWISE_EQUATION
   # Format: Uses 'temperature' (breakpoints) and 'equation' (list of expressions)
   # Number of equations = number of breakpoints - 1

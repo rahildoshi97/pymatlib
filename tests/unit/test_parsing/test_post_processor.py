@@ -60,7 +60,7 @@ class TestPropertyPostProcessor:
     def test_post_process_properties_numeric_temperature(self, post_processor, sample_material):
         """Test post-processing with numeric temperature (should skip)."""
         properties = {}
-        categorized_properties = {PropertyType.CONSTANT: []}
+        categorized_properties = {PropertyType.CONSTANT_VALUE: []}
         processed_properties = set()
         # Should skip processing for numeric temperature
         post_processor.post_process_properties(
@@ -81,7 +81,7 @@ class TestPropertyPostProcessor:
                 # No regression key
             }
         }
-        categorized_properties = {PropertyType.KEY_VAL: [('heat_capacity', properties['heat_capacity'])]}
+        categorized_properties = {PropertyType.TABULAR_DATA: [('heat_capacity', properties['heat_capacity'])]}
         processed_properties = {'heat_capacity'}
         # Should complete without errors
         post_processor.post_process_properties(
@@ -103,7 +103,7 @@ class TestPropertyPostProcessor:
                 }
             }
         }
-        categorized_properties = {PropertyType.KEY_VAL: [('heat_capacity', properties['heat_capacity'])]}
+        categorized_properties = {PropertyType.TABULAR_DATA: [('heat_capacity', properties['heat_capacity'])]}
         processed_properties = {'heat_capacity'}
         # Add the property to material before post-processing
         sample_material.heat_capacity = 450 + 0.1 * T
@@ -129,7 +129,7 @@ class TestPropertyPostProcessor:
                 }
             }
         }
-        categorized_properties = {PropertyType.KEY_VAL: [('missing_property', properties['missing_property'])]}
+        categorized_properties = {PropertyType.TABULAR_DATA: [('missing_property', properties['missing_property'])]}
         processed_properties = set()
         # Should handle missing property gracefully
         post_processor.post_process_properties(
@@ -153,7 +153,7 @@ class TestPropertyPostProcessor:
                 }
             }
         }
-        categorized_properties = {PropertyType.COMPUTE: [('integral_prop', properties['integral_prop'])]}
+        categorized_properties = {PropertyType.COMPUTED_PROPERTY: [('integral_prop', properties['integral_prop'])]}
         processed_properties = {'integral_prop'}
         # Should skip integral properties
         post_processor.post_process_properties(
@@ -232,7 +232,7 @@ class TestPropertyPostProcessor:
             'prop2': {'temperature': [300, 400], 'value': [200, 210]}
         }
         categorized_properties = {
-            PropertyType.KEY_VAL: [('prop1', properties['prop1']), ('prop2', properties['prop2'])]
+            PropertyType.TABULAR_DATA: [('prop1', properties['prop1']), ('prop2', properties['prop2'])]
         }
         processed_properties = {'prop1'}  # Only one processed
         with caplog.at_level(logging.WARNING):
@@ -260,7 +260,7 @@ class TestPropertyPostProcessor:
                 }
             }
         }
-        categorized_properties = {PropertyType.COMPUTE: [('error_prop', properties['error_prop'])]}
+        categorized_properties = {PropertyType.COMPUTED_PROPERTY: [('error_prop', properties['error_prop'])]}
         processed_properties = {'error_prop'}
         # Should raise ValueError with error summary
         with pytest.raises(ValueError, match="Post-processing errors occurred"):

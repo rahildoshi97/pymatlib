@@ -19,12 +19,12 @@ logger = logging.getLogger(__name__)
 
 # --- Enum ---
 class PropertyType(Enum):
-    CONSTANT = auto()
+    CONSTANT_VALUE = auto()
     STEP_FUNCTION = auto()
-    FILE = auto()
-    KEY_VAL = auto()
+    FILE_IMPORT = auto()
+    TABULAR_DATA = auto()
     PIECEWISE_EQUATION = auto()
-    COMPUTE = auto()
+    COMPUTED_PROPERTY = auto()
     INVALID = auto()
 
 
@@ -36,15 +36,15 @@ class PropertyTypeDetector:
     # The order is crucial: more specific patterns must come before general ones.
     DETECTION_RULES = [
         # Unique key checks first (most efficient)
-        (lambda c: FILE_PATH_KEY in c, PropertyType.FILE),
+        (lambda c: FILE_PATH_KEY in c, PropertyType.FILE_IMPORT),
         # Patterns sharing keys (order matters)
         (lambda c: TEMPERATURE_KEY in c and VALUE_KEY in c and PropertyTypeDetector._is_step_function(c),
          PropertyType.STEP_FUNCTION),
-        (lambda c: TEMPERATURE_KEY in c and VALUE_KEY in c, PropertyType.KEY_VAL),
+        (lambda c: TEMPERATURE_KEY in c and VALUE_KEY in c, PropertyType.TABULAR_DATA),
         (lambda c: TEMPERATURE_KEY in c and EQUATION_KEY in c and isinstance(c.get(EQUATION_KEY), list),
          PropertyType.PIECEWISE_EQUATION),
         (lambda c: TEMPERATURE_KEY in c and EQUATION_KEY in c and isinstance(c.get(EQUATION_KEY), str),
-         PropertyType.COMPUTE),
+         PropertyType.COMPUTED_PROPERTY),
     ]
 
     # --- Main Public API ---
@@ -53,7 +53,7 @@ class PropertyTypeDetector:
         """Determines the property type using a declarative, rule-based approach."""
         logger.debug(f"Determining property type for '{prop_name}'")
         if PropertyTypeDetector._is_constant_format(config):
-            return PropertyType.CONSTANT
+            return PropertyType.CONSTANT_VALUE
         if not isinstance(config, dict):
             raise ValueError(f"Property '{prop_name}' has an invalid format. "
                              f"Expected a dictionary or a numeric constant, but got {type(config).__name__}.")
@@ -91,12 +91,12 @@ class PropertyTypeDetector:
         """Performs strict validation based on the detected property type."""
         logger.debug(f"Validating property '{prop_name}' for type: {prop_type.name}")
         validator_map = {
-            PropertyType.CONSTANT: PropertyTypeDetector._validate_constant_property,
-            PropertyType.FILE: PropertyTypeDetector._validate_file_property,
+            PropertyType.CONSTANT_VALUE: PropertyTypeDetector._validate_constant_property,
+            PropertyType.FILE_IMPORT: PropertyTypeDetector._validate_file_property,
             PropertyType.STEP_FUNCTION: PropertyTypeDetector._validate_step_function_property,
-            PropertyType.KEY_VAL: PropertyTypeDetector._validate_key_val_property,
+            PropertyType.TABULAR_DATA: PropertyTypeDetector._validate_key_val_property,
             PropertyType.PIECEWISE_EQUATION: PropertyTypeDetector._validate_piecewise_equation_property,
-            PropertyType.COMPUTE: PropertyTypeDetector._validate_compute_property,
+            PropertyType.COMPUTED_PROPERTY: PropertyTypeDetector._validate_compute_property,
         }
         validator = validator_map.get(prop_type)
         if validator:
@@ -120,7 +120,7 @@ class PropertyTypeDetector:
     def _validate_file_property(prop_name: str, config: Dict[str, Any]) -> None:
         required = {FILE_PATH_KEY, TEMPERATURE_HEADER_KEY, VALUE_HEADER_KEY, BOUNDS_KEY}
         optional = {REGRESSION_KEY}
-        PropertyTypeDetector._check_keys(config, required, optional, "FILE")
+        PropertyTypeDetector._check_keys(config, required, optional, "FILE_IMPORT")
         PropertyTypeDetector._check_bounds(config[BOUNDS_KEY])
         if REGRESSION_KEY in config:
             PropertyTypeDetector._check_regression(config[REGRESSION_KEY])
@@ -168,7 +168,7 @@ class PropertyTypeDetector:
     def _validate_key_val_property(prop_name: str, config: Dict[str, Any]) -> None:
         required = {TEMPERATURE_KEY, VALUE_KEY, BOUNDS_KEY}
         optional = {REGRESSION_KEY}
-        PropertyTypeDetector._check_keys(config, required, optional, "KEY_VAL")
+        PropertyTypeDetector._check_keys(config, required, optional, "TABULAR_DATA")
         PropertyTypeDetector._check_bounds(config[BOUNDS_KEY])
         if REGRESSION_KEY in config:
             PropertyTypeDetector._check_regression(config[REGRESSION_KEY])
@@ -195,7 +195,7 @@ class PropertyTypeDetector:
     def _validate_compute_property(prop_name: str, config: Dict[str, Any]) -> None:
         required = {TEMPERATURE_KEY, EQUATION_KEY, BOUNDS_KEY}
         optional = {REGRESSION_KEY}
-        PropertyTypeDetector._check_keys(config, required, optional, "COMPUTE")
+        PropertyTypeDetector._check_keys(config, required, optional, "COMPUTED_PROPERTY")
         PropertyTypeDetector._check_bounds(config[BOUNDS_KEY])
         if REGRESSION_KEY in config:
             PropertyTypeDetector._check_regression(config[REGRESSION_KEY])

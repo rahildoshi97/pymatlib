@@ -70,8 +70,8 @@ class PropertyVisualizer:
             raise ValueError("No properties to plot.")
         property_count = sum(len(props) for props in self.parser.categorized_properties.values())
         logger.info("Initializing visualization for %d properties", property_count)
-        fig_width = 12  # 16
-        fig_height = max(3 * property_count, 3)  # Minimum height for readability
+        fig_width = 16
+        fig_height = max(4 * property_count, 4)  # Minimum height for readability
         self.fig = plt.figure(figsize=(fig_width, fig_height))
         self.gs = GridSpec(property_count, ncols=2, figure=self.fig, width_ratios=[1, 1], wspace=0.2)
         self.current_subplot = 0
@@ -167,7 +167,7 @@ class PropertyVisualizer:
         logger.info("Visualizing property: %s (type: %s) for material: %s",
                     prop_name, prop_type, material.name)
         try:
-            # Method-specific colors
+            """# Method-specific colors
             method_colors = {
                 'CONSTANT': '#FF6B6B',
                 'STEP_FUNCTION': '#4ECDC4',
@@ -214,7 +214,7 @@ class PropertyVisualizer:
 
             # Add title for YAML section
             # ax_yaml.set_title(f"YAML Configuration\n{prop_name}", fontsize=12, fontweight='bold', pad=20)
-            ax_yaml.set_title(f"YAML Configuration", fontsize=12, fontweight='bold', pad=20)
+            ax_yaml.set_title(f"YAML Configuration", fontsize=12, fontweight='bold', pad=20)"""
 
             # RIGHT PANEL: Property Plot
             ax = self.fig.add_subplot(self.gs[self.current_subplot, 1])
@@ -253,7 +253,7 @@ class PropertyVisualizer:
             num_points = int(np.ceil((padded_upper - padded_lower) / step)) + 1
             extended_temp = np.linspace(padded_lower, padded_upper, num_points)
             # Title and labels
-            ax.set_title(f"{prop_name} ({prop_type} Property)", fontweight='bold', pad=15)
+            ax.set_title(f"{prop_name} ({prop_type})", fontweight='bold', pad=15)
             ax.set_xlabel("Temperature (K)", fontweight='bold')
             ax.set_ylabel(f"{prop_name}", fontweight='bold')
             # Color scheme
@@ -267,7 +267,7 @@ class PropertyVisualizer:
             }
             # Initialize y_value for annotations
             _y_value = 0.0
-            if prop_type == 'CONSTANT':
+            if prop_type == 'CONSTANT_VALUE':
                 value = float(current_prop)
                 ax.axhline(y=value, color=colors['constant'], linestyle='-',
                            linewidth=2.5, label='constant', alpha=0.8)
@@ -318,7 +318,7 @@ class PropertyVisualizer:
                 except Exception as e:
                     logger.warning("Could not evaluate step function '%s': %s", prop_name, e)
                     _y_value = 0.0
-            else:  # Handle all other property types (FILE, KEY_VAL, PIECEWISE_EQUATION, COMPUTE)
+            else:  # Handle all other property types (FILE_IMPORT, TABULAR_DATA, PIECEWISE_EQUATION, COMPUTED_PROPERTY)
                 try:
                     f_current = sp.lambdify(T, current_prop, 'numpy')
                     # Determine the appropriate label and color based on regression status

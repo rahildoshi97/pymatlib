@@ -367,4 +367,5 @@ class MaterialYAMLParser(YAMLFileParser):
             if prop_list:
                 logger.info("Found %d properties of type %s: %s",
                             len(prop_list), prop_type.name, [p[0] for p in prop_list])
+        logger.debug(f"Categorized properties: {categorized_properties}")
         return categorized_properties

@@ -10,7 +10,7 @@ from pymatlib.algorithms.piecewise_inverter import PiecewiseInverter
 def setup_logging():
     """Setup logging configuration."""
     logging.basicConfig(
-        level=logging.WARNING,  # DEBUG/INFO/WARNING/ERROR/CRITICAL
+        level=logging.INFO,  # DEBUG/INFO/WARNING/ERROR/CRITICAL
         format="%(asctime)s %(levelname)s %(name)s -> %(message)s"
     )
     # Silence noisy libraries
