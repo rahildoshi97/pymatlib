@@ -233,21 +233,6 @@ enabling reproducible research across different simulation codes and research gr
 
 | Feature                  | **PyMatLib**  | **CoolProp** | **NIST WebBook** | **CALPHAD** |
 |:-------------------------|:--------------|:-------------|:-----------------|:------------|
-| **Core Capabilities**    |
-| Symbolic Integration     | Yes           | No           | No               | No          |
-| Dependency Resolution    | Yes           | No           | No               | No          |
-| Multiple Input Methods   | Yes (6 types) | No           | No               | No          |
-| **Material Support**     |
-| Solid Materials          | Yes           | Limited      | Yes              | Yes         |
-| Custom Properties        | Yes           | No           | No               | Limited     |
-| Temperature Dependencies | Yes           | Yes          | Yes              | Yes         |
-| **Accessibility**        |
-| Open Source              | Yes           | Yes          | No               | No          |
-| Python Integration       | Native        | Yes          | API only         | No          |
-
-
-| Feature                  | **PyMatLib**  | **CoolProp** | **NIST WebBook** | **CALPHAD** |
-|:-------------------------|:--------------|:-------------|:-----------------|:------------|
 | **Core Capabilities**    |               |              |                  |             |
 | Symbolic Integration     | Yes           | No           | No               | No          |
 | Dependency Resolution    | Yes           | No           | No               | No          |
