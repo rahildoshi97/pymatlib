@@ -231,19 +231,37 @@ enabling reproducible research across different simulation codes and research gr
 
 # Comparison with Existing Tools
 
-| Feature                  | PyMatLib      | CoolProp | NIST WebBook | CALPHAD |
-|:-------------------------|:--------------|:---------|:-------------|:--------|
+| Feature                  | **PyMatLib**  | **CoolProp** | **NIST WebBook** | **CALPHAD** |
+|:-------------------------|:--------------|:-------------|:-----------------|:------------|
 | **Core Capabilities**    |
-| Symbolic Integration     | Yes           | No       | No           | No      |
-| Dependency Resolution    | Yes           | No       | No           | No      |
-| Multiple Input Methods   | Yes (6 types) | No       | No           | No      |
+| Symbolic Integration     | Yes           | No           | No               | No          |
+| Dependency Resolution    | Yes           | No           | No               | No          |
+| Multiple Input Methods   | Yes (6 types) | No           | No               | No          |
 | **Material Support**     |
-| Solid Materials          | Yes           | Limited  | Yes          | Yes     |
-| Custom Properties        | Yes           | No       | No           | Limited |
-| Temperature Dependencies | Yes           | Yes      | Yes          | Yes     |
+| Solid Materials          | Yes           | Limited      | Yes              | Yes         |
+| Custom Properties        | Yes           | No           | No               | Limited     |
+| Temperature Dependencies | Yes           | Yes          | Yes              | Yes         |
 | **Accessibility**        |
-| Open Source              | Yes           | Yes      | No           | No      |
-| Python Integration       | Native        | Yes      | API only     | No      |
+| Open Source              | Yes           | Yes          | No               | No          |
+| Python Integration       | Native        | Yes          | API only         | No          |
+
+
+| Feature                  | **PyMatLib**  | **CoolProp** | **NIST WebBook** | **CALPHAD** |
+|:-------------------------|:--------------|:-------------|:-----------------|:------------|
+| **Core Capabilities**    |               |              |                  |             |
+| Symbolic Integration     | Yes           | No           | No               | No          |
+| Dependency Resolution    | Yes           | No           | No               | No          |
+| Multiple Input Methods   | Yes (6 types) | No           | No               | No          |
+|                          |               |              |                  |             |
+| **Material Support**     |               |              |                  |             |
+| Solid Materials          | Yes           | Limited      | Yes              | Yes         |
+| Custom Properties        | Yes           | No           | No               | Limited     |
+| Temperature Dependencies | Yes           | Yes          | Yes              | Yes         |
+|                          |               |              |                  |             |
+| **Accessibility**        |               |              |                  |             |
+| Open Source              | Yes           | Yes          | No               | No          |
+| Python Integration       | Native        | Yes          | API only         | No          |
+
 
 **Key Advantage**: PyMatLib is the only tool that combines symbolic mathematics with intelligent dependency resolution, 
 enabling seamless integration with simulation frameworks while maintaining scientific reproducibility.
