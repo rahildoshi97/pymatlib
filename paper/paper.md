@@ -208,6 +208,11 @@ properties:
       temperature: [333.15, 423.15, 523.15, 623.15, 723.15, 833.15]
       value: [2.38e-05, 2.55e-05, 2.75e-05, 2.95e-05, 3.15e-05, 3.35e-05] # 1/K values
       bounds: [extrapolate, extrapolate]
+
+    density:
+      temperature: [300, 1660, 1736, 3000]
+      equation: [7877.39 - 0.37*T, 11816.63 - 2.74*T, 8596.40 - 0.88*T]
+      bounds: [extrapolate, extrapolate]
 ```
 
 Complete YAML configurations are provided in the PyMatLib documentation for both 
