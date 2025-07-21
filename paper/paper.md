@@ -203,6 +203,11 @@ properties:
             simplify: pre  # Simplify before processing
             degree: 2      # Use quadratic regression for simplification
             segments: 3    # Fit with 3 segments for piecewise linear approximation
+
+    thermal_expansion_coefficient:
+      temperature: [333.15, 423.15, 523.15, 623.15, 723.15, 833.15]
+      value: [2.38e-05, 2.55e-05, 2.75e-05, 2.95e-05, 3.15e-05, 3.35e-05] # 1/K values
+      bounds: [extrapolate, extrapolate]
 ```
 
 Complete YAML configurations are provided in the PyMatLib documentation for both 
