@@ -20,15 +20,15 @@ bibliography: paper.bib
 
 # Summary
 
-PyMatLib is an open-source Python library that streamlines the use of temperature-dependent material properties in computational simulations.
+PyMatLib is an extensible, open-source Python library that streamlines the use of temperature-dependent material properties in computational simulations.
 When materials are heated or cooled, their physical characteristics like 
 thermal conductivity, density, and heat capacity change significantly, 
-creating challenges for computer simulations of processes like metal casting, heat treatment, or thermal analysis.
+posing challenges for computer simulations of processes like metal casting, heat treatment, or thermal analysis.
 
-The library provides a simple way to define these temperature-dependent properties using YAML configuration files, 
-then automatically converts them into mathematical expressions that can be used in scientific simulations. 
+The library provides a robust framework to define these temperature-dependent properties using simple YAML configuration files, 
+which are automatically converted into symbolic mathematical expressions that can be used in scientific simulations. 
 PyMatLib supports both pure metals and alloys, 
-handles six different ways of defining properties (from simple constants to complex equations), 
+offers six different ways of defining properties (from simple constants to complex equations), 
 and automatically manages dependencies between different material properties.
 
 The library has been designed specifically for high-performance simulations in computational materials science 
@@ -52,7 +52,7 @@ Custom implementations often lack validation, reproducibility, and standardized 
 
 PyMatLib addresses these limitations by providing unprecedented flexibility in material property definition through several key capabilities.
 
-# Key Features
+# Key Functionality
 
 - **Flexible Input Methods**: The library supports six different property definition methods 
 (constant values, step functions, file-based data, tabular data, piecewise equations, and computed properties), 
@@ -121,24 +121,18 @@ This prevents common configuration errors and ensures reproducible material defi
 - **Integrated Visualization**: Automatic plot generation enables users to verify their material definitions visually,
 with the option to disable visualization for production workflows after validation.
 
+PyMatLib is distributed under the BSD-3-Clause license. The source code and documentation are available on
+[GitHub](https://github.com/rahildoshi97/pymatlib/tree/master).
+
 # Usage Example
-```python
-    import sympy as sp
-    from pymatlib.parsing.api import create_material
-    
-    # Create a material with symbolic temperature and enable plotting
-    T = sp.Symbol('T')
-    aluminum = create_material('Al.yaml', T, enable_plotting=True)
-    print(f"Density: {aluminum.density}")
-```
 
-# YAML Configuration Example
-
-PyMatLib uses a YAML-based configuration system for defining material properties,
-allowing users to specify properties in a human-readable format.
+PyMatLib is designed for ease of use. A material is defined in a YAML file and loaded with a single function call.
 The YAML files can include pure metals with melting/boiling temperatures or alloys with solidus/liquidus temperature ranges.
 
+## YAML Configuration Examples
+
 ## Pure Metal Example
+**YAML Configuration for Pure Metals (`Al.yaml`)**:
 ```yaml
 name: Aluminum
 material_type: pure_metal
@@ -168,17 +162,18 @@ properties:
 ```
 
 ## Alloy Example
+**YAML Configuration for Alloys (`SS304L.yaml`)**:
 ```yaml
 name: Stainless Steel 304L
 material_type: alloy
 
 # Composition fractions must sum to 1.0
 composition:
-Fe: 0.675  # Iron
-Cr: 0.170  # Chromium
-Ni: 0.120  # Nickel
-Mo: 0.025  # Molybdenum
-Mn: 0.010  # Manganese
+  Fe: 0.675  # Iron
+  Cr: 0.170  # Chromium
+  Ni: 0.120  # Nickel
+  Mo: 0.025  # Molybdenum
+  Mn: 0.010  # Manganese
 
 # Required temperature properties for alloys
 solidus_temperature: 1605.          # Melting begins (K)
@@ -188,18 +183,32 @@ final_boiling_temperature: 3200.    # Material is completely vaporized (K)
 
 properties:
   density:
-      file_path: ./SS304L.xlsx
-      temperature_header: T (K)
-      value_header: Density (kg/(m)^3)
-      bounds: [constant, extrapolate]
-      regression:  # Optional regression configuration
-        simplify: pre  # Simplify before processing
-        degree: 2      # Use quadratic regression for simplification
-        segments: 3    # Fit with 3 segments for piecewise linear approximation
+    file_path: ./SS304L.xlsx
+    temperature_header: T (K)
+    value_header: Density (kg/(m)^3)
+    bounds: [constant, extrapolate]
+    regression:      # Optional regression configuration
+      simplify: pre  # Simplify before processing
+      degree: 2      # Use quadratic regression for simplification
+      segments: 3    # Fit with 3 segments for piecewise linear approximation
 ```
 Complete YAML configurations are provided in the PyMatLib documentation for both 
-[pure metals](https://github.com/rahildoshi97/pymatlib/blob/master/src/pymatlib/data/materials/pure_metals/Al/Al.yaml) and 
-[alloys](https://github.com/rahildoshi97/pymatlib/blob/master/src/pymatlib/data/materials/alloys/SS304L/SS304L.yaml).
+[pure metals](https://github.com/rahildoshi97/pymatlib/blob/master/src/pymatlib/data/materials/pure_metals/Al/Al.yaml) and [alloys](https://github.com/rahildoshi97/pymatlib/blob/master/src/pymatlib/data/materials/alloys/SS304L/SS304L.yaml).
+
+**Python Usage**:
+```python
+    import sympy as sp
+    from pymatlib.parsing.api import create_material
+    
+    # Define a symbolic temperature
+    T = sp.Symbol('T')
+    
+    # Create a material object from the YAML file and enable plotting (optional)
+    aluminum = create_material('Al.yaml', T, enable_plotting=True)
+    
+    # Access symbolic properties
+    print(f"Density: {aluminum.density}")
+```
 
 # Research Applications
 
@@ -227,7 +236,6 @@ enabling reproducible research across different simulation codes and research gr
 | Open Source              | Yes           | Yes          | No               | No          |
 | Python Integration       | Native        | Yes          | API only         | No          |
 
-
 **Key Advantage**: PyMatLib is the only tool that combines symbolic mathematics with intelligent dependency resolution, 
 enabling seamless integration with simulation frameworks while maintaining scientific reproducibility.
 
@@ -235,8 +243,6 @@ Unlike existing tools, PyMatLib uniquely combines symbolic mathematics [@sympy],
 and seamless integration with scientific computing workflows [@numpy; @matplotlib].
 The library integrates directly with simulation frameworks like
 pystencils [@pystencils] and waLBerla [@walberla] for high-performance computing applications.
-PyMatLib is open-source, distributed under the BSD-3-Clause license.
-Code and documentation to use this package are available on [GitHub](https://github.com/rahildoshi97/pymatlib/tree/master).
 
 # Acknowledgements
 
