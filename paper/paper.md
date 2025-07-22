@@ -1,5 +1,8 @@
 ---
-title: 'PyMatLib: A Python Library for Temperature-Dependent Material Property Processing in Scientific Simulations'
+title: 'SymMatsPy: Symbolic Materials for Scientific Simulations in Python'
+# Symbolic Materials with Python
+# SymMatsPy: Symbolic Material Properties for Scientific Simulations in Python
+# SymMatsPy: A Python Library for Symbolic Modeling of (Temperature-Dependent) Material Properties (Behavior)
 tags:
   - Python
   - materials science
