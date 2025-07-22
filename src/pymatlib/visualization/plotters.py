@@ -269,8 +269,8 @@ class PropertyVisualizer:
             _y_value = 0.0
             if prop_type == 'CONSTANT_VALUE':
                 value = float(current_prop)
-                ax.axhline(y=value, color=colors['constant'], linestyle='-',
-                           linewidth=2.5, label='constant', alpha=0.8)
+                ax.axhline(y=value, color='#bcbd22', linestyle='-',
+                           linewidth=3.5, label='constant', alpha=0.8)
                 # Annotation
                 ax.text(0.5, 0.9, f"Value: {value:.3e}", transform=ax.transAxes,
                         horizontalalignment='center', fontweight='bold',
@@ -292,8 +292,8 @@ class PropertyVisualizer:
                             zorder=1, alpha=0.6)"""
                     # Overlay data points if available (foreground)
                     if x_data is not None and y_data is not None:
-                        ax.plot(x_data, y_data, color=colors['raw'], linestyle='-',
-                                linewidth=2.5, marker='o', markersize=6,
+                        ax.plot(x_data, y_data, color='#bcbd22', linestyle='-',
+                                linewidth=3.5, marker='o', markersize=4,
                                 label='step function', zorder=3, alpha=0.8)
                         # Add vertical line at transition point
                         transition_idx = len(x_data) // 2
@@ -332,7 +332,7 @@ class PropertyVisualizer:
                         y_extended = f_current(extended_temp)
                         ax.plot(extended_temp, y_extended, color='#bcbd22',  # Yellow-Green
                                 linestyle='None', linewidth=2.5, label=main_label,
-                                marker='o', markersize=3.5, zorder=2, alpha=0.8)  # markersize=3.5 for boundary_behavior.png
+                                marker='o', markersize=2.5, zorder=2, alpha=0.8)  # markersize=3.5 for boundary_behavior.png
                         logger.debug("Plotted extended range for property '%s'", prop_name)
                     except Exception as e:
                         logger.warning("Could not evaluate function over extended range for '%s': %s",
@@ -427,9 +427,9 @@ class PropertyVisualizer:
                         fontweight='bold',
                         bbox=dict(facecolor='lightblue', alpha=0.8, boxstyle='round,pad=0.3'))"""  #
             # Add legend
-            legend = ax.legend(loc='best', framealpha=0.9, fancybox=True,
+            """legend = ax.legend(loc='best', framealpha=0.9, fancybox=True,
                                shadow=True, edgecolor='gray')
-            legend.get_frame().set_linewidth(1.2)
+            legend.get_frame().set_linewidth(1.2)"""
             # Add property to visualized set
             self.visualized_properties.add(prop_name)
             logger.info("Successfully visualized property: %s", prop_name)

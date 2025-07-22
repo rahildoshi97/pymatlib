@@ -96,7 +96,7 @@ properties:
   # ====================================================================================================
   #density:
     #temperature: [300, 1660, 1736, 3000]         # Temperature breakpoints (K)
-    #equation: [7877.39163826692 - 0.377781577789007*T, 11816.6337569868 - 2.74041499241854*T, 8596.40178865677 - 0.885849240373116*T]
+    #equation: [7877.39 - 0.37*T, 11816.63 - 2.74*T, 8596.40 - 0.88*T]
     # Two equations for three breakpoints: [500-1700K] and [1700-3000K]
     #bounds: [constant, constant]           # Boundary behavior outside range
 
