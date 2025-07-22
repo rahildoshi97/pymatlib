@@ -94,16 +94,16 @@ choosing between constant value or linear extrapolation to best match the physic
     bounds: [constant, extrapolate]  # Boundary behavior: 'constant' or 'extrapolate'
 ```
 
-![Boundary behavior options in PyMatLib showing the same thermal conductivity property with different extrapolation settings: constant boundaries (left) maintain edge values outside the defined range, while extrapolate boundaries (right) use linear extrapolation.\label{fig:boundary_behavior}](figures/boundary_behavior.png)
+![Boundary behavior options in PyMatLib showing the same density property with different extrapolation settings: constant boundaries (left) maintain edge values outside the defined range, while extrapolate boundaries (right) use linear extrapolation.\label{fig:boundary_behavior}](figures/boundary_behavior.png)
 
 - **Automatic Dependency Resolution**: Intelligent processing order determination for computed properties ensures 
 mathematical dependencies are resolved correctly without manual intervention. 
 The library automatically detects circular dependencies and provides clear error messages for invalid configurations.
 
 - **Bidirectional Property-Temperature Conversion**: The library can automatically generate inverse piecewise functions
-(temperature = f(property)), a critical feature for energy-based numerical methods [@voller1987fixed], phase-change simulations, 
-and iterative solvers where temperature is the unknown variable. The inverse function generation supports linear piecewise segments 
-(either through default linear interpolation or explicit degree=1 regression), ensuring robust mathematical invertibility.
+(`temperature = f(property)`), a critical feature for energy-based numerical methods [@voller1987fixed], phase-change simulations, 
+and iterative solvers where `temperature` is the unknown variable. The inverse function generation supports linear piecewise segments 
+(either through default linear interpolation or explicit `degree=1` regression), ensuring robust mathematical invertibility.
 
 - **Built-in Validation Framework**: A comprehensive validation framework checks YAML configurations for correctness,
 including composition sums, required fields for pure metals versus alloys, and valid property names.
