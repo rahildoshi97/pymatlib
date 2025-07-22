@@ -20,7 +20,8 @@ bibliography: paper.bib
 
 # Summary
 
-PyMatLib is an extensible, open-source Python library that streamlines the use of temperature-dependent material properties in computational simulations.
+PyMatLib is an extensible, open-source Python library that streamlines the definition and use of 
+temperature-dependent material properties in computational simulations.
 When materials are heated or cooled, their physical characteristics like 
 thermal conductivity, density, and heat capacity change significantly, 
 posing challenges for computer simulations of processes like metal casting, heat treatment, or thermal analysis.
@@ -121,9 +122,6 @@ This prevents common configuration errors and ensures reproducible material defi
 - **Integrated Visualization**: Automatic plot generation enables users to verify their material definitions visually,
 with the option to disable visualization for production workflows after validation.
 
-PyMatLib is distributed under the BSD-3-Clause license. The source code and documentation are available on
-[GitHub](https://github.com/rahildoshi97/pymatlib/tree/master).
-
 # Usage Example
 
 PyMatLib is designed for ease of use. A material is defined in a YAML file and loaded with a single function call.
@@ -210,7 +208,30 @@ Complete YAML configurations are provided in the PyMatLib documentation for both
     print(f"Density: {aluminum.density}")
 ```
 
-# Research Applications
+# Comparison with Existing Tools
+
+| Feature                  | **PyMatLib**    | **CoolProp** | **NIST WebBook** | **CALPHAD** |
+|:-------------------------|:----------------|:-------------|:-----------------|:------------|
+| **Core Capabilities**    |                 |              |                  |             |
+| Symbolic Integration     | Yes             | No           | No               | No          |
+| Dependency Resolution    | Yes (Automatic) | No           | No               | No          |
+| Multiple Input Methods   | Yes (6 types)   | No           | No               | No          |
+|                          |                 |              |                  |             |
+| **Material Support**     |                 |              |                  |             |
+| Solid Materials          | Yes             | Limited      | Yes              | Yes         |
+| Custom Properties        | Yes             | No           | No               | Limited     |
+| Temperature Dependencies | Yes             | Yes          | Yes              | Yes         |
+|                          |                 |              |                  |             |
+| **Accessibility**        |                 |              |                  |             |
+| Open Source              | Yes             | Yes          | No               | No          |
+| Python Integration       | Native          | Yes          | API only         | No          |
+
+**Key Advantage**: PyMatLib's unique combination of native symbolic mathematics via SymPy [@sympy], 
+automatic dependency resolution, and multiple input methods provides a level of flexibility and seamless integration 
+with simulation frameworks like pystencils [@pystencils] and waLBerla [@walberla] for high performance computing applications,
+which are not found in existing tools, enabling more reproducible and sophisticated scientific simulations.
+
+# Research Applications and Availability
 
 PyMatLib is applicable to a wide range of research areas, including alloy design and optimization [@callister2018materials], 
 energy-based finite element methods for thermal analysis [@hughes2012finite], multiscale simulations [@tadmor2011modeling], 
@@ -218,37 +239,15 @@ and high-performance computing in fluid dynamics and heat transfer.
 Its YAML-based configuration system, powered by ruamel.yaml parsing [@ruamel-yaml], supports the FAIR principles [@wilkinson2016fair] for scientific data management, 
 enabling reproducible research across different simulation codes and research groups.
 
-# Comparison with Existing Tools
-
-| Feature                  | **PyMatLib**  | **CoolProp** | **NIST WebBook** | **CALPHAD** |
-|:-------------------------|:--------------|:-------------|:-----------------|:------------|
-| **Core Capabilities**    |               |              |                  |             |
-| Symbolic Integration     | Yes           | No           | No               | No          |
-| Dependency Resolution    | Yes           | No           | No               | No          |
-| Multiple Input Methods   | Yes (6 types) | No           | No               | No          |
-|                          |               |              |                  |             |
-| **Material Support**     |               |              |                  |             |
-| Solid Materials          | Yes           | Limited      | Yes              | Yes         |
-| Custom Properties        | Yes           | No           | No               | Limited     |
-| Temperature Dependencies | Yes           | Yes          | Yes              | Yes         |
-|                          |               |              |                  |             |
-| **Accessibility**        |               |              |                  |             |
-| Open Source              | Yes           | Yes          | No               | No          |
-| Python Integration       | Native        | Yes          | API only         | No          |
-
-**Key Advantage**: PyMatLib is the only tool that combines symbolic mathematics with intelligent dependency resolution, 
-enabling seamless integration with simulation frameworks while maintaining scientific reproducibility.
-
-Unlike existing tools, PyMatLib uniquely combines symbolic mathematics [@sympy], automatic dependency resolution,
-and seamless integration with scientific computing workflows [@numpy; @matplotlib].
-The library integrates directly with simulation frameworks like
-pystencils [@pystencils] and waLBerla [@walberla] for high-performance computing applications.
+PyMatLib is open-source under the BSD-3-Clause license. 
+The source code, documentation, and further examples are available on
+[GitHub](https://github.com/rahildoshi97/pymatlib/tree/master)..
 
 # Acknowledgements
 
 The development of PyMatLib was supported by the Friedrich-Alexander-Universität Erlangen-Nürnberg. 
-We acknowledge the contributions of the SymPy [@sympy], NumPy [@numpy], pandas [@pandas], matplotlib [@matplotlib],
-and ruamel.yaml [@ruamel-yaml] development communities, whose libraries provide 
+We gratefully acknowledge the developers of SymPy [@sympy], NumPy [@numpy], pandas [@pandas], matplotlib [@matplotlib],
+and ruamel.yaml [@ruamel-yaml], whose libraries provide 
 the symbolic mathematics, numerical computing, data processing, visualization, and configuration parsing capabilities 
 that form the foundation of PyMatLib.
 
