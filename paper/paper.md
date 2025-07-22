@@ -78,15 +78,11 @@ This timing control allows users to balance computational efficiency with numeri
 This simplifies complex property curves into efficient, accurate mathematical representations with configurable polynomial degrees and segments, 
 reducing computational overhead while maintaining physical accuracy (\autoref{fig:regression_options}).
 
-    Here is an example configuration for regression and simplification options in PyMatLib:
-
 ```yaml
-
     regression:      # Optional regression configuration
       simplify: pre  # 'pre' (before processing) or 'post' (after processing)
       degree: 2      # Polynomial degree for regression
       segments: 3    # Number of piecewise segments
-
 ```
 
 ![Regression capabilities showing data simplification effects: raw experimental data (points) fitted with different polynomial degrees and segment configurations, demonstrating how PyMatLib can reduce complexity while maintaining physical accuracy.\label{fig:regression_options}](figures/regression_options.png)
