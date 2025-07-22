@@ -14,16 +14,16 @@ authors:
 affiliations:
   - name: Friedrich-Alexander-Universität Erlangen-Nürnberg, Germany
     index: 1
-date: 16 July 2025
+date: 22 July 2025
 bibliography: paper.bib
 ---
 
 # Summary
 
-PyMatLib is an open-source Python library that revolutionizes how scientists and engineers handle temperature-dependent material properties in computational simulations.
+PyMatLib is an open-source Python library that streamlines the use of temperature-dependent material properties in computational simulations.
 When materials are heated or cooled, their physical characteristics like 
-thermal conductivity, density, and heat capacity change significantly. 
-This creates challenges for computer simulations of processes like metal casting, heat treatment, or thermal analysis.
+thermal conductivity, density, and heat capacity change significantly, 
+creating challenges for computer simulations of processes like metal casting, heat treatment, or thermal analysis.
 
 The library provides a simple way to define these temperature-dependent properties using YAML configuration files, 
 then automatically converts them into mathematical expressions that can be used in scientific simulations. 
@@ -50,16 +50,14 @@ while NIST WebBook provides tabular data without processing capabilities or depe
 CALPHAD databases [@lukas2007computational] require specialized software and lack integration with general-purpose simulation codes. 
 Custom implementations often lack validation, reproducibility, and standardized interfaces.
 
+PyMatLib addresses these limitations by providing unprecedented flexibility in material property definition through several key capabilities.
+
 # Key Features
 
-PyMatLib addresses critical gaps in material science software by providing a standardized, extensible framework 
-that offers unprecedented flexibility in material property definition through several innovative capabilities:
-
 - **Flexible Input Methods**: The library supports six different property definition methods 
-(constant values, step functions, file-based data, key-value pairs, piecewise equations, and computed properties), 
+(constant values, step functions, file-based data, tabular data, piecewise equations, and computed properties), 
 allowing users to choose the most appropriate format for their data sources and modeling requirements (\autoref{fig:input_methods}).
-File-based data processing leverages pandas [@pandas] for robust handling of various formats 
-including Excel (.xlsx), CSV, and text files with comprehensive missing value detection, data cleaning, duplicate removal, and validation.
+File-based data processing leverages pandas [@pandas] for robust handling of Excel, CSV, and text files with comprehensive data validation.
 
 ![PyMatLib's property definition methods: (a) constant value, (b) step function, (c) file data, (d) tabular data, (e) piecewise equations, and (f) computed properties.\label{fig:input_methods}](figures/input_methods.png)
 
@@ -67,12 +65,11 @@ including Excel (.xlsx), CSV, and text files with comprehensive missing value de
 with extensibility for additional material types.
 Pure metals use melting/boiling temperatures, while alloys use solidus/liquidus temperature ranges.
 
-- **Robust Data Quality Assurance**: Built-in data validation includes duplicate temperature removal,
+- **Robust Data Quality**: Built-in data validation includes duplicate temperature removal,
 missing value handling with configurable thresholds, automatic data sorting, 
-and support for various file encodings and missing value representations commonly found in experimental datasets. 
-This ensures data integrity and prevents common errors in materials property processing.
+and support for various file encodings commonly found in experimental datasets. 
 
-- **Optional Data Simplification**: The library supports regression-based data simplification using pwlf [@pwlf] for large complex datasets,
+- **Regression Capabilities**: The library supports regression-based data simplification using pwlf [@pwlf] for large complex datasets,
 allowing users to reduce computational overhead and memory usage while maintaining accuracy.
 Piecewise linear fitting with configurable polynomial degrees enables efficient approximation of complex property relationships
 while preserving essential physical behavior (\autoref{fig:regression_options}).
@@ -118,29 +115,24 @@ The inverse function generation supports linear piecewise segments
 (either through default linear interpolation or explicit degree=1 regression), ensuring robust mathematical invertibility.
 
 - **Built-in Validation Framework**: Built-in validation ensures YAML configuration correctness, including composition sum verification, 
-required field checking for pure metals versus alloys, property name validation, and regression parameter bounds checking. 
+required field checking for pure metals versus alloys, property name validation, regression parameters and bounds checking. 
 This prevents common configuration errors and ensures reproducible material definitions [@roache1998verification].
 
 - **Integrated Visualization**: Automatic plot generation enables users to verify their material definitions visually,
 with the option to disable visualization for production workflows after validation.
 
+# Usage Example
 ```python
     import sympy as sp
     from pymatlib.parsing.api import create_material
     
     # Create a material with symbolic temperature and enable plotting
     T = sp.Symbol('T')
-    material_T = create_material('path/to/material.yaml', T, enable_plotting=True)
+    aluminum = create_material('Al.yaml', T, enable_plotting=True)
+    print(f"Density: {aluminum.density}")
 ```
 
-Unlike existing tools, PyMatLib uniquely combines symbolic mathematics [@sympy], automatic dependency resolution, 
-and seamless integration with scientific computing workflows [@numpy; @matplotlib]. 
-The library integrates directly with simulation frameworks like 
-pystencils [@pystencils] and waLBerla [@walberla] for high-performance computing applications. 
-PyMatLib is open-source, distributed under the BSD-3-Clause license.
-Code and documentation to use this package are available on [GitHub](https://github.com/rahildoshi97/pymatlib/tree/master).
-
-# Example YAML Configuration
+# YAML Configuration Example
 
 PyMatLib uses a YAML-based configuration system for defining material properties,
 allowing users to specify properties in a human-readable format.
@@ -148,10 +140,6 @@ The YAML files can include pure metals with melting/boiling temperatures or allo
 
 ## Pure Metal Example
 ```yaml
-# =================================================
-# PYMATLIB MATERIAL CONFIGURATION FILE - PURE METAL
-# =================================================
-
 name: Aluminum
 material_type: pure_metal
 
@@ -163,19 +151,24 @@ composition:
 melting_temperature: 933.47  # Solid becomes liquid (K)
 boiling_temperature: 2743.0  # Liquid becomes gas (K)
 
-properties:  
-    density:
-        temperature: (300, 3000, 541)
-        equation: 2700 * (1 - 3*thermal_expansion_coefficient * (T - 293))
-        bounds: [constant, constant]
+properties:
+  thermal_expansion_coefficient:
+    temperature: [333.15, 423.15, 523.15, 623.15, 723.15, 833.15]  # Explicit temperature list
+    value: [2.38e-05, 2.55e-05, 2.75e-05, 2.95e-05, 3.15e-05, 3.35e-05]  # 1/K values
+    bounds: [constant, constant]
+    regression:
+      simplify: post
+      degree: 1
+      segments: 1
+
+  density:
+    temperature: (300, 3000, 541)
+    equation: 2700 * (1 - 3*thermal_expansion_coefficient * (T - 293))
+    bounds: [constant, constant]
 ```
 
 ## Alloy Example
 ```yaml
-# ============================================
-# PYMATLIB MATERIAL CONFIGURATION FILE - ALLOY
-# ============================================
-
 name: Stainless Steel 304L
 material_type: alloy
 
@@ -194,38 +187,25 @@ initial_boiling_temperature: 3090.  # Boiling begins (K)
 final_boiling_temperature: 3200.    # Material is completely vaporized (K)
 
 properties:
-    density:
-        file_path: ./SS304L.xlsx
-        temperature_header: T (K)
-        value_header: Density (kg/(m)^3)
-        bounds: [constant, extrapolate]
-        regression:  # Optional regression configuration
-            simplify: pre  # Simplify before processing
-            degree: 2      # Use quadratic regression for simplification
-            segments: 3    # Fit with 3 segments for piecewise linear approximation
-
-    thermal_expansion_coefficient:
-      temperature: [333.15, 423.15, 523.15, 623.15, 723.15, 833.15]
-      value: [2.38e-05, 2.55e-05, 2.75e-05, 2.95e-05, 3.15e-05, 3.35e-05] # 1/K values
-      bounds: [extrapolate, extrapolate]
-
-    density:
-      temperature: [300, 1660, 1736, 3000]
-      equation: [7877.39 - 0.37*T, 11816.63 - 2.74*T, 8596.40 - 0.88*T]
-      bounds: [extrapolate, extrapolate]
+  density:
+      file_path: ./SS304L.xlsx
+      temperature_header: T (K)
+      value_header: Density (kg/(m)^3)
+      bounds: [constant, extrapolate]
+      regression:  # Optional regression configuration
+        simplify: pre  # Simplify before processing
+        degree: 2      # Use quadratic regression for simplification
+        segments: 3    # Fit with 3 segments for piecewise linear approximation
 ```
-
 Complete YAML configurations are provided in the PyMatLib documentation for both 
 [pure metals](https://github.com/rahildoshi97/pymatlib/blob/master/src/pymatlib/data/materials/pure_metals/Al/Al.yaml) and 
 [alloys](https://github.com/rahildoshi97/pymatlib/blob/master/src/pymatlib/data/materials/alloys/SS304L/SS304L.yaml).
 
 # Research Applications
 
-The library can be applied in research projects involving alloy design 
-and optimization with accurate representation of solidus-liquidus temperature ranges [@callister2018materials], 
-energy-based finite element methods for thermal analysis [@hughes2012finite], 
-multiscale simulations linking molecular dynamics with continuum mechanics [@tadmor2011modeling], 
-and high-performance computing applications in computational fluid dynamics and heat transfer modeling. 
+PyMatLib is applicable to a wide range of research areas, including alloy design and optimization [@callister2018materials], 
+energy-based finite element methods for thermal analysis [@hughes2012finite], multiscale simulations [@tadmor2011modeling], 
+and high-performance computing in fluid dynamics and heat transfer. 
 Its YAML-based configuration system, powered by ruamel.yaml parsing [@ruamel-yaml], supports the FAIR principles [@wilkinson2016fair] for scientific data management, 
 enabling reproducible research across different simulation codes and research groups.
 
@@ -250,6 +230,13 @@ enabling reproducible research across different simulation codes and research gr
 
 **Key Advantage**: PyMatLib is the only tool that combines symbolic mathematics with intelligent dependency resolution, 
 enabling seamless integration with simulation frameworks while maintaining scientific reproducibility.
+
+Unlike existing tools, PyMatLib uniquely combines symbolic mathematics [@sympy], automatic dependency resolution,
+and seamless integration with scientific computing workflows [@numpy; @matplotlib].
+The library integrates directly with simulation frameworks like
+pystencils [@pystencils] and waLBerla [@walberla] for high-performance computing applications.
+PyMatLib is open-source, distributed under the BSD-3-Clause license.
+Code and documentation to use this package are available on [GitHub](https://github.com/rahildoshi97/pymatlib/tree/master).
 
 # Acknowledgements
 
