@@ -179,8 +179,7 @@ properties:
       degree: 2      # Use quadratic regression for simplification
       segments: 3    # Fit with 3 segments for piecewise linear approximation
 ```
-Complete YAML configurations are provided in the PyMatLib documentation for both 
-[pure metals](https://github.com/rahildoshi97/pymatlib/blob/master/src/pymatlib/data/materials/pure_metals/Al/Al.yaml) and [alloys](https://github.com/rahildoshi97/pymatlib/blob/master/src/pymatlib/data/materials/alloys/SS304L/SS304L.yaml).
+Complete YAML configurations for both are provided in the PyMatLib [documentation](https://github.com/rahildoshi97/pymatlib/blob/master/docs/how-to/define_materials.md). 
 
 **Python Usage**:
 
