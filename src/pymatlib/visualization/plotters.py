@@ -71,7 +71,7 @@ class PropertyVisualizer:
         property_count = sum(len(props) for props in self.parser.categorized_properties.values())
         logger.info("Initializing visualization for %d properties", property_count)
         fig_width = 12
-        fig_height = max(4 * property_count, 8)  # Minimum height for readability
+        fig_height = max(4 * property_count, 4)  # Minimum height for readability
         self.fig = plt.figure(figsize=(fig_width, fig_height))
         self.gs = GridSpec(property_count, 1, figure=self.fig, )
         self.current_subplot = 0
@@ -150,9 +150,9 @@ class PropertyVisualizer:
             num_points = int(np.ceil((padded_upper - padded_lower) / step)) + 1
             extended_temp = np.linspace(padded_lower, padded_upper, num_points)
             # Title and labels
-            ax.set_title(f"{prop_name} ({prop_type})", fontweight='bold', pad=15)
-            ax.set_xlabel("Temperature (K)", fontweight='bold')
-            ax.set_ylabel(f"{prop_name}", fontweight='bold')
+            ax.set_title(f"{prop_name} ({prop_type})", fontsize=14, fontweight='bold', pad=15)
+            ax.set_xlabel("Temperature", fontsize=12, fontweight='bold')
+            ax.set_ylabel(f"{prop_name}", fontsize=12, fontweight='bold')
             # Color scheme
             colors = {
                 'constant': '#1f77b4',  # blue
@@ -239,7 +239,7 @@ class PropertyVisualizer:
                             ax.plot(x_data, y_data, color=colors['raw'],
                                     linestyle='-', linewidth=2, label='data points', zorder=2)
                     # Plot data points if available (for FILE, KEY_VAL properties)
-                    if x_data is not None and y_data is not None and prop_type in ['FILE', 'KEY_VAL']:
+                    if x_data is not None and y_data is not None and prop_type in ['FILE_IMPORT', 'TABULAR_DATA',]:
                         # marker_size = 6 if prop_type == 'KEY_VAL' else 3
                         # ax.scatter(x_data, y_data, color=colors['raw'], marker='o', s=marker_size**2,
                         #            alpha=0.7, label='data points', zorder=3)

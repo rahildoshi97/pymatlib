@@ -30,7 +30,7 @@ properties:
     bounds: [constant, constant]           # Keep constant values outside range
   
   latent_heat_of_vaporization:
-    temperature: boiling_temperature       # Transition at boiling point
+    temperature: 2743.0                    # Transition at boiling point
     value: [0.0, 294000.0]                 # [before_boiling, after_boiling] in J/kg
     bounds: [constant, constant]
   
@@ -56,7 +56,7 @@ properties:
     regression:
       simplify: post
       degree: 1
-      segments: 1
+      segments: 1                          # Single segment (no breakpoints)
 
   # ====================================================================================================
   # PIECEWISE_EQUATION EXAMPLE
@@ -64,7 +64,7 @@ properties:
   # ====================================================================================================
   
   heat_conductivity:
-    temperature: [500, 1700, 3000]         # Three breakpoints define two ranges
+    temperature: [300, 1700, 3000]         # Three breakpoints define two ranges
     equation: [0.0124137215440647*T + 13.0532171803243, 0.0124137215440647*T + 13.0532171803243]
     # Equation 1: 500-1700K, Equation 2: 1700-3000K
     bounds: [constant, constant]
