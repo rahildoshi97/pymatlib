@@ -79,7 +79,9 @@ This simplifies complex property curves into efficient, accurate mathematical re
 reducing computational overhead while maintaining physical accuracy (\autoref{fig:regression_options}).
 
     Here is an example configuration for regression and simplification options in PyMatLib:
+
 ```yaml
+
     regression:      # Optional regression configuration
       simplify: pre  # 'pre' (before processing) or 'post' (after processing)
       degree: 2      # Polynomial degree for regression
