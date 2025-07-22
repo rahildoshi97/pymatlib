@@ -253,9 +253,9 @@ class PropertyVisualizer:
             num_points = int(np.ceil((padded_upper - padded_lower) / step)) + 1
             extended_temp = np.linspace(padded_lower, padded_upper, num_points)
             # Title and labels
-            ax.set_title(f"{prop_name} ({prop_type})", fontweight='bold', pad=15)
-            ax.set_xlabel("Temperature (K)", fontweight='bold')
-            ax.set_ylabel(f"{prop_name}", fontweight='bold')
+            ax.set_title(f"{prop_name} ({prop_type})", fontsize=16, fontweight='bold', pad=10)
+            ax.set_xlabel("Temperature", fontsize=14, fontweight='bold')
+            ax.set_ylabel(f"{prop_name}", fontsize=14,fontweight='bold')
             # Color scheme
             colors = {
                 'constant': '#1f77b4',  # blue
@@ -465,12 +465,16 @@ class PropertyVisualizer:
                 # Save settings
                 self.fig.savefig(
                     str(filepath),
-                    dpi=300,  # High resolution
+                    dpi=600,  # High resolution
                     bbox_inches="tight",  # Cropping
                     facecolor='white',  # Clean background
                     edgecolor='none',  # No border
                     pad_inches=0.4  # Padding
                 )
+                # Also save as vector format for infinite scalability
+                # svg_filepath = filepath.with_suffix('.svg')
+                # self.fig.savefig(str(svg_filepath), format='svg', bbox_inches="tight",
+                #                  facecolor='white', edgecolor='none', pad_inches=0.4)
                 total_properties = sum(len(props) for props in self.parser.categorized_properties.values())
                 visualized_count = len(self.visualized_properties)
                 if visualized_count != total_properties:

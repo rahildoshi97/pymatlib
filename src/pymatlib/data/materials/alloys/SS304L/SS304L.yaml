@@ -32,7 +32,7 @@ properties:
   # Note: Must be float, not integer (use 1.0 instead of 1)
   # ====================================================================================================
 
-  #density: 6950.0  # J/kg - Scientific notation supported
+  density: 6950.0  # J/kg - Scientific notation supported
 
   # ====================================================================================================
   # PROPERTY TYPE 2: STEP_FUNCTION
