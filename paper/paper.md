@@ -231,9 +231,9 @@ and high-performance computing in fluid dynamics and heat transfer.
 Its architecture promotes reproducible science and is well-suited for high-performance computing environments, 
 with demonstrated integrations into frameworks like pystencils [@pystencils] and waLBerla [@walberla].
 
-PyMatLib is open-source under the BSD-3-Clause license. 
+PyMatLib is an open-source software distributed under the [BSD-3-Clause License](https://github.com/rahildoshi97/pymatlib/blob/master/LICENSE). 
 The source code, documentation, and further examples are available on
-[GitHub](https://github.com/rahildoshi97/pymatlib/tree/master)..
+[GitHub](https://github.com/rahildoshi97/pymatlib/tree/master).
 
 # Acknowledgements
 
