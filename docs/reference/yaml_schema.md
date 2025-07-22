@@ -34,7 +34,7 @@ latent_heat_of_fusion:
   bounds: [constant, constant]
 ```
 ### 3. File Import
-Data from Excel, CSV, or text files:
+Import data from Excel, CSV, or text files:
 ```yaml
 heat_capacity:
   file_path: ./data.xlsx
@@ -185,13 +185,13 @@ print(get_supported_properties())
 9. Temperature arrays must be monotonic
 10. Energy density arrays must be monotonic with respect to temperature
 11. File paths must be valid and files must exist
-12. For key-value pairs, temperature and value arrays must have the same length
+12. For tabular data, temperature and value arrays must have the same length
 13. When using tuple notation for temperature arrays, the increment must be non-zero
 
 ## Important Notes
 
 1. All numerical values must use period (.) as decimal separator, not comma
-2. Interpolation between data points is performed automatically for file-based and key-value properties
+2. Interpolation between data points is performed automatically for file-import and tabular data properties
 3. Properties will be computed in the correct order regardless of their position in the file
 4. To retrieve temperature from energy_density, use the interpolation methods from the generated InterpolationArrayContainer class
 5. The new architecture provides enhanced error messages and validation compared to previous versions

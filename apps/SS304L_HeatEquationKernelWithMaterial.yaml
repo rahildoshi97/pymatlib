@@ -18,7 +18,7 @@ final_boiling_temperature: 3200.
 
 properties:
 
-  thermal_diffusivity: # COMPUTE
+  thermal_diffusivity: # COMPUTED_PROPERTY
     temperature: (3000, 300, -5.0)
     equation: heat_conductivity /(density * heat_capacity)
     bounds: [ extrapolate, extrapolate ]
@@ -29,7 +29,7 @@ properties:
 
   ##################################################
 
-  energy_density:  # COMPUTE
+  energy_density:  # COMPUTED_PROPERTY
     temperature: (300, 3000, 5.0)
     equation: density * specific_enthalpy
     bounds: [ extrapolate, extrapolate ]
@@ -40,7 +40,7 @@ properties:
 
   ##################################################
 
-  specific_enthalpy:  # COMPUTE
+  specific_enthalpy:  # COMPUTED_PROPERTY
     temperature: (3000, 300, 541)
     equation: Integral(heat_capacity, T)
     bounds: [ constant, constant ]
@@ -51,7 +51,7 @@ properties:
 
   ##################################################
 
-  heat_capacity:  # FILE
+  heat_capacity:  # FILE_IMPORT
     file_path: ./SS304L_HeatEquationKernelWithMaterial.xlsx
     temperature_column: T (K)
     property_column: Specific heat (J/(Kg K))
@@ -63,7 +63,7 @@ properties:
 
   ##################################################
 
-  heat_conductivity:  # FILE
+  heat_conductivity:  # FILE_IMPORT
     file_path: ./SS304L_HeatEquationKernelWithMaterial.xlsx
     temperature_column: T (K)
     property_column: Thermal conductivity (W/(m*K))-TOTAL-10000.0(K/s)
@@ -75,7 +75,7 @@ properties:
 
   ##################################################
 
-  density:  # FILE
+  density:  # FILE_IMPORT
     file_path: ./SS304L_HeatEquationKernelWithMaterial.xlsx
     temperature_column: T (K)
     property_column: Density (kg/(m)^3)

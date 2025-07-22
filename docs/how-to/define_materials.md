@@ -32,28 +32,28 @@ For properties defined in spreadsheets:
 
 ```yaml
 properties:
-    # Excel file format
+    # Excel file import
     density:
         file_path: ./304L_data.xlsx
         temperature_column: T (K)
         property_column: Density (kg/(m)^3)
         bounds: [constant, constant]
     
-    # CSV file format
+    # CSV file import
     heat_capacity:
         file_path: ./heat_capacity_data.csv
         temperature_column: Temperature
         property_column: Cp
         bounds: [constant, constant]
     
-    # Text file format (space/tab separated)
+    # Text file import (space/tab separated)
     thermal_conductivity:
         file_path: ./conductivity_data.txt
         temperature_column: 0  # Column index for headerless files
         property_column: 1
         bounds: [constant, constant]
 ```
-Supported file formats include .txt (space/tab separated), .csv, and .xlsx.
+Supported file imports include .txt (space/tab separated), .csv, and .xlsx.
 
 ### 4. Tabular Data for Interpolation
 
@@ -181,6 +181,7 @@ Here's a complete example for Aluminum (Pure metal):
 # PYMATLIB MATERIAL CONFIGURATION FILE - PURE METAL
 # ====================================================================================================
 # This file defines material properties for pure Aluminum using the pymatlib format.
+# Pymatlib supports 6 property types: CONSTANT_VALUE, STEP_FUNCTION, FILE_IMPORT, TABULAR_DATA, PIECEWISE_EQUATION, and COMPUTED_PROPERTY
 # Pure metals require 'melting_temperature' and 'boiling_temperature' instead of solidus/liquidus
 # ====================================================================================================
 
@@ -213,8 +214,8 @@ properties:
     bounds: [constant, constant]
   
   # ====================================================================================================
-  # KEY_VAL EXAMPLES
-  # Key-value pairs with explicit temperature-property relationships
+  # TABULAR_DATA EXAMPLES
+  # Tabular data pairs with explicit temperature-property relationships
   # ====================================================================================================
   
   heat_capacity:
@@ -327,7 +328,7 @@ Here's a complete example for stainless steel SS304L (Alloy):
 # PYMATLIB MATERIAL CONFIGURATION FILE
 # ====================================================================================================
 # This file defines material properties for Stainless Steel 304L using the new pymatlib format.
-# Pymatlib supports 6 property types: CONSTANT, STEP_FUNCTION, FILE, KEY_VAL, PIECEWISE_EQUATION, and COMPUTE
+# Pymatlib supports 6 property types: CONSTANT_VALUE, STEP_FUNCTION, FILE_IMPORT, TABULAR_DATA, PIECEWISE_EQUATION, and COMPUTED_PROPERTY
 #
 # IMPORTANT: All property configurations must include 'bounds' parameter (except CONSTANT properties)
 # ====================================================================================================
@@ -372,7 +373,7 @@ properties:
   #   bounds: [constant, constant]         # Required for all non-constant properties
 
   # ====================================================================================================
-  # PROPERTY TYPE 3: KEY_VAL
+  # PROPERTY TYPE 3: TABULAR_DATA
   # Format: Uses 'temperature' (list/tuple) and 'value' (list) with same length
   # Supports temperature references, explicit lists, and tuple notation
   # ====================================================================================================
@@ -392,7 +393,7 @@ properties:
       segments: 2                          # Number of piecewise segments
 
   # ====================================================================================================
-  # PROPERTY TYPE 4: FILE
+  # PROPERTY TYPE 4: FILE_IMPORT
   # Format: Uses 'file_path', 'temperature_column', 'property_column'
   # Supports .txt, .csv, .xlsx files with automatic missing value handling
   # ====================================================================================================
@@ -496,7 +497,7 @@ properties:
 - For temperature-dependent properties, cover the full range of temperatures you expect in your simulation
 - Validate your property data against experimental values when possible
 - All numerical values must use period (.) as decimal separator, not comma
-- Interpolation between data points is performed automatically for file-based and key-value properties
+- Interpolation between data points is performed automatically for file-import and tabular data properties
 
 ## Validation and Error Handling
 

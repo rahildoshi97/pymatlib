@@ -2,7 +2,7 @@
 # PYMATLIB MATERIAL CONFIGURATION FILE
 # ====================================================================================================
 # This file defines material properties for Stainless Steel 304L using the new pymatlib format.
-# Pymatlib supports 6 property types: CONSTANT, STEP_FUNCTION, FILE, KEY_VAL, PIECEWISE_EQUATION, and COMPUTE
+# Pymatlib supports 6 property types: CONSTANT_VALUE, STEP_FUNCTION, FILE_IMPORT, TABULAR_DATA, PIECEWISE_EQUATION, and COMPUTED_PROPERTY
 #
 # IMPORTANT: All property configurations must include 'bounds' parameter (except CONSTANT properties)
 # ====================================================================================================
@@ -27,7 +27,7 @@ final_boiling_temperature: 3200.    # Temperature where material is completely v
 properties:
 
   # ====================================================================================================
-  # PROPERTY TYPE 1: CONSTANT
+  # PROPERTY TYPE 1: CONSTANT_VALUE
   # Format: property_name: numeric_value
   # Note: Must be float, not integer (use 1.0 instead of 1)
   # ====================================================================================================
@@ -47,7 +47,7 @@ properties:
   #   bounds: [constant, constant]         # Required for all non-constant properties
 
   # ====================================================================================================
-  # PROPERTY TYPE 3: KEY_VAL
+  # PROPERTY TYPE 3: TABULAR_DATA
   # Format: Uses 'temperature' (list/tuple) and 'value' (list) with same length
   # Supports temperature references, explicit lists, and tuple notation
   # ====================================================================================================
@@ -67,7 +67,7 @@ properties:
       segments: 2                          # Number of piecewise segments
 
   # ====================================================================================================
-  # PROPERTY TYPE 4: FILE
+  # PROPERTY TYPE 4: FILE_IMPORT
   # Format: Uses 'file_path', 'temperature_column', 'property_column'
   # Supports .txt, .csv, .xlsx files with automatic missing value handling
   # ====================================================================================================
@@ -109,7 +109,7 @@ properties:
       segments: 2
 
   # ====================================================================================================
-  # PROPERTY TYPE 6: COMPUTE
+  # PROPERTY TYPE 6: COMPUTED_PROPERTY
   # Format: Uses 'equation' (single expression) and 'temperature' (range definition)
   # Supports dependency resolution and automatic ordering
   # ====================================================================================================

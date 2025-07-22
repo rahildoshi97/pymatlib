@@ -2,6 +2,7 @@
 # PYMATLIB MATERIAL CONFIGURATION FILE - PURE METAL
 # ====================================================================================================
 # This file defines material properties for pure Aluminum using the pymatlib format.
+# Pymatlib supports 6 property types: CONSTANT_VALUE, STEP_FUNCTION, FILE_IMPORT, TABULAR_DATA, PIECEWISE_EQUATION, and COMPUTED_PROPERTY
 # Pure metals require 'melting_temperature' and 'boiling_temperature' instead of solidus/liquidus
 # ====================================================================================================
 
@@ -34,8 +35,8 @@ properties:
     bounds: [constant, constant]
   
   # ====================================================================================================
-  # KEY_VAL EXAMPLES
-  # Key-value pairs with explicit temperature-property relationships
+  # TABULAR_DATA EXAMPLES
+  # Tabular data with explicit temperature-property relationships
   # ====================================================================================================
   
   heat_capacity:
@@ -73,7 +74,7 @@ properties:
       segments: 1
   
   # ====================================================================================================
-  # COMPUTE EXAMPLES
+  # COMPUTED_PROPERTY EXAMPLES
   # Properties calculated from other properties using symbolic expressions
   # ====================================================================================================
   
