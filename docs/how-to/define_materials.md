@@ -21,9 +21,9 @@ For properties that change abruptly at phase transitions:
 ```YAML
 properties:
     latent_heat_of_fusion:
-    temperature: solidus_temperature
-    value: [0.0, 171401.0]
-    bounds: [constant, constant]
+        temperature: solidus_temperature
+        value: [0.0, 171401.0]
+        bounds: [constant, constant]
 ```
 
 ### 3. Importing from External Files
@@ -41,17 +41,17 @@ properties:
     
     # CSV file format
     heat_capacity:
-      file_path: ./heat_capacity_data.csv
-      temperature_column: Temperature
-      property_column: Cp
-      bounds: [constant, constant]
+        file_path: ./heat_capacity_data.csv
+        temperature_column: Temperature
+        property_column: Cp
+        bounds: [constant, constant]
     
     # Text file format (space/tab separated)
     thermal_conductivity:
-      file_path: ./conductivity_data.txt
-      temperature_column: 0  # Column index for headerless files
-      property_column: 1
-      bounds: [constant, constant]
+        file_path: ./conductivity_data.txt
+        temperature_column: 0  # Column index for headerless files
+        property_column: 1
+        bounds: [constant, constant]
 ```
 Supported file formats include .txt (space/tab separated), .csv, and .xlsx.
 
@@ -69,21 +69,21 @@ properties:
     
     # Using references to defined temperatures
     latent_heat_of_fusion:
-      temperature: [solidus_temperature, liquidus_temperature]
-      value: [171401]
-      bounds: [constant, constant]
+        temperature: [solidus_temperature, liquidus_temperature]
+        value: [171401]
+        bounds: [constant, constant]
     
     # Using tuple for temperature generation
     heat_capacity:
-      temperature: (1000, 200)  # Start at 1000K and increment by 200K for each value
-      value:
-      bounds: [constant, constant]
+        temperature: (1000, 200)  # Start at 1000K and increment by 200K for each value
+        value:
+        bounds: [constant, constant]
     
     # Using tuple with negative increment
     density:
-      temperature: (1735.00, -5)  # Start at 1735.00K and decrement by 5K for each value
-      value: [7037.470, 7060.150, 7088.800, 7110.460, 7127.680, 7141.620, 7156.800, 7172.590, 7184.010, 7192.780]
-      bounds: [constant, constant]
+        temperature: (1735.00, -5)  # Start at 1735.00K and decrement by 5K for each value
+        value: [7037.470, 7060.150, 7088.800, 7110.460, 7127.680, 7141.620, 7156.800, 7172.590, 7184.010, 7192.780]
+        bounds: [constant, constant]
 ```
 
 ### 5. Piecewise Equations
@@ -92,9 +92,9 @@ For properties with different equations in different temperature ranges:
 ```yaml
 properties:
     heat_conductivity:
-    temperature: [1700][3000]
-    equation: ["0.012T + 13", "0.015T + 5"]
-    bounds: [constant, constant]
+        temperature: [1700][3000]
+        equation: ["0.012T + 13", "0.015T + 5"]
+        bounds: [constant, constant]
 ```
 
 ### 6. Computed Properties
@@ -105,15 +105,15 @@ For properties that can be derived from others:
 properties:
     # Thermal diffusivity computation
     thermal_diffusivity:
-    temperature: (300, 3000, 5.0)
-    equation: heat_conductivity / (density * heat_capacity)
-    bounds: [extrapolate, extrapolate]
+        temperature: (300, 3000, 5.0)
+        equation: heat_conductivity / (density * heat_capacity)
+        bounds: [extrapolate, extrapolate]
     
     # Energy density with different models
     energy_density:
-      temperature: (300, 3000, 541)  # 541 evenly spaced points
-      equation: density * specific_enthalpy
-      bounds: [extrapolate, extrapolate]
+        temperature: (300, 3000, 541)  # 541 evenly spaced points
+        equation: density * specific_enthalpy
+        bounds: [extrapolate, extrapolate]
 ```
 
 ## Temperature Definition Formats
@@ -156,13 +156,13 @@ Control data simplification and memory usage:
 ```yaml
 properties:
     heat_conductivity:
-      temperature: [1200, 1800, 2200, 2400]  # Temperatures in Kelvin
-      value: [25, 30, 33, 35]  # Property values
-      bounds: [constant, constant]
-      regression:
-          simplify: pre # Apply before symbolic processing
-          degree: 1 # Linear regression
-          segments: 3 # Number of piecewise segments
+        temperature: [1200, 1800, 2200, 2400]  # Temperatures in Kelvin
+        value: [25, 30, 33, 35]  # Property values
+        bounds: [constant, constant]
+        regression:
+            simplify: pre # Apply before symbolic processing
+            degree: 1 # Linear regression
+            segments: 3 # Number of piecewise segments
 ```
 
 ### Boundary Behavior
@@ -175,9 +175,163 @@ bounds: [constant, extrapolate]
 
 ## Creating a Complete Material Definition
 
-Here's a complete example for stainless steel SS304L:
+Here's a complete example for Aluminum (Pure metal):
+```yaml
+# ====================================================================================================
+# PYMATLIB MATERIAL CONFIGURATION FILE - PURE METAL
+# ====================================================================================================
+# This file defines material properties for pure Aluminum using the pymatlib format.
+# Pure metals require 'melting_temperature' and 'boiling_temperature' instead of solidus/liquidus
+# ====================================================================================================
+
+name: Aluminum
+material_type: pure_metal  # Must be 'pure_metal' for single-element materials
+
+# Composition must sum to 1.0 (for pure metals, single element = 1.0)
+composition:
+  Al: 1.0  # Aluminum purity (99.95%)
+
+# Required temperature properties for pure metals
+melting_temperature: 933.47   # Temperature where solid becomes liquid (K)
+boiling_temperature: 2743.0   # Temperature where liquid becomes gas (K)
+
+properties:
+  
+  # ====================================================================================================
+  # STEP_FUNCTION EXAMPLES
+  # Step functions use a single temperature transition point with before/after values
+  # ====================================================================================================
+  
+  latent_heat_of_fusion:
+    temperature: melting_temperature - 1  # Transition 1K before melting point
+    value: [0.0, 10790.0]                  # [before_transition, after_transition] in J/kg
+    bounds: [constant, constant]           # Keep constant values outside range
+  
+  latent_heat_of_vaporization:
+    temperature: boiling_temperature       # Transition at boiling point
+    value: [0.0, 294000.0]                 # [before_boiling, after_boiling] in J/kg
+    bounds: [constant, constant]
+  
+  # ====================================================================================================
+  # KEY_VAL EXAMPLES
+  # Key-value pairs with explicit temperature-property relationships
+  # ====================================================================================================
+  
+  heat_capacity:
+    temperature: (273.15, 100.0)           # Tuple: (start=273.15K, increment=100K)
+    # Generates: [273.15, 373.15, 473.15, 573.15, 673.15, 773.15, 873.15, 973.15]
+    value: [897, 921, 950, 980, 1010, 1040, 1070, 1084]  # J/kg·K values
+    bounds: [constant, constant]
+    regression:
+      simplify: post                       # Apply linear regression after processing
+      degree: 1                            # Linear fit
+      segments: 1                          # Single segment (no breakpoints)
+
+  thermal_expansion_coefficient:
+    temperature: [333.15, 423.15, 523.15, 623.15, 723.15, 833.15]  # Explicit temperature list
+    value: [2.38e-05, 2.55e-05, 2.75e-05, 2.95e-05, 3.15e-05, 3.35e-05]  # 1/K values
+    bounds: [constant, constant]
+    regression:
+      simplify: post
+      degree: 1
+      segments: 1
+
+  # ====================================================================================================
+  # PIECEWISE_EQUATION EXAMPLE
+  # Multiple equations for different temperature ranges
+  # ====================================================================================================
+  
+  heat_conductivity:
+    temperature: [500, 1700, 3000]         # Three breakpoints define two ranges
+    equation: [0.0124137215440647*T + 13.0532171803243, 0.0124137215440647*T + 13.0532171803243]
+    # Equation 1: 500-1700K, Equation 2: 1700-3000K
+    bounds: [constant, constant]
+    regression:
+      simplify: post
+      degree: 1
+      segments: 1
+  
+  # ====================================================================================================
+  # COMPUTE EXAMPLES
+  # Properties calculated from other properties using symbolic expressions
+  # ====================================================================================================
+  
+  density:
+    temperature: (300, 3000, 541)          # (start, stop, points) - 541 evenly spaced points
+    equation: 2700 * (1 - 3*thermal_expansion_coefficient * (T - 293))  # Thermal expansion model
+    bounds: [constant, constant]
+    regression:
+      simplify: post
+      degree: 1
+      segments: 1
+  
+  thermal_diffusivity:
+    temperature: (3000, 300, -5.)          # (start, stop, negative_step) - decreasing by 5K
+    equation: heat_conductivity / (density * heat_capacity)  # Standard thermal diffusivity formula
+    bounds: [extrapolate, extrapolate]     # Allow extrapolation outside range
+    regression:
+      simplify: post
+      degree: 2
+      segments: 1
+
+  energy_density:
+    temperature: (300, 3000, 5.0)          # (start, stop, step) - 5K increments
+    equation: density * specific_enthalpy  # Property dependencies automatically resolved
+    bounds: [extrapolate, extrapolate]
+    regression:
+      simplify: pre
+      degree: 1
+      segments: 6
+
+  specific_enthalpy:
+    temperature: (300, 3000, 541)          # (start, stop, num_points) - 541 evenly spaced points
+    equation: Integral(heat_capacity, T)   # Symbolic integration
+    bounds: [ constant, constant ]
+    regression:
+      simplify: post
+      degree: 1
+      segments: 2
+
+# ====================================================================================================
+# PURE METAL SPECIFIC NOTES:
+# 
+# 1. REQUIRED FIELDS:
+#    - name, material_type: pure_metal, composition, melting_temperature, boiling_temperature
+# 
+# 2. TEMPERATURE REFERENCES:
+#    - melting_temperature, boiling_temperature (instead of solidus/liquidus for alloys)
+#    - Arithmetic expressions: melting_temperature + 50, boiling_temperature - 100
+# 
+# 3. PROPERTY DEPENDENCIES:
+#    - Properties are processed in dependency order automatically
+#    - thermal_diffusivity depends on heat_conductivity, density, heat_capacity
+#    - density depends on thermal_expansion_coefficient
+# 
+# 4. TEMPERATURE TUPLE FORMATS:
+#    - (start, increment): Requires n_values from 'value' list length
+#    - (start, stop, step): Step size (float) or number of points (integer)
+#    - Negative steps create decreasing temperature arrays
+# 
+# 5. REGRESSION BENEFITS:
+#    - Reduces memory usage and computational complexity
+#    - Smooths noisy data while preserving essential behavior
+#    - 'pre': Applied to raw data before symbolic processing
+#    - 'post': Applied after symbolic expressions are evaluated
+# ====================================================================================================
+```
+
+Here's a complete example for stainless steel SS304L (Alloy):
 
 ```yaml
+# ====================================================================================================
+# PYMATLIB MATERIAL CONFIGURATION FILE
+# ====================================================================================================
+# This file defines material properties for Stainless Steel 304L using the new pymatlib format.
+# Pymatlib supports 6 property types: CONSTANT, STEP_FUNCTION, FILE, KEY_VAL, PIECEWISE_EQUATION, and COMPUTE
+#
+# IMPORTANT: All property configurations must include 'bounds' parameter (except CONSTANT properties)
+# ====================================================================================================
+
 name: Stainless Steel 304L
 material_type: alloy  # Must be 'alloy' or 'pure_metal'
 
@@ -192,15 +346,39 @@ composition:
 # Required temperature properties for alloys
 solidus_temperature: 1605.          # Temperature where melting begins (K)
 liquidus_temperature: 1735.         # Temperature where material is completely melted (K)
-initial_boiling_temperature: 6520.  # Temperature where boiling begins (K)
-final_boiling_temperature: 6850.    # Temperature where material is completely vaporized (K)
+initial_boiling_temperature: 3090.  # Temperature where boiling begins (K)
+final_boiling_temperature: 3200.    # Temperature where material is completely vaporized (K)
 
 properties:
 
+  # ====================================================================================================
+  # PROPERTY TYPE 1: CONSTANT
+  # Format: property_name: numeric_value
+  # Note: Must be float, not integer (use 1.0 instead of 1)
+  # ====================================================================================================
+
   latent_heat_of_vaporization: 1.71401E5  # J/kg - Scientific notation supported
 
+  # ====================================================================================================
+  # PROPERTY TYPE 2: STEP_FUNCTION
+  # Format: Uses 'temperature' (single reference) and 'value' (list of 2 values)
+  # Supports temperature references and arithmetic expressions
+  # ====================================================================================================
+
+  # Example with temperature reference arithmetic:
+  # latent_heat_of_fusion:
+  #   temperature: solidus_temperature - 1 # Arithmetic expressions supported
+  #   value: [0.0, 171401.0]               # [before_transition, after_transition]
+  #   bounds: [constant, constant]         # Required for all non-constant properties
+
+  # ====================================================================================================
+  # PROPERTY TYPE 3: KEY_VAL
+  # Format: Uses 'temperature' (list/tuple) and 'value' (list) with same length
+  # Supports temperature references, explicit lists, and tuple notation
+  # ====================================================================================================
+
   latent_heat_of_fusion:
-    temperature: [solidus_temperature - 5, liquidus_temperature + 5]  # Temperature references with arithmetic
+    temperature: [solidus_temperature - 1, liquidus_temperature + 1]  # Temperature references with arithmetic
     value: [0, 171401.]                    # Corresponding property values
     bounds: [constant, constant]           # Boundary behavior: 'constant' or 'extrapolate'
 
@@ -209,19 +387,25 @@ properties:
     value: [1.2632e-5, 1.468e-5, 1.524e-5, 1.581e-5, 1.639e-5, 1.699e-5, 1.759e-5, 1.821e-5, 1.885e-5, 2.1e-5, 2.3e-5, 2.5e-5, 2.7e-5]
     bounds: [constant, constant]
     regression:                            # Optional regression configuration
-      simplify: post                        # 'pre' (before processing) or 'post' (after processing)
+      simplify: pre                        # 'pre' (before processing) or 'post' (after processing)
       degree: 1                            # Polynomial degree for regression
       segments: 2                          # Number of piecewise segments
 
+  # ====================================================================================================
+  # PROPERTY TYPE 4: FILE
+  # Format: Uses 'file_path', 'temperature_column', 'property_column'
+  # Supports .txt, .csv, .xlsx files with automatic missing value handling
+  # ====================================================================================================
+
   heat_capacity:
-    file_path: ./SS304L.xlsx              # Relative path from YAML file location
-    temperature_column: T (K)             # Column name for temperature data
+    file_path: ./SS304L.xlsx               # Relative path from YAML file location
+    temperature_column: T (K)              # Column name for temperature data
     property_column: Specific heat (J/(Kg K)) # Column name for property data
-    bounds: [constant, constant]          # Required boundary behavior
-    regression:                           # Optional regression for data simplification
-      simplify: pre                       # Apply regression before processing
-      degree: 1                           # Linear regression
-      segments: 4                         # Divide into 4 piecewise segments
+    bounds: [constant, constant]           # Required boundary behavior
+    regression:                            # Optional regression for data simplification
+      simplify: pre                        # Apply regression before processing
+      degree: 1                            # Linear regression
+      segments: 4                          # Divide into 4 piecewise segments
 
   density:
     file_path: ./SS304L.xlsx
@@ -229,22 +413,34 @@ properties:
     property_column: Density (kg/(m)^3)
     bounds: [constant, constant]
     regression:
-      simplify: post                      # Apply regression after processing
-      degree: 1
-      segments: 1
+      simplify: post                       # Apply regression after processing
+      degree: 2
+      segments: 3
+
+  # ====================================================================================================
+  # PROPERTY TYPE 5: PIECEWISE_EQUATION
+  # Format: Uses 'temperature' (breakpoints) and 'equation' (list of expressions)
+  # Number of equations = number of breakpoints - 1
+  # ====================================================================================================
 
   heat_conductivity:
-    temperature: [500, 1700, 3000]        # Temperature breakpoints (K)
+    temperature: [500, 1700, 3000]         # Temperature breakpoints (K)
     equation: [0.0124137215440647*T + 13.0532171803243, 0.0124137215440647*T + 13.0532171803243]
     # Two equations for three breakpoints: [500-1700K] and [1700-3000K]
     bounds: [constant, constant]           # Boundary behavior outside range
     regression:
-      simplify: post                      # Apply regression after symbolic processing
+      simplify: post                       # Apply regression after symbolic processing
       degree: 1
       segments: 2
 
+  # ====================================================================================================
+  # PROPERTY TYPE 6: COMPUTE
+  # Format: Uses 'equation' (single expression) and 'temperature' (range definition)
+  # Supports dependency resolution and automatic ordering
+  # ====================================================================================================
+
   specific_enthalpy:
-    temperature: (300, 3000, 541)         # (start, stop, num_points) - 541 evenly spaced points
+    temperature: (300, 3000, 541)          # (start, stop, num_points) - 541 evenly spaced points
     equation: Integral(heat_capacity, T)   # Symbolic integration
     bounds: [constant, constant]
     regression:
@@ -253,22 +449,44 @@ properties:
       segments: 2
 
   energy_density:
-    temperature: (300, 3000, 5.0)         # (start, stop, step) - 5K increments
+    temperature: (300, 3000, 5.0)          # (start, stop, step) - 5K increments
     equation: density * specific_enthalpy  # Property dependencies automatically resolved
     bounds: [extrapolate, extrapolate]
     regression:
-      simplify: post
+      simplify: pre
       degree: 1
       segments: 6
 
   thermal_diffusivity:
-    temperature: (3000, 300, -5.0)        # (start, stop, negative_step) - decreasing temperature
+    temperature: (3000, 300, -5.0)         # (start, stop, negative_step) - decreasing temperature
     equation: heat_conductivity /(density * heat_capacity)  # Multi-property dependency
     bounds: [constant, constant]
     regression:
       simplify: post
       degree: 1
       segments: 3
+
+# ====================================================================================================
+# TEMPERATURE DEFINITION FORMATS:
+#
+# 1. Single value: 1000.0
+# 2. List: [300, 400, 500, 600]
+# 3. Temperature references: solidus_temperature, liquidus_temperature, etc.
+# 4. Arithmetic expressions: melting_temperature + 50, solidus_temperature - 10
+# 5. Tuple formats:
+#    - (start, increment): (300, 50) with n_values parameter
+#    - (start, stop, step): (300, 1000, 10.0) for 10K increments
+#    - (start, stop, points): (300, 1000, 71) for 71 evenly spaced points
+#
+# BOUNDS OPTIONS:
+# - 'constant': Use boundary values as constants outside range
+# - 'extrapolate': Linear extrapolation outside range
+#
+# REGRESSION OPTIONS:
+# - simplify: 'pre' (before symbolic processing) or 'post' (after symbolic processing)
+# - degree: Polynomial degree (1=linear, 2=quadratic, etc.)
+# - segments: Number of piecewise segments for regression
+# ====================================================================================================
 ```
 
 ## Best Practices
