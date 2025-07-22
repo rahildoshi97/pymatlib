@@ -77,11 +77,11 @@ properties:
     #file_path: ./SS304L.xlsx
     #temperature_header: T (K)
     #value_header: Density (kg/(m)^3)
-    #bounds: [constant, constant]
+    #bounds: [constant, extrapolate]
     #regression:
-      #simplify: pre  # Simplify after symbolic processing
+      #simplify: post  # Simplify after symbolic processing
       #degree: 1       # Linear regression
-      #segments: 3     # Use 5 segments for piecewise regression
+      #segments: 1     # Use 5 segments for piecewise regression
 
   #heat_capacity:
     #file_path: ./SS304L.xlsx               # Relative path from YAML file location
@@ -111,10 +111,7 @@ properties:
 
 
 
-  thermal_expansion_coefficient:
-    temperature: [333.15, 423.15, 523.15, 623.15, 723.15, 833.15]  # Explicit temperature list
-    value: [2.38e-05, 2.55e-05, 2.75e-05, 2.95e-05, 3.15e-05, 3.35e-05]  # 1/K values
-    bounds: [constant, constant]
+
 
   #density:
     #temperature: (300, 3000, 541)          # (start, stop, points) - 541 evenly spaced points
