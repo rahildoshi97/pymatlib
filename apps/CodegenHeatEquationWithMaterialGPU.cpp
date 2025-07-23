@@ -224,7 +224,7 @@ int main(int argc, char** argv)
         gpu::fieldCpy<ScalarField, GPUScalarField>(blocks, uTmpFieldCpuId, uTmpFieldId);
 
         // Reapply Dirichlet boundaries on CPU
-        initDirichletBoundaryNorth(blocks, uFieldId, uTmpFieldId, uFieldCpuId, uTmpFieldCpuId);
+        // initDirichletBoundaryNorth(blocks, uFieldId, uTmpFieldId, uFieldCpuId, uTmpFieldCpuId);
     }, "Swap and Boundary Update");
 
     if (vtkWriteFrequency > 0)
@@ -240,6 +240,7 @@ int main(int argc, char** argv)
 
         vtkOutput->addBeforeFunction([&]() {
             // Copy GPU data to CPU for VTK output
+            // Only copy when actually writing VTK (every 400 steps)
             gpu::fieldCpy<ScalarField, GPUScalarField>(blocks, uFieldCpuId, uFieldId);
             gpu::fieldCpy<ScalarField, GPUScalarField>(blocks, alphaFieldCpuId, alphaFieldId);
         });
