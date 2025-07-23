@@ -75,34 +75,108 @@ void initDirichletBoundaryNorth(const shared_ptr<StructuredBlockForest>& blocks,
     }
 
     // Copy to GPU with correct template parameters
-    gpu::fieldCpy<GPUScalarField, ScalarField>(blocks, uId, uCpuId);
-    gpu::fieldCpy<GPUScalarField, ScalarField>(blocks, uTmpId, uTmpCpuId);
+    //gpu::fieldCpy<GPUScalarField, ScalarField>(blocks, uId, uCpuId);
+    //gpu::fieldCpy<GPUScalarField, ScalarField>(blocks, uTmpId, uTmpCpuId);
 }
 
-// Initialize alpha field properly
-/*void initAlphaField(const shared_ptr<StructuredBlockForest>& blocks,
-                   BlockDataID alphaId, BlockDataID alphaCpuId)
+void initDirichletBoundariesAllSides(const shared_ptr<StructuredBlockForest>& blocks,
+                                    BlockDataID uId, BlockDataID uTmpId,
+                                    BlockDataID uCpuId, BlockDataID uTmpCpuId)
 {
-    // Initialize thermal diffusivity on CPU
     for (auto block = blocks->begin(); block != blocks->end(); ++block)
     {
-        ScalarField* alpha = block->getData<ScalarField>(alphaCpuId);
-        CellInterval xyz = alpha->xyzSize();
+        ScalarField* u = block->getData<ScalarField>(uCpuId);
+        ScalarField* u_tmp = block->getData<ScalarField>(uTmpCpuId);
 
-        for (auto cell = xyz.begin(); cell != xyz.end(); ++cell)
+        // North boundary (Y max)
+        if (blocks->atDomainYMaxBorder(*block))
         {
-            // Same thermal diffusivity calculation as in the kernel
-            real_t k = real_c(35.3375739419170);
-            real_t rho = real_c(6824.46293263393);
-            real_t cp = real_c(835.533555786031);
-            real_t alpha_val = k / (rho * cp);
-            alpha->get(*cell) = alpha_val;
+            CellInterval north = u->xyzSizeWithGhostLayer();
+            north.yMin() = north.yMax();
+
+            for (auto cell = north.begin(); cell != north.end(); ++cell)
+            {
+                real_t v = real_c(3000.0); // Hot boundary
+                u->get(*cell) = v;
+                u_tmp->get(*cell) = v;
+            }
+        }
+
+        // South boundary (Y min)
+        if (blocks->atDomainYMinBorder(*block))
+        {
+            CellInterval south = u->xyzSizeWithGhostLayer();
+            south.yMax() = south.yMin();
+
+            for (auto cell = south.begin(); cell != south.end(); ++cell)
+            {
+                real_t v = real_c(300.0); // Cold boundary
+                u->get(*cell) = v;
+                u_tmp->get(*cell) = v;
+            }
+        }
+
+        // East boundary (X max)
+        if (blocks->atDomainXMaxBorder(*block))
+        {
+            CellInterval east = u->xyzSizeWithGhostLayer();
+            east.xMin() = east.xMax();
+
+            for (auto cell = east.begin(); cell != east.end(); ++cell)
+            {
+                real_t v = real_c(300.0);
+                u->get(*cell) = v;
+                u_tmp->get(*cell) = v;
+            }
+        }
+
+        // West boundary (X min)
+        if (blocks->atDomainXMinBorder(*block))
+        {
+            CellInterval west = u->xyzSizeWithGhostLayer();
+            west.xMax() = west.xMin();
+
+            for (auto cell = west.begin(); cell != west.end(); ++cell)
+            {
+                real_t v = real_c(300.0);
+                u->get(*cell) = v;
+                u_tmp->get(*cell) = v;
+            }
+        }
+
+        // Top boundary (Z max)
+        if (blocks->atDomainZMaxBorder(*block))
+        {
+            CellInterval top = u->xyzSizeWithGhostLayer();
+            top.zMin() = top.zMax();
+
+            for (auto cell = top.begin(); cell != top.end(); ++cell)
+            {
+                real_t v = real_c(300.0);
+                u->get(*cell) = v;
+                u_tmp->get(*cell) = v;
+            }
+        }
+
+        // Bottom boundary (Z min)
+        if (blocks->atDomainZMinBorder(*block))
+        {
+            CellInterval bottom = u->xyzSizeWithGhostLayer();
+            bottom.zMax() = bottom.zMin();
+
+            for (auto cell = bottom.begin(); cell != bottom.end(); ++cell)
+            {
+                real_t v = real_c(300.0);
+                u->get(*cell) = v;
+                u_tmp->get(*cell) = v;
+            }
         }
     }
 
-    // Copy to GPU
-    gpu::fieldCpy<GPUScalarField, ScalarField>(blocks, alphaId, alphaCpuId);
-}*/
+    // Copy to GPU with correct template parameters
+    //gpu::fieldCpy<GPUScalarField, ScalarField>(blocks, uId, uCpuId);
+    //gpu::fieldCpy<GPUScalarField, ScalarField>(blocks, uTmpId, uTmpCpuId);
+}
 
 int main(int argc, char** argv)
 {
@@ -187,14 +261,15 @@ int main(int argc, char** argv)
     //////////////////////////
 
     // Initialize boundary conditions
-    initDirichletBoundaryNorth(blocks, uFieldId, uTmpFieldId, uFieldCpuId, uTmpFieldCpuId);
+    //initDirichletBoundaryNorth(blocks, uFieldId, uTmpFieldId, uFieldCpuId, uTmpFieldCpuId);  // Neumann
+    initDirichletBoundariesAllSides(blocks, uFieldId, uTmpFieldId, uFieldCpuId, uTmpFieldCpuId);  // Dirichlet
 
     ////////////////////////
     /// NEUMANN BOUNDARY ///
     ////////////////////////
 
-    pde::NeumannDomainBoundary<ScalarField> neumann(*blocks, uFieldCpuId);
-    neumann.excludeBoundary(stencil::N);
+    //pde::NeumannDomainBoundary<ScalarField> neumann(*blocks, uFieldCpuId);  // Neumann
+    //neumann.excludeBoundary(stencil::N);  // Neumann
 
     ////////////////
     /// TIMELOOP ///
@@ -204,7 +279,8 @@ int main(int argc, char** argv)
 
     timeloop.add() << BeforeFunction([&]() {
         // Apply Neumann boundaries on CPU
-        neumann();
+        //neumann();  // Neumann
+        initDirichletBoundariesAllSides(blocks, uFieldId, uTmpFieldId, uFieldCpuId, uTmpFieldCpuId);  // Dirichlet
 
         // Copy updated boundary values to GPU
         gpu::fieldCpy<GPUScalarField, ScalarField>(blocks, uFieldId, uFieldCpuId);
