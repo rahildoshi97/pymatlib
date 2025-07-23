@@ -58,6 +58,100 @@ void initDirichletBoundaryNorth(const shared_ptr<StructuredBlockForest>& blocks,
     }
 }
 
+void initDirichletBoundariesAllSides(const shared_ptr<StructuredBlockForest>& blocks,
+                                    BlockDataID uId, BlockDataID uTmpId)
+{
+    for (auto block = blocks->begin(); block != blocks->end(); ++block)
+    {
+        ScalarField* u = block->getData<ScalarField>(uId);
+        ScalarField* u_tmp = block->getData<ScalarField>(uTmpId);
+
+        // North boundary (Y max)
+        if (blocks->atDomainYMaxBorder(*block))
+        {
+            CellInterval north = u->xyzSizeWithGhostLayer();
+            north.yMin() = north.yMax();
+
+            for (auto cell = north.begin(); cell != north.end(); ++cell)
+            {
+                real_t v = real_c(3000.0); // Hot boundary
+                u->get(*cell) = v;
+                u_tmp->get(*cell) = v;
+            }
+        }
+
+        // South boundary (Y min)
+        if (blocks->atDomainYMinBorder(*block))
+        {
+            CellInterval south = u->xyzSizeWithGhostLayer();
+            south.yMax() = south.yMin();
+
+            for (auto cell = south.begin(); cell != south.end(); ++cell)
+            {
+                real_t v = real_c(300.0); // Cold boundary
+                u->get(*cell) = v;
+                u_tmp->get(*cell) = v;
+            }
+        }
+
+        // East boundary (X max)
+        if (blocks->atDomainXMaxBorder(*block))
+        {
+            CellInterval east = u->xyzSizeWithGhostLayer();
+            east.xMin() = east.xMax();
+
+            for (auto cell = east.begin(); cell != east.end(); ++cell)
+            {
+                real_t v = real_c(300.0);
+                u->get(*cell) = v;
+                u_tmp->get(*cell) = v;
+            }
+        }
+
+        // West boundary (X min)
+        if (blocks->atDomainXMinBorder(*block))
+        {
+            CellInterval west = u->xyzSizeWithGhostLayer();
+            west.xMax() = west.xMin();
+
+            for (auto cell = west.begin(); cell != west.end(); ++cell)
+            {
+                real_t v = real_c(300.0);
+                u->get(*cell) = v;
+                u_tmp->get(*cell) = v;
+            }
+        }
+
+        // Top boundary (Z max)
+        if (blocks->atDomainZMaxBorder(*block))
+        {
+            CellInterval top = u->xyzSizeWithGhostLayer();
+            top.zMin() = top.zMax();
+
+            for (auto cell = top.begin(); cell != top.end(); ++cell)
+            {
+                real_t v = real_c(300.0);
+                u->get(*cell) = v;
+                u_tmp->get(*cell) = v;
+            }
+        }
+
+        // Bottom boundary (Z min)
+        if (blocks->atDomainZMinBorder(*block))
+        {
+            CellInterval bottom = u->xyzSizeWithGhostLayer();
+            bottom.zMax() = bottom.zMin();
+
+            for (auto cell = bottom.begin(); cell != bottom.end(); ++cell)
+            {
+                real_t v = real_c(300.0);
+                u->get(*cell) = v;
+                u_tmp->get(*cell) = v;
+            }
+        }
+    }
+}
+
 int main(int argc, char** argv)
 {
     mpi::Environment env(argc, argv);
@@ -121,14 +215,15 @@ int main(int argc, char** argv)
     /// DIRICHLET BOUNDARY ///
     //////////////////////////
 
-    initDirichletBoundaryNorth(blocks, uFieldId, uTmpFieldId);
+    //initDirichletBoundaryNorth(blocks, uFieldId, uTmpFieldId);  // Neumann
+    initDirichletBoundariesAllSides(blocks, uFieldId, uTmpFieldId);  // Dirichlet
 
     ////////////////////////
     /// NEUMANN BOUNDARY ///
     ////////////////////////
 
-    pde::NeumannDomainBoundary<ScalarField> neumann(*blocks, uFieldId);
-    neumann.excludeBoundary(stencil::N);
+    //pde::NeumannDomainBoundary<ScalarField> neumann(*blocks, uFieldId);  // Neumann
+    //neumann.excludeBoundary(stencil::N);  // Neumann
 
     ////////////////
     /// TIMELOOP ///
@@ -137,7 +232,8 @@ int main(int argc, char** argv)
     SweepTimeloop timeloop(blocks, timeSteps);
 
     timeloop.add() << BeforeFunction(commScheme, "Communication")
-                   << BeforeFunction(neumann, "Neumann Boundaries")
+                   //<< BeforeFunction(neumann, "Neumann Boundaries")  // Neumann
+                   << BeforeFunction([&]() {initDirichletBoundariesAllSides(blocks, uFieldId, uTmpFieldId);}, "Dirichlet Boundaries")  // Dirichlet
                    << Sweep(HeatEquationKernelWithMaterialCPU(alphaFieldId, uFieldId, uTmpFieldId, dt, dx), "HeatEquationKernelWithMaterialCPU")
                    << AfterFunction([blocks, uFieldId, uTmpFieldId]() {swapFields(*blocks, uFieldId, uTmpFieldId);}, "Swap");
 
