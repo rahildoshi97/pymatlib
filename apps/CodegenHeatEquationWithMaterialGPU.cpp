@@ -24,7 +24,7 @@
 #include "gpu/FieldCopy.h"
 #include "gpu/GPUWrapper.h"
 #include "gpu/HostFieldAllocator.h"
-#include "gpu/ParallelStreams.h"
+//#include "gpu/ParallelStreams.h"
 #include "gpu/communication/MemcpyPackInfo.h"
 #include "gpu/communication/UniformGPUScheme.h"
 
@@ -174,8 +174,8 @@ void initDirichletBoundariesAllSides(const shared_ptr<StructuredBlockForest>& bl
     }
 
     // Copy to GPU with correct template parameters
-    //gpu::fieldCpy<GPUScalarField, ScalarField>(blocks, uId, uCpuId);
-    //gpu::fieldCpy<GPUScalarField, ScalarField>(blocks, uTmpId, uTmpCpuId);
+    gpu::fieldCpy<GPUScalarField, ScalarField>(blocks, uId, uCpuId);
+    gpu::fieldCpy<GPUScalarField, ScalarField>(blocks, uTmpId, uTmpCpuId);
 }
 
 int main(int argc, char** argv)
@@ -280,28 +280,28 @@ int main(int argc, char** argv)
     timeloop.add() << BeforeFunction([&]() {
         // Apply Neumann boundaries on CPU
         //neumann();  // Neumann
-        initDirichletBoundariesAllSides(blocks, uFieldId, uTmpFieldId, uFieldCpuId, uTmpFieldCpuId);  // Dirichlet
+        //initDirichletBoundariesAllSides(blocks, uFieldId, uTmpFieldId, uFieldCpuId, uTmpFieldCpuId);  // Dirichlet
 
         // Copy updated boundary values to GPU
-        gpu::fieldCpy<GPUScalarField, ScalarField>(blocks, uFieldId, uFieldCpuId);
+        //gpu::fieldCpy<GPUScalarField, ScalarField>(blocks, uFieldId, uFieldCpuId);
 
         // Also copy boundary conditions to u_tmp field
-        gpu::fieldCpy<GPUScalarField, ScalarField>(blocks, uTmpFieldId, uTmpFieldCpuId);
+        //gpu::fieldCpy<GPUScalarField, ScalarField>(blocks, uTmpFieldId, uTmpFieldCpuId);
 
         // GPU communication
-        commScheme.communicate();
-    }, "Communication and Boundaries")
+        commScheme.getCommunicateFunctor();
+    }, "GPU Communication")
     << Sweep(HeatEquationKernelWithMaterialGPU(alphaFieldId, uFieldId, uTmpFieldId, dt, dx), "HeatEquationKernelWithMaterialGPU")
     << AfterFunction([&]() {
         swapFields(*blocks, uFieldId, uTmpFieldId);
 
         // Copy results back to CPU for boundary condition updates
-        gpu::fieldCpy<ScalarField, GPUScalarField>(blocks, uFieldCpuId, uFieldId);
-        gpu::fieldCpy<ScalarField, GPUScalarField>(blocks, uTmpFieldCpuId, uTmpFieldId);
+        //gpu::fieldCpy<ScalarField, GPUScalarField>(blocks, uFieldCpuId, uFieldId);
+        //gpu::fieldCpy<ScalarField, GPUScalarField>(blocks, uTmpFieldCpuId, uTmpFieldId);
 
         // Reapply Dirichlet boundaries on CPU
         // initDirichletBoundaryNorth(blocks, uFieldId, uTmpFieldId, uFieldCpuId, uTmpFieldCpuId);
-    }, "Swap and Boundary Update");
+    }, "GPU Swap");
 
     if (vtkWriteFrequency > 0)
     {

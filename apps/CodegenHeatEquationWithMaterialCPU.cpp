@@ -233,7 +233,7 @@ int main(int argc, char** argv)
 
     timeloop.add() << BeforeFunction(commScheme, "Communication")
                    //<< BeforeFunction(neumann, "Neumann Boundaries")  // Neumann
-                   << BeforeFunction([&]() {initDirichletBoundariesAllSides(blocks, uFieldId, uTmpFieldId);}, "Dirichlet Boundaries")  // Dirichlet
+                   //<< BeforeFunction([&]() {initDirichletBoundariesAllSides(blocks, uFieldId, uTmpFieldId);}, "Dirichlet Boundaries")
                    << Sweep(HeatEquationKernelWithMaterialCPU(alphaFieldId, uFieldId, uTmpFieldId, dt, dx), "HeatEquationKernelWithMaterialCPU")
                    << AfterFunction([blocks, uFieldId, uTmpFieldId]() {swapFields(*blocks, uFieldId, uTmpFieldId);}, "Swap");
 
