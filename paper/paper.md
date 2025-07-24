@@ -32,34 +32,25 @@ and serves as a seamless bridge between experimental data and numerical simulati
 
 # Statement of Need
 
-The physical characteristics of materials, such as thermal conductivity, density,
-and heat capacity, in fields like metal casting, heat treatment, and thermal analysis, change significantly with temperature.
-Accurately modeling these changes is a persistent challenge.
+Accurate numerical simulation requires accounting for material properties—such as thermal conductivity, density, and heat capacity
+—that are not constant but depend on variables like temperature, pressure, or concentration [@lewis1996finite; @zienkiewicz2013finite]. 
+This challenge is compounded by the wide variation in data availability, 
+from well-characterized models for established materials to sparse experimental points for novel alloys. 
+Consequently, property definitions can range from simple constants to complex tabular datasets or sophisticated equations, 
+creating a significant integration hurdle for researchers.
 
-Material properties are not constants—they are typically dependent on variables such as 
-temperature, pressure, or concentration, which creates significant challenges for accurate numerical simulations in fields like 
-metal casting, heat treatment, and thermal analysis [@lewis1996finite; @zienkiewicz2013finite]. 
-The knowledge base for material properties varies dramatically across different materials: 
-some well-established materials have been characterized over decades with extensive databases, 
-while newly designed alloys from ongoing materials development may have limited or no available data. 
-This diversity in material knowledge means that property definitions can range from 
-simple constants to complex measurement datasets to sophisticated theoretical models—essentially, 
-any representation is possible depending on the material and application.
+To manage this complexity, researchers often resort to manual interpolation, custom scripting, or proprietary software, 
+which compromises reproducibility and standardization [@ashby2013materials]. 
+While valuable resources like the NIST WebBook [@nist_webbook] and libraries such as CoolProp [@coolprop] exist, 
+they typically provide raw data without the integrated processing needed to unify these varied formats. 
+Similarly, specialized CALPHAD databases [@calphad] are powerful but often require proprietary software 
+and do not easily integrate with general-purpose simulation codes.
 
-Researchers often rely on manual interpolation, custom scripting, 
-or proprietary software solutions, which can lead to issues with reproducibility, flexibility and standardization [@ashby2013materials]. 
-While valuable resources like NIST [@nist_webbook] and libraries like CoolProp [@coolprop] provide extensive material data,
-they primarily offer raw tabular data or focus on fluid properties, lacking the integrated symbolic processing and dependency management
-capabilities needed for complex simulations. 
-Similarly, specialized CALPHAD databases [@calphad] require proprietary software and do not easily integrate with general-purpose simulation codes.
-
-This gap forces researchers to develop ad-hoc solutions for each new project, 
-creating a bottleneck in the research workflow and hindering the FAIR principles of data sharing [@wilkinson2016fair]. 
-PyMatLib addresses these challenges by combining all these diverse material property representations into a unified material library 
-through symbolic mathematical expressions with automatic regression and optimization capabilities.
-The library provides a robust, flexible, and open-source tool 
-that combines a user-friendly configuration system with powerful backend processing, 
-thereby standardizing and simplifying the integration of realistic material behavior into scientific simulations.
+This gap forces the development of ad-hoc solutions, hindering workflow efficiency and the adoption of FAIR data principles [@wilkinson2016fair]. 
+PyMatLib was created to bridge this gap by providing a unified, open-source framework that leverages 
+symbolic mathematics, automatic regression, and dependency resolution to handle these disparate data sources. 
+By combining a user-friendly YAML configuration with powerful backend processing, 
+PyMatLib standardizes and simplifies the integration of realistic material behavior into scientific simulations.
 
 # Key Functionality
 
