@@ -219,21 +219,21 @@ The primary entry point is the create_material function, which parses the YAML f
 
 # Comparison with Existing Tools
 
-| Feature                  | **PyMatLib**    | **CoolProp** | **NIST WebBook** | **CALPHAD** |
-|:-------------------------|:----------------|:-------------|:-----------------|:------------|
-| **Core Capabilities**    |                 |              |                  |             |
-| Symbolic Integration     | Yes             | No           | No               | No          |
-| Dependency Resolution    | Yes (Automatic) | No           | No               | No          |
-| Multiple Input Methods   | Yes (6 types)   | No           | No               | No          |
-|                          |                 |              |                  |             |
-| **Material Support**     |                 |              |                  |             |
-| Solid Materials          | Yes             | Limited      | Yes              | Yes         |
-| Custom Properties        | Yes             | No           | No               | Limited     |
-| Temperature Dependencies | Yes             | Yes          | Yes              | Yes         |
-|                          |                 |              |                  |             |
-| **Accessibility**        |                 |              |                  |             |
-| Open Source              | Yes             | Yes          | No               | No          |
-| Python Integration       | Native          | Yes          | API only         | No          |
+| Feature                  | **PyMatLib**       | **CoolProp** | **NIST WebBook** | **CALPHAD** |
+|:-------------------------|:-------------------|:-------------|:-----------------|:------------|
+| **Core Capabilities**    |                    |              |                  |             |
+| Symbolic Integration     | Yes                | No           | No               | No          |
+| Dependency Resolution    | Yes (Automatic)    | No           | No               | No          |
+| Multiple Input Methods   | Yes (6 types)      | No           | No               | No          |
+|                          |                    |              |                  |             |
+| **Material Support**     |                    |              |                  |             |
+| Solid Materials          | Yes                | Limited      | Yes              | Yes         |
+| Custom Properties        | Yes (Any property) | No           | No               | Limited     |
+| Temperature Dependencies | Yes                | Yes          | Yes              | Yes         |
+|                          |                    |              |                  |             |
+| **Accessibility**        |                    |              |                  |             |
+| Open Source              | Yes                | Yes          | No               | No          |
+| Python Integration       | Native             | Yes          | API only         | No          |
 
 **Key Advantage**: PyMatLib's unique combination of native symbolic mathematics via SymPy [@sympy], 
 automatic dependency resolution, and multiple input methods provides a level of flexibility and integration 
