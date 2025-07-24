@@ -69,39 +69,32 @@ or other specialized materials as research evolves.
 - **Automatic Dependency Resolution**: For properties that depend on others (e.g., thermal diffusivity calculated from thermal conductivity, density, and heat capacity), 
 PyMatLib automatically determines the correct processing order and resolves mathematical dependencies without manual intervention. 
 The library detects circular dependencies and provides clear error messages for invalid configurations, 
-- freeing users from complex dependency management.
+freeing users from complex dependency management.
 
 - **Regression and Data Reduction**: The library integrates pwlf [@pwlf] to perform piecewise linear regression for large datasets.
 This simplifies complex property curves into efficient, accurate mathematical representations with configurable polynomial degrees and segments, 
-reducing computational overhead while maintaining physical accuracy (\autoref{fig:regression_options}).
+reducing computational overhead while maintaining physical accuracy (\autoref{fig:regression_options_with_boundary_behavior}).
 
-![Regression capabilities showing data simplification effects: raw experimental data (points) fitted with different polynomial degrees and segment configurations, demonstrating how PyMatLib can reduce complexity while maintaining physical accuracy.\label{fig:regression_options}](figures/regression_options.png)
+- **Configurable Boundary Behavior**: Users can define how properties behave outside their specified temperature ranges,
+choosing between constant value or linear extrapolation to best match the physical behavior of the material.
+The boundary behavior options work seamlessly with the regression capabilities to provide comprehensive data processing control
+(\autoref{fig:regression_options_with_boundary_behavior}).
+
+![PyMatLib's data processing capabilities: regression and data reduction showing raw experimental data (points) fitted with different polynomial degrees and segment configurations, and boundary behavior options demonstrating constant versus extrapolate settings for the same density property, illustrating how PyMatLib can reduce complexity while maintaining physical accuracy and providing flexible boundary control.\label{fig:regression_options_with_boundary_behavior}](figures/regression_options_with_boundary_behavior.png)
 
 - **Intelligent Simplification Timing**: PyMatLib provides sophisticated control over when data simplification occurs
-  in the dependency chain through the `simplify` parameter. With `simplify: pre`,
-  properties are simplified using regression before being used in dependent calculations, optimizing performance.
-  With `simplify: post`, simplification is deferred until all dependent properties have been computed, maximizing numerical accuracy.
-  This timing control allows users to balance computational efficiency with numerical accuracy based on their specific simulation requirements.
+in the dependency chain through the `simplify` parameter. With `simplify: pre`,
+properties are simplified using regression before being used in dependent calculations, optimizing performance.
+With `simplify: post`, simplification is deferred until all dependent properties have been computed, maximizing numerical accuracy.
+This timing control allows users to balance computational efficiency with numerical accuracy based on their specific simulation requirements.
 
 ```yaml
+    bounds: [constant, extrapolate]  # Boundary behavior: 'constant' or 'extrapolate'
     regression:      # Optional regression configuration
       simplify: pre  # 'pre' (before processing) or 'post' (after processing)
       degree: 2      # Polynomial degree for regression
       segments: 3    # Number of piecewise segments
 ```
-
-- **Configurable Boundary Behavior**: Users can define how properties behave outside their specified temperature ranges, 
-choosing between constant value or linear extrapolation to best match the physical behavior of the material 
-(\autoref{fig:boundary_behavior}).
-```yaml
-    bounds: [constant, extrapolate]  # Boundary behavior: 'constant' or 'extrapolate'
-```
-
-![Boundary behavior options in PyMatLib showing the same density property with different extrapolation settings: constant boundaries (left) maintain edge values outside the defined range, while extrapolate boundaries (right) use linear extrapolation.\label{fig:boundary_behavior}](figures/boundary_behavior.png)
-
-- **Automatic Dependency Resolution**: Intelligent processing order determination for computed properties ensures 
-mathematical dependencies are resolved correctly without manual intervention. 
-The library automatically detects circular dependencies and provides clear error messages for invalid configurations.
 
 - **Bidirectional Property-Variable Inversion**: The library can automatically generate inverse piecewise functions, 
 enabling the determination of independent variables from known property values (e.g., `temperature = f(property)`). 
