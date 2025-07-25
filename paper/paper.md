@@ -1,5 +1,5 @@
 ---
-title: 'SymMatsPy: Symbolic Materials for Scientific Simulations in Python'
+title: 'PyMatLib'
 tags:
   - Python
   - materials science
@@ -11,10 +11,16 @@ authors:
   - name: Rahil Miten Doshi
     orcid: 0009-0008-3570-9841
     affiliation: 1
+  - name: Matthias Markl
+    orcid: 0000-0002-3000-7081
+    affiliation: 1
+  - name: Harald Koestler
+    # orcid:
+    affiliation: 1
 affiliations:
   - name: Friedrich-Alexander-Universität Erlangen-Nürnberg, Germany
     index: 1
-date: 24 July 2025
+date: 25 July 2025
 bibliography: paper.bib
 ---
 
@@ -22,13 +28,15 @@ bibliography: paper.bib
 
 PyMatLib is an extensible, open-source Python library that streamlines the definition and use of 
 material properties in numerical simulations.
-The library allows researchers to define complex material behaviors in simple human-readable YAML files,
-which are automatically converted into symbolic mathematical expressions for direct use in scientific computing frameworks. 
+The library allows researchers to define complex material behaviors-ranging from simple constants to experimental data 
+-in human-readable YAML configuration files.
+These are automatically converted into symbolic mathematical expressions for direct use in scientific computing frameworks. 
 PyMatLib supports both pure metals and alloys, 
 offers six different property definition methods, 
 and intelligently manages dependencies between different material properties.
 It is designed for high-performance computing applications,
-and serves as a seamless bridge between experimental data and numerical simulation.
+and serves as a seamless bridge between experimental data and numerical simulation,
+making sophisticated material modeling accessible to a broader scientific community.
 
 # Statement of Need
 
@@ -56,35 +64,35 @@ PyMatLib standardizes and simplifies the integration of realistic material behav
 
 - **Flexible Input Methods**: The library supports six different property definition methods: 
 constant values, step functions, file-based data (Excel, CSV, txt), tabular data, piecewise equations, and computed properties (\autoref{fig:input_methods}). 
-This versatility allows users to leverage data from diverse sources, from simple constants to complex experimental datasets. 
-File processing is handled robustly using pandas [@pandas].
+This versatility allows users to leverage data from diverse sources,
+with robust file processing handled using pandas [@pandas].
 
 ![PyMatLib's property definition methods: (a) constant value, (b) step function, (c) file data, (d) tabular data, (e) piecewise equations, and (f) computed properties.\label{fig:input_methods}](figures/input_methods.png)
 
-- **Universal Material Support**: The framework is designed to support any material type through its extensible architecture.
-Currently, PyMatLib is implemented and thoroughly tested for pure metals and alloys through a unified interface.
-The modular design allows for straightforward extension to additional material classes such as ceramics, polymers, composites,
-or other specialized materials as research evolves.
+- **Universal Material Support**: The framework is designed with an extensible architecture to support any material type. 
+It is currently implemented and thoroughly tested for pure metals and alloys through it's unified interface, 
+with a modular design that allows for straightforward extension to other material classes such as 
+ceramics, polymers, composites, or other specialized materials as research evolves. 
 
 - **Automatic Dependency Resolution**: For properties that depend on others (e.g., thermal diffusivity calculated from thermal conductivity, density, and heat capacity), 
 PyMatLib automatically determines the correct processing order and resolves mathematical dependencies without manual intervention. 
 The library detects circular dependencies and provides clear error messages for invalid configurations, 
 freeing users from complex dependency management.
 
-- **Regression and Data Reduction**: The library integrates pwlf [@pwlf] to perform piecewise linear regression for large datasets.
-This simplifies complex property curves into efficient, accurate mathematical representations with configurable polynomial degrees and segments, 
+- **Regression and Data Reduction**: The library integrates pwlf [@pwlf] to perform piecewise regression for large datasets.
+This simplifies complex property curves into efficient mathematical representations with configurable polynomial degrees and segments, 
 reducing computational overhead while maintaining physical accuracy (\autoref{fig:regression_options_with_boundary_behavior}).
 
 - **Configurable Boundary Behavior**: Users can define how properties behave outside their specified temperature ranges,
-choosing between constant value or linear extrapolation to best match the physical behavior of the material.
+choosing between constant-value or linear extrapolation to best match the physical behavior of the material.
 The boundary behavior options work seamlessly with the regression capabilities to provide comprehensive data processing control
 (\autoref{fig:regression_options_with_boundary_behavior}).
 
 ![PyMatLib's data processing capabilities: regression and data reduction showing raw experimental data (points) fitted with different polynomial degrees and segment configurations, and boundary behavior options demonstrating constant versus extrapolate settings for the same density property, illustrating how PyMatLib can reduce complexity while maintaining physical accuracy and providing flexible boundary control.\label{fig:regression_options_with_boundary_behavior}](figures/regression_options_with_boundary_behavior.png)
 
 - **Intelligent Simplification Timing**: PyMatLib provides sophisticated control over when data simplification occurs
-in the dependency chain through the `simplify` parameter. With `simplify: pre`,
-properties are simplified using regression before being used in dependent calculations, optimizing performance.
+in the dependency chain via the `simplify` parameter. 
+`simplify: pre` simplifies properties before they are used in dependent calculations, optimizing performance.
 With `simplify: post`, simplification is deferred until all dependent properties have been computed, maximizing numerical accuracy.
 This timing control allows users to balance computational efficiency with numerical accuracy based on their specific simulation requirements.
 
@@ -97,8 +105,8 @@ This timing control allows users to balance computational efficiency with numeri
 ```
 
 - **Bidirectional Property-Variable Inversion**: The library can automatically generate inverse piecewise functions, 
-enabling the determination of independent variables from known property values (e.g., `temperature = f(property)`). 
-This bidirectional capability is essential for energy-based numerical methods [@voller1987fixed], phase-change simulations, 
+enabling the determination of independent variables from known property values (e.g., `temperature = f(property)`), 
+a critical feature for energy-based numerical methods [@voller1987fixed], phase-change simulations, 
 and iterative solvers where the independent variable must be determined from known property states. 
 Currently, PyMatLib focuses on temperature-dependent properties, 
 but the underlying architecture is designed to accommodate additional dependencies such as concentration, pressure, or shear rate in future versions. 
@@ -114,10 +122,10 @@ This prevents common configuration errors and ensures reproducible material defi
 allows users to automatically generate plots to verify their property definitions visually,
 with the option to disable visualization for production workflows after validation.
 
-# Usage Example
+# Usage
 
-PyMatLib is designed for ease of use. A material is defined in a YAML file and loaded with a single function call.
-The YAML files can include pure metals with melting/boiling temperatures or alloys with solidus/liquidus temperature ranges.
+A material is defined in a YAML file and loaded with a single function call.
+The following examples demonstrate a pure metal and an alloy configuration, followed by the Python code to load and use the material.
 
 ## YAML Configuration Examples
 
@@ -184,11 +192,9 @@ properties:
       degree: 2      # Use quadratic regression for simplification
       segments: 3    # Fit with 3 segments for piecewise linear approximation
 ```
-Complete YAML configurations for both are provided in the PyMatLib [documentation](https://github.com/rahildoshi97/pymatlib/blob/master/docs/how-to/define_materials.md). 
+Complete YAML configurations are provided in the PyMatLib [documentation](https://github.com/rahildoshi97/pymatlib/blob/master/docs/how-to/define_materials.md). 
 
-**Python Usage**:
-
-Integrating PyMatLib into a scientific workflow is straightforward.
+### Python Integration
 The primary entry point is the create_material function, which parses the YAML file and returns a fully configured material object.
 ```python
     import sympy as sp
@@ -212,21 +218,21 @@ The primary entry point is the create_material function, which parses the YAML f
 
 # Comparison with Existing Tools
 
-| Feature                  | **PyMatLib**       | **CoolProp** | **NIST WebBook** | **CALPHAD** |
-|:-------------------------|:-------------------|:-------------|:-----------------|:------------|
-| **Core Capabilities**    |                    |              |                  |             |
-| Symbolic Integration     | Yes                | No           | No               | No          |
-| Dependency Resolution    | Yes (Automatic)    | No           | No               | No          |
-| Multiple Input Methods   | Yes (6 types)      | No           | No               | No          |
-|                          |                    |              |                  |             |
-| **Material Support**     |                    |              |                  |             |
-| Solid Materials          | Yes                | Limited      | Yes              | Yes         |
-| Custom Properties        | Yes (Any property) | No           | No               | Limited     |
-| Temperature Dependencies | Yes                | Yes          | Yes              | Yes         |
-|                          |                    |              |                  |             |
-| **Accessibility**        |                    |              |                  |             |
-| Open Source              | Yes                | Yes          | No               | No          |
-| Python Integration       | Native             | Yes          | API only         | No          |
+| Feature                  | **PyMatLib**      | **CoolProp** | **NIST WebBook** | **CALPHAD** |
+|:-------------------------|:------------------|:-------------|:-----------------|:------------|
+| **Core Capabilities**    |                   |              |                  |             |
+| Symbolic Integration     | Yes               | No           | No               | No          |
+| Dependency Resolution    | Yes (Automatic)   | No           | No               | No          |
+| Multiple Input Methods   | Yes (6 types)     | No           | No               | No          |
+|                          |                   |              |                  |             |
+| **Material Support**     |                   |              |                  |             |
+| Solid Materials          | Yes               | Limited      | Yes              | Yes         |
+| Custom Properties        | Yes (Any)         | No           | No               | Limited     |
+| Temperature Dependencies | Yes               | Yes          | Yes              | Yes         |
+|                          |                   |              |                  |             |
+| **Accessibility**        |                   |              |                  |             |
+| Open Source              | Yes               | Yes          | No               | No          |
+| Python Integration       | Native            | Yes          | API only         | No          |
 
 **Key Advantage**: PyMatLib's unique combination of native symbolic mathematics via SymPy [@sympy], 
 automatic dependency resolution, and multiple input methods provides a level of flexibility and integration 
@@ -235,13 +241,13 @@ not found in existing tools, enabling more reproducible and sophisticated scient
 # Research Applications and Availability
 
 PyMatLib is applicable to a wide range of research areas, including alloy design and optimization [@callister2018materials], 
-energy-based finite element methods for thermal analysis [@hughes2012finite], multiscale simulations [@tadmor2011modeling], 
-and high-performance computing in fluid dynamics and heat transfer.
+finite element analysis [@hughes2012finite], multiscale modeling [@tadmor2011modeling], 
+computational fluid dynamics and heat transfer.
 Its architecture promotes reproducible science and is well-suited for high-performance computing environments, 
 with demonstrated integrations into frameworks like pystencils [@pystencils] and waLBerla [@walberla].
 
 PyMatLib is an open-source software distributed under the [BSD-3-Clause License](https://github.com/rahildoshi97/pymatlib/blob/master/LICENSE). 
-The source code, documentation, and further examples are available on
+The source code, comprehensive documentation, and example configurations are available on
 [GitHub](https://github.com/rahildoshi97/pymatlib/tree/master).
 
 # Acknowledgements
