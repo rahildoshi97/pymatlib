@@ -10,16 +10,20 @@ tags:
 authors:
   - name: Rahil Miten Doshi
     orcid: 0009-0008-3570-9841
-    affiliation: 1
+    affiliation: 1, 2
   - name: Matthias Markl
     orcid: 0000-0002-3000-7081
-    affiliation: 1
+    affiliation: 2
   - name: Harald Koestler
-    # orcid:
-    affiliation: 1
-affiliations:
-  - name: Friedrich-Alexander-Universität Erlangen-Nürnberg, Germany
+    orcid: 0000-0002-6992-2690
+    affiliation: 2, 3
+affiliations: 
+  - name: Chair for System Simulation, Friedrich-Alexander-Universität Erlangen-Nürnberg, Germany
     index: 1
+  - name: Chair of Materials Science and Engineering for Metals, Friedrich-Alexander-Universität Erlangen-Nürnberg, Germany
+    index: 2
+  - name: Erlangen National High Performance Computing Center (NHR@FAU), Erlangen, Germany
+    index: 3
 date: 25 July 2025
 bibliography: paper.bib
 ---
@@ -28,7 +32,7 @@ bibliography: paper.bib
 
 PyMatLib is an extensible, open-source Python library that streamlines the definition and use of 
 material properties in numerical simulations.
-The library allows researchers to define complex material behaviors-ranging from simple constants to experimental data 
+The library allows users to define complex material behaviors-ranging from simple constants to experimental data 
 -in human-readable YAML configuration files.
 These are automatically converted into symbolic mathematical expressions for direct use in scientific computing frameworks. 
 PyMatLib supports both pure metals and alloys, 
