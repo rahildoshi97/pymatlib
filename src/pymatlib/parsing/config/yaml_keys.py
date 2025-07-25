@@ -29,6 +29,7 @@ POST_KEY = "post"
 MATERIAL_TYPE_KEY = "material_type"
 PURE_METAL_KEY = "pure_metal"
 ALLOY_KEY = "alloy"
+# Extend to include other material types as needed
 
 # Composition key
 COMPOSITION_KEY = "composition"

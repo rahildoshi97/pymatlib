@@ -61,18 +61,19 @@ class MaterialYAMLParser(YAMLFileParser):
     """Parser for material configuration files in YAML format."""
 
     VALID_YAML_PROPERTIES = {
-        'density',
-        'dynamic_viscosity',
-        'energy_density',
-        'heat_capacity',
-        'heat_conductivity',
-        'kinematic_viscosity',
-        'latent_heat_of_fusion',
-        'latent_heat_of_vaporization',
-        'specific_enthalpy',
-        'surface_tension',
-        'thermal_diffusivity',
-        'thermal_expansion_coefficient',
+        "density",
+        "dynamic_viscosity",
+        "energy_density",
+        "heat_capacity",
+        "heat_conductivity",
+        "kinematic_viscosity",
+        "latent_heat_of_fusion",
+        "latent_heat_of_vaporization",
+        "specific_enthalpy",
+        "surface_tension",
+        "thermal_diffusivity",
+        "thermal_expansion_coefficient",
+        # Extend to include other material properties as needed
     }
 
     # --- Constructor ---
@@ -191,9 +192,13 @@ class MaterialYAMLParser(YAMLFileParser):
         # Material-type specific fields
         if material_type == PURE_METAL_KEY:
             required_fields = common_fields | {MELTING_TEMPERATURE_KEY, BOILING_TEMPERATURE_KEY}
-        else:  # alloy
+        elif material_type == ALLOY_KEY:
             required_fields = common_fields | {SOLIDUS_TEMPERATURE_KEY, LIQUIDUS_TEMPERATURE_KEY,
                                                INITIAL_BOILING_TEMPERATURE_KEY, FINAL_BOILING_TEMPERATURE_KEY}
+        else:
+            logger.error("Unsupported material_type: %s", material_type)
+            raise ValueError(f"Unsupported material_type: {material_type}. "
+                             f"Supported types are: {PURE_METAL_KEY}, {ALLOY_KEY}.")
         missing_fields = required_fields - set(self.config.keys())
         if missing_fields:
             logger.error("Missing required fields for %s: %s", material_type, missing_fields)

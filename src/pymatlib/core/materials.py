@@ -62,6 +62,7 @@ class Material:
     MAX_SOLIDUS_TEMP = 2000.0  # High-temperature superalloys
     MIN_LIQUIDUS_TEMP = 300.0  # Low-melting alloys
     MAX_LIQUIDUS_TEMP = 2200.0  # Refractory alloys (Mo-Re, W-Re systems)
+    # Extend to include other material properties as needed
 
     def __post_init__(self) -> None:
         """
@@ -98,10 +99,9 @@ class Material:
             elif self.material_type == 'alloy':
                 self._validate_alloy_temperatures()
             else:
-                raise MaterialTemperatureError(
-                    f"Unknown material type: {self.material_type}. "
-                    f"Must be 'pure_metal' or 'alloy'"
-                )
+                available_types = ['pure_metal', 'alloy',]  # Extend with other types as needed
+                raise MaterialTemperatureError(f"Unknown material type: {self.material_type}. "
+                                               f"Supported types: {available_types}")
             logger.debug(f"Temperature validation passed for {self.material_type}: {self.name}")
         except MaterialTemperatureError as e:
             logger.error(f"Temperature validation failed for {self.name}: {e}")
@@ -242,6 +242,10 @@ class Material:
             self.atomic_mass = interpolate_atomic_mass(self.elements, self.composition)
             logger.debug("Alloy properties - atomic_number: %.3f, atomic_mass: %.3f",
                          self.atomic_number, self.atomic_mass)
+        else:
+            available_types = ['pure_metal', 'alloy',]  # Extend with other types as needed
+            raise ValueError(f"Unknown material type: {self.material_type}. "
+                             f"Supported types: {available_types}")
 
     def solidification_interval(self) -> Tuple[sp.Float, sp.Float]:
         """
