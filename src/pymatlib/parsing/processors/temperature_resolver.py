@@ -1,7 +1,7 @@
 import logging
 import numpy as np
 import re
-from typing import List, Union, Optional
+from typing import Dict, List, Union, Optional
 
 from pymatlib.core.materials import Material
 from pymatlib.parsing.io.data_handler import load_property_data
@@ -22,15 +22,21 @@ class TemperatureResolver:
     ABSOLUTE_ZERO = PhysicalConstants.ABSOLUTE_ZERO
     EPSILON = ProcessingConstants.TEMPERATURE_EPSILON
     MIN_POINTS = ProcessingConstants.MIN_TEMPERATURE_POINTS
-    # Temperature reference mapping
-    TEMPERATURE_REFERENCE_MAP = {
-        MELTING_TEMPERATURE_KEY: 'melting_temperature',
-        BOILING_TEMPERATURE_KEY: 'boiling_temperature',
-        SOLIDUS_TEMPERATURE_KEY: 'solidus_temperature',
-        LIQUIDUS_TEMPERATURE_KEY: 'liquidus_temperature',
-        INITIAL_BOILING_TEMPERATURE_KEY: 'initial_boiling_temperature',
-        FINAL_BOILING_TEMPERATURE_KEY: 'final_boiling_temperature'
-    }
+    # Temperature reference mapping - now extensible
+    @classmethod
+    def get_temperature_reference_map(cls) -> Dict[str, str]:
+        """Get temperature reference mapping for all registered material types."""
+        base_map = {
+            MELTING_TEMPERATURE_KEY: "melting_temperature",
+            BOILING_TEMPERATURE_KEY: "boiling_temperature",
+            SOLIDUS_TEMPERATURE_KEY: "solidus_temperature",
+            LIQUIDUS_TEMPERATURE_KEY: "liquidus_temperature",
+            INITIAL_BOILING_TEMPERATURE_KEY: "initial_boiling_temperature",
+            FINAL_BOILING_TEMPERATURE_KEY: "final_boiling_temperature",
+        }
+        # Add extensions for other material types
+        extension_map = {}
+        return {**base_map, **extension_map}
 
     # --- Main Public API ---
     @staticmethod
@@ -174,9 +180,10 @@ class TemperatureResolver:
                 return result
             except ValueError:
                 pass  # Not numeric, try material reference
-            # Material reference lookup
-            if temp_ref in TemperatureResolver.TEMPERATURE_REFERENCE_MAP:
-                attr_name = TemperatureResolver.TEMPERATURE_REFERENCE_MAP[temp_ref]
+            # Dynamic material reference lookup
+            temp_map = TemperatureResolver.get_temperature_reference_map()
+            if temp_ref in temp_map:
+                attr_name = temp_map[temp_ref]
                 if hasattr(material, attr_name):
                     return float(getattr(material, attr_name))
                 else:
