@@ -105,14 +105,13 @@ This timing control allows users to balance computational efficiency with numeri
 ```
 
 - **Bidirectional Property-Variable Inversion**: The library can automatically generate inverse piecewise functions, 
-enabling the determination of independent variables from known property values (e.g., `temperature = f(property)`), 
-a critical feature for energy-based numerical methods [@voller1987fixed], phase-change simulations, 
-and iterative solvers where the independent variable must be determined from known property states. 
-Currently, PyMatLib focuses on temperature-dependent properties, 
-but the underlying architecture is designed to accommodate additional dependencies such as concentration, pressure, or shear rate in future versions. 
-The inverse function generation supports linear piecewise segments 
+enabling determination of independent variables from known property values (e.g., `temperature = f(property)`).
+This capability is essential for energy-based numerical methods [@voller1987fixed], phase-change simulations, and iterative solvers.
+Currently focused on temperature-dependent properties, 
+the underlying architecture supports future extension to additional variables such as concentration, pressure, or shear rate.
+Inverse function generation supports linear piecewise segments 
 (either through default linear interpolation or explicit `degree=1` regression), 
-ensuring robust mathematical invertibility for the supported variable relationships.
+ensuring robust mathematical invertibility.
 
 - **Built-in Validation Framework**: A comprehensive validation framework checks YAML configurations for correctness,
 including composition sums, required fields for pure metals versus alloys, and valid property names.
