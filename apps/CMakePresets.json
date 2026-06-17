@@ -7,89 +7,81 @@
     },
     "configurePresets": [
         {
-            "name": "debug",
-            "displayName": "Debug Build",
-            "description": "Debug build",
+            "name": "local-debug-cpu",
+            "displayName": "Local Debug CPU",
+            "description": "Debug build with CPU-only support",
             "generator": "Unix Makefiles",
-            "binaryDir": "${sourceDir}/cmake-build-debug",
+            "binaryDir": "${sourceDir}/build/local-debug-cpu",
             "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "TARGET_PLATFORM": "CPU",
                 "CMAKE_C_COMPILER": "/usr/bin/gcc",
                 "CMAKE_CXX_COMPILER": "/usr/bin/g++",
-                "CMAKE_BUILD_TYPE": "Debug",
-                "CMAKE_INSTALL_PREFIX": "${sourceDir}/cmake-build-debug",
-                "Python_ROOT_DIR": "/local/ca00xebo/venvs/materforge",
-                "Python_EXECUTABLE": "/local/ca00xebo/venvs/materforge/bin/python",
-                "ENABLE_GPU_SUPPORT": "OFF",
-                "WALBERLA_BUILD_WITH_CODEGEN": "OFF",
-                "WALBERLA_BUILD_WITH_PYTHON": "ON",
-                "WALBERLA_BUILD_WITH_OPENMP": "ON",
-                "WALBERLA_BUILD_WITH_MPI": "ON",
-                "WALBERLA_BUILD_TUTORIALS": "ON",
-                "WALBERLA_BUILD_TOOLS": "ON",
-                "WALBERLA_BUILD_TESTS": "ON",
-                "WALBERLA_BUILD_SHOWCASES": "ON",
-                "WALBERLA_BUILD_WITH_PARMETIS": "OFF",
-                "WALBERLA_BUILD_WITH_OPENMESH": "OFF",
-                "WALBERLA_BUILD_WITH_METIS": "OFF",
-                "WALBERLA_BUILD_WITH_LTO": "OFF",
-                "WALBERLA_BUILD_WITH_LIKWID_MARKERS": "OFF",
-                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
-                "CMAKE_SKIP_BUILD_RPATH": "OFF",
-                "CMAKE_SKIP_INSTALL_RPATH": "ON",
-                "CMAKE_INSTALL_RPATH_USE_LINK_PATH": "OFF",
-                "WALBERLA_ENABLE_SWEEPGEN": "ON",
-                "WALBERLA_SWEEPGEN_MANAGED_VENV": "ON"
+                "Python_EXECUTABLE": "$env{VIRTUAL_ENV}/bin/python3"
             }
         },
         {
-            "name": "release",
-            "displayName": "Release Build", 
-            "description": "Release build",
+            "name": "local-release-cpu",
+            "displayName": "Local Release CPU",
+            "description": "Release build with CPU-only support",
             "generator": "Unix Makefiles",
-            "binaryDir": "${sourceDir}/cmake-build-release",
+            "binaryDir": "${sourceDir}/build/local-release-cpu",
             "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
                 "CMAKE_C_COMPILER": "/usr/bin/gcc",
                 "CMAKE_CXX_COMPILER": "/usr/bin/g++",
+                "Python_EXECUTABLE": "$env{VIRTUAL_ENV}/bin/python3"
+            }
+        },
+        {
+            "name": "local-debug-gpu",
+            "displayName": "Local Debug GPU (CUDA)",
+            "description": "Debug build with CUDA GPU support",
+            "generator": "Unix Makefiles",
+            "binaryDir": "${sourceDir}/build/local-debug-gpu",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "TARGET_PLATFORM": "GPU-CUDA",
+                "CMAKE_C_COMPILER": "/usr/bin/gcc",
+                "CMAKE_CXX_COMPILER": "/usr/bin/g++",
+                "Python_EXECUTABLE": "$env{VIRTUAL_ENV}/bin/python3"
+            }
+        },
+        {
+            "name": "local-release-gpu",
+            "displayName": "Local Release GPU (CUDA)",
+            "description": "Release build with CUDA GPU support",
+            "generator": "Unix Makefiles",
+            "binaryDir": "${sourceDir}/build/local-release-gpu",
+            "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Release",
-                "CMAKE_INSTALL_PREFIX": "${sourceDir}/cmake-build-release",
-                "Python_ROOT_DIR": "/local/ca00xebo/venvs/materforge",
-                "Python_EXECUTABLE": "/local/ca00xebo/venvs/materforge/bin/python",
-                "ENABLE_GPU_SUPPORT": "OFF",
-                "WALBERLA_BUILD_WITH_CODEGEN": "OFF",
-                "WALBERLA_BUILD_WITH_PYTHON": "ON",
-                "WALBERLA_BUILD_WITH_OPENMP": "ON",
-                "WALBERLA_BUILD_WITH_MPI": "ON",
-                "WALBERLA_BUILD_TUTORIALS": "OFF",
-                "WALBERLA_BUILD_TOOLS": "OFF",
-                "WALBERLA_BUILD_TESTS": "OFF",
-                "WALBERLA_BUILD_SHOWCASES": "OFF",
-                "WALBERLA_BUILD_WITH_PARMETIS": "OFF",
-                "WALBERLA_BUILD_WITH_OPENMESH": "OFF",
-                "WALBERLA_BUILD_WITH_METIS": "OFF",
-                "WALBERLA_BUILD_WITH_LTO": "OFF",
-                "WALBERLA_BUILD_WITH_LIKWID_MARKERS": "OFF",
-                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
-                "CMAKE_SKIP_BUILD_RPATH": "OFF",
-                "CMAKE_SKIP_INSTALL_RPATH": "ON",
-                "CMAKE_INSTALL_RPATH_USE_LINK_PATH": "OFF",
-                "WALBERLA_ENABLE_SWEEPGEN": "ON",
-                "WALBERLA_SWEEPGEN_MANAGED_VENV": "ON"
+                "TARGET_PLATFORM": "GPU-CUDA",
+                "WALBERLA_BUILD_WITH_GPU_SUPPORT": "ON",
+                "CMAKE_C_COMPILER": "/usr/bin/gcc",
+                "CMAKE_CXX_COMPILER": "/usr/bin/g++",
+                "Python_EXECUTABLE": "$env{VIRTUAL_ENV}/bin/python3"
             }
         }
     ],
     "buildPresets": [
         {
-            "name": "debug-build",
-            "displayName": "Debug Build",
-            "configurePreset": "debug",
-            "description": "Build using debug preset",
+            "name": "local-debug-cpu-build",
+            "configurePreset": "local-debug-cpu",
             "jobs": 8
         },
         {
-            "name": "release-build",
-            "displayName": "Release Build",
-            "configurePreset": "release",
-            "description": "Build using release preset",
+            "name": "local-release-cpu-build",
+            "configurePreset": "local-release-cpu",
+            "jobs": 8
+        },
+        {
+            "name": "local-debug-gpu-build",
+            "configurePreset": "local-debug-gpu",
+            "jobs": 8
+        },
+        {
+            "name": "local-release-gpu-build",
+            "configurePreset": "local-release-gpu",
             "jobs": 8
         }
     ]
