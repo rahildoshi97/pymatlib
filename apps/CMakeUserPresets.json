@@ -1,0 +1,28 @@
+{
+    "version": 6,
+    "configurePresets": [
+        {
+            "name": "woody-release-cpu",
+            "displayName": "Woody CPU Build (GCC 12, OpenMPI 4.1.3)",
+            "description": "Production CPU build on woody (FAU NHR, AlmaLinux 8, GCC 12.1.0, OpenMPI 4.1.3)",
+            "inherits": "local-release-cpu",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "CMAKE_C_COMPILER": "/apps/SPACK/0.18.1/opt/linux-almalinux8-skylake/gcc-12.1.0/gcc-13.3.0-js37w2yz5mae2gnazllunltycalzfczj/bin/gcc",
+                "CMAKE_CXX_COMPILER": "/apps/SPACK/0.18.1/opt/linux-almalinux8-skylake/gcc-12.1.0/gcc-13.3.0-js37w2yz5mae2gnazllunltycalzfczj/bin/g++",
+                "MPI_C_COMPILER": "/apps/SPACK/0.18.1/opt/linux-almalinux8-skylake/gcc-12.1.0/openmpi-4.1.3-i76wyn4x5aobewottoyj2od33hhtyb2h/bin/mpicc",
+                "MPI_CXX_COMPILER": "/apps/SPACK/0.18.1/opt/linux-almalinux8-skylake/gcc-12.1.0/openmpi-4.1.3-i76wyn4x5aobewottoyj2od33hhtyb2h/bin/mpicxx",
+                "MPIEXEC_EXECUTABLE": "/apps/SPACK/0.18.1/opt/linux-almalinux8-skylake/gcc-12.1.0/openmpi-4.1.3-i76wyn4x5aobewottoyj2od33hhtyb2h/bin/mpirun",
+                "Python_EXECUTABLE": "/home/hpc/iwia/iwia133h/.venvs/materforge/bin/python3"
+            },
+            "binaryDir": "${sourceDir}/build/woody-release-cpu"
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "woody-cpu-build",
+            "configurePreset": "woody-release-cpu",
+            "jobs": 16
+        }
+    ]
+}
