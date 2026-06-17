@@ -40,6 +40,17 @@ Helpers for the reference materials shipped with the package. See
 .. autofunction:: materforge.get_material_path
    :no-index:
 
+Fast Evaluation
+~~~~~~~~~~~~~~~
+
+A compiled, reusable evaluator for sweeping many dependency values or evaluating
+over a NumPy array. See :doc:`../how-to/fast_evaluation` for usage.
+
+.. autoclass:: materforge.MaterialEvaluator
+   :members:
+   :show-inheritance:
+   :no-index:
+
 Command-Line Interface
 ----------------------
 
