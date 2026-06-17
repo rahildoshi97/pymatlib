@@ -12,13 +12,6 @@
 
 # Same-node SRT performance comparison: const nu=0.08 vs MaterForge temp-dependent.
 #
-# WHY ONE JOB:  the const-vs-tempdep overhead is < 10 %, smaller than the node-to-node
-# hardware variation on woody's Ice Lake pool (turbo/thermal/memory binning).  Submitting
-# run_perf_const.sh and run_perf_tempdep.sh as two independent jobs does NOT pin them to the
-# same node - SLURM is free to place them on different nodes under --constraint=icx, which
-# confounds the comparison.  Running both binaries inside a single --exclusive allocation
-# guarantees the same physical CPU for both cases, exactly like run_perf_trt.sh does for TRT.
-#
 # Each binary's full output is redirected to the per-case log that
 # generate_performance_plots.py already parses (run_perf_const.log / run_perf_tempdep.log),
 # so no downstream change is needed.  Both binaries are WRITE_VISCOSITY=OFF
