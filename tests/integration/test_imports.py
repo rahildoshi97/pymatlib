@@ -16,6 +16,8 @@ def test_all_imports():
         import materforge.visualization
         # Test core imports
         from materforge.core.materials import Material
+        from materforge.core.evaluator import MaterialEvaluator
+        from materforge import MaterialEvaluator as TopLevelEvaluator
         # Test catalog imports
         from materforge import list_materials, load_material, get_material_path
         # Test CLI imports
@@ -61,12 +63,19 @@ def test_basic_material_creation():
 def test_circular_dependencies():
     """Test specifically for circular import dependencies."""
     import sys
-    # Clear any previously imported materforge modules
-    modules_to_remove = [name for name in sys.modules.keys() if name.startswith('materforge')]
-    for module_name in modules_to_remove:
-        if module_name in sys.modules:
-            del sys.modules[module_name]
+
+    def _drop_materforge_modules():
+        for name in [n for n in sys.modules if n.startswith('materforge')]:
+            del sys.modules[name]
+
+    # Snapshot the already-imported modules so we can restore them afterwards.
+    # Without this, the re-import below replaces every materforge module object
+    # in sys.modules, leaving class references bound by other test modules
+    # pointing at the old objects (isinstance checks then fail).
+    saved = {name: mod for name, mod in sys.modules.items()
+             if name.startswith('materforge')}
     try:
+        _drop_materforge_modules()
         # Import in different orders to catch circular dependencies
         import materforge.core.materials
         import materforge
@@ -76,6 +85,9 @@ def test_circular_dependencies():
         import materforge
     except ImportError as e:
         pytest.fail(f"Circular dependency detected: {e}")
+    finally:
+        _drop_materforge_modules()
+        sys.modules.update(saved)
 
 if __name__ == "__main__":
     test_all_imports()
