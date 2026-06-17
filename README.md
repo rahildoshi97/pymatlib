@@ -131,6 +131,25 @@ Each subcommand wraps the same public API shown above. See the
 [CLI guide](https://materforge.readthedocs.io/en/latest/how-to/use_the_cli.html)
 for the full reference.
 
+### Fast Evaluation Over Many Values
+
+`evaluate()` is convenient for a single value. To sweep a range, compile the
+material once - each property is lambdified and cached, so an array is evaluated
+in a single vectorised call:
+
+```python
+import numpy as np
+
+evaluate = mat.compile()              # cache numeric callables once
+
+evaluate(500.0)                       # scalar -> {'density': 7861.2, ...}
+table = evaluate(np.linspace(300, 1800, 500))   # array -> dict of arrays
+table['density'].shape                # (500,)
+```
+
+See the [fast evaluation guide](https://materforge.readthedocs.io/en/latest/how-to/fast_evaluation.html)
+for details.
+
 ### Property Inversion
 
 ```python
