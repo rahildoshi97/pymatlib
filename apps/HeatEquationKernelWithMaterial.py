@@ -4,13 +4,14 @@
 # This application depends on waLBerla and pystencils (GPLv3), requiring GPL licensing.
 
 import logging
+import numpy as np
 import sympy as sp
 import pystencils as ps
 from pathlib import Path
 from pystencilssfg import SourceFileGenerator
 from sweepgen import Sweep
 
-from materforge import create_material
+from materforge import create_material, get_material_info
 from materforge.algorithms.piecewise_inverter import PiecewiseInverter
 
 logging.basicConfig(
@@ -41,6 +42,15 @@ with SourceFileGenerator() as sfg:
     #yaml_path_Al = Path(__file__).parent.parent / "src" / "materforge" / "data" / "materials" / "Al.yaml"
     #yaml_path_SS304L = Path(__file__).parent.parent / "src" / "materforge" / "data" / "materials" / "1.4301.yaml"
 
+    # Inspect the material's metadata up front - the same summary you get from
+    # the command line with `materforge info 1.4301_HeatEquationKernelWithMaterial.yaml`
+    # (or `materforge validate ...` to just check it parses).
+    info = get_material_info(yaml_path)
+    print(f"Loaded '{info['name']}' with {info['total_properties']} properties:")
+    for property_type, count in info.get('property_types', {}).items():
+        print(f"  {property_type}: {count}")
+    print("=" * 80)
+
     S = sp.Symbol('S')
     mat = create_material(yaml_path=yaml_path, dependency=S, enable_plotting=True)
     #mat_Al = create_material(yaml_path=yaml_path_Al, dependency=u.center(), enable_plotting=True) # type: ignore
@@ -70,11 +80,13 @@ with SourceFileGenerator() as sfg:
 
     if hasattr(mat, 'energy_density'):
         try:
-            energy_symbols = mat.energy_density.free_symbols # type: ignore
-            if len(energy_symbols) != 1:
-                raise ValueError(f"Energy density function must have exactly one symbol, found: {energy_symbols}")
-
-            temp_symbol = list(energy_symbols)[0]
+            # Compile the material once into cached numeric callables (v0.9.0
+            # fast-eval). The dependency symbol is inferred from the properties,
+            # so we no longer extract it from energy_density by hand.
+            evaluator = mat.compile()
+            temp_symbol = evaluator.symbol
+            if temp_symbol is None:
+                raise ValueError("energy_density has no dependency symbol to invert")
             E_symbol = sp.Symbol('E')
 
             # Create inverter with custom tolerance
@@ -89,12 +101,23 @@ with SourceFileGenerator() as sfg:
             passed = 0
             failed = 0
 
-            for temp in test_temperatures:
+            # Debug: Show available properties from the evaluator and their types
+            all_values_dict = evaluator(np.array(test_temperatures, dtype=float))
+            name, array = all_values_dict.items().__iter__().__next__() # type: ignore
+            print(f"Available properties from evaluator: {list(all_values_dict.keys())}\n")
+            for n, arr in all_values_dict.items():
+                print(f"Property '{n}': values = {arr}, type = {type(arr)}\n")
+
+            # Forward T -> E for every test temperature in a single vectorised
+            # call, instead of a per-temperature symbolic subs().evalf().
+            energy_values = evaluator(np.array(test_temperatures, dtype=float))["energy_density"]
+            print(f"Computed energy densities for test temperatures: {energy_values}")
+            print(f"Evaluated {len(test_temperatures)} energies in one MaterialEvaluator call")
+
+            for temp, energy_val in zip(test_temperatures, energy_values):
                 try:
-                    # Forward: T -> E
-                    energy_val = float(mat.energy_density.subs(temp_symbol, temp).evalf()) # type: ignore
-                    # Backward: E -> T
-                    recovered_temp = float(inverse_func.subs(E_symbol, energy_val)) # type: ignore
+                    # Backward: E -> T (the inverter has no vectorised form)
+                    recovered_temp = float(inverse_func.subs(E_symbol, float(energy_val))) # type: ignore
                     error = abs(temp - recovered_temp)
                     errors.append(error)
 
