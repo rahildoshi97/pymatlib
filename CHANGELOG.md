@@ -23,10 +23,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `apps/scripts/run_strong_scaling.sh` - SLURM array job sweeping 1, 2,
   4, 8, 16 MPI ranks on a single Xeon Gold 6326 node for strong-scaling
   measurement
-- `apps/scripts/run_perf_trt.sh` - TRT-collision counterpart of the
-  SRT performance jobs (const + tempdep, 5 trials each, WRITE_VISCOSITY=OFF),
-  so the const-vs-tempdep overhead can be reported for both collision
-  operators
 - `apps/scripts/parse_scaling.py` and `apps/scripts/plot_scaling.py` -
   parser and plotter for the strong-scaling logs (MLUPS / speedup /
   efficiency)

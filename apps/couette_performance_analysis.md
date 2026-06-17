@@ -276,14 +276,12 @@ cp build/woody-release-cpu/CouetteFlowScaling build/woody-release-cpu/CouetteFlo
 ```bash
 # SRT — const + temp-dep in one --exclusive allocation, same node
 sbatch scripts/run_perf_srt.sh
-# TRT — const + temp-dep in one job, same node
-sbatch scripts/run_perf_trt.sh
 ```
 
 > **Same-node requirement.** The const→tempdep overhead is < 10 %, smaller than the
 > node-to-node hardware variation across woody's Ice Lake pool. Both cases must run on the
-> *same* physical node or the comparison is confounded. `run_perf_srt.sh`/`run_perf_trt.sh`
-> enforce this by running both binaries inside a single allocation. Submitting the standalone
+> *same* physical node or the comparison is confounded. `run_perf_srt.sh`
+> enforces this by running both binaries inside a single allocation. Submitting the standalone
 > `run_perf_const.sh` and `run_perf_tempdep.sh` as two independent jobs does **not** pin them
 > to one node (SLURM may place them on different `icx` nodes) and must not be used for the
 > headline comparison.

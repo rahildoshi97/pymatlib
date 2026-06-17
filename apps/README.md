@@ -252,7 +252,7 @@ sbatch apps/scripts/run_perf_srt.sh        # const_0.08 + tempdep, same node, 5 
 It runs both binaries back-to-back inside one `--exclusive --constraint=icx`
 allocation and redirects each case's output to `run_perf_const.log` /
 `run_perf_tempdep.log` (the files `generate_performance_plots.py` parses), so the
-post-processing is unchanged. The TRT counterpart is `run_perf_trt.sh`.
+post-processing is unchanged.
 
 > The standalone `run_perf_const.sh` and `run_perf_tempdep.sh` are kept for
 > single-case reruns, but submitting them as two independent jobs does **not**
