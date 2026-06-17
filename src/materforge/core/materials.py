@@ -6,9 +6,12 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from typing import Any, Dict
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
 import sympy as sp
+
+if TYPE_CHECKING:
+    from materforge.core.evaluator import MaterialEvaluator
 
 logger = logging.getLogger(__name__)
 
@@ -91,6 +94,28 @@ class Material:
             name=f"{self.name}@{symbol}={value}",
             properties=evaluated_properties,
         )
+
+    # --- Fast numeric evaluation ---
+    def compile(self, symbol: Optional[sp.Symbol] = None) -> "MaterialEvaluator":
+        """Builds a reusable evaluator with cached numeric callables.
+
+        Each property is lambdified once and reused, so sweeping many dependency
+        values - or evaluating over a NumPy array in one call - is far faster
+        than repeated symbolic :meth:`evaluate`.
+
+        Args:
+            symbol: Dependency symbol to evaluate against. Inferred from the
+                    properties' free symbols when omitted.
+        Returns:
+            A :class:`~materforge.core.evaluator.MaterialEvaluator` snapshot of
+            this material.
+        Example:
+            >>> ev = material.compile()
+            >>> ev(500.0)                       # {'density': 2634.5, ...}
+            >>> ev(np.linspace(300, 900, 200))  # arrays, one call per property
+        """
+        from materforge.core.evaluator import MaterialEvaluator
+        return MaterialEvaluator(self, symbol)
 
     def __str__(self) -> str:
         return f"Material: {self.name} ({len(self.properties)} properties)"

@@ -33,11 +33,12 @@ except ImportError:
     try:
         __version__ = version("materforge")
     except PackageNotFoundError:
-        __version__ = "0.8.0+unknown"
+        __version__ = "0.9.0+unknown"
 
 # Core material definitions
 from .core.materials import Material
 from .core.symbol_registry import SymbolRegistry
+from .core.evaluator import MaterialEvaluator
 
 # Main API functions
 from .parsing.api import (
@@ -69,6 +70,7 @@ __all__ = [
     # Core classes
     "Material",
     "SymbolRegistry",
+    "MaterialEvaluator",
     # Main API
     "create_material",
     "validate_yaml_file",
