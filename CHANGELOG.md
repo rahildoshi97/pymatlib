@@ -5,6 +5,23 @@ All notable changes to MaterForge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.0] - 2026-06-17
+
+### Added
+- `Material.compile()`, returning a reusable `MaterialEvaluator` that lambdifies
+  each property once and caches the numeric callable. Call it with a scalar to
+  get a dict of floats, or with a NumPy array to evaluate every property over the
+  whole array in one vectorised call - far faster than repeated symbolic
+  `evaluate()` when sweeping many dependency values. The dependency symbol is
+  inferred from the properties (override with `symbol=`); constants are broadcast
+  to match the input shape. `MaterialEvaluator` is exported from the top-level
+  `materforge` package. See the new "Evaluate Properties Quickly" how-to guide.
+
+### Notes
+- Parse/regression caching (skipping re-parsing and `pwlf` regression for an
+  unchanged YAML) is planned for a follow-up patch (v0.9.1); this release covers
+  evaluation speed only.
+
 ## [0.8.0] - 2026-06-14
 
 ### Added
