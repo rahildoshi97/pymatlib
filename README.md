@@ -150,6 +150,21 @@ table['density'].shape                # (500,)
 See the [fast evaluation guide](https://materforge.readthedocs.io/en/latest/how-to/fast_evaluation.html)
 for details.
 
+### Cached Builds
+
+The slow part of `create_material` is the piecewise regression. MaterForge caches
+the built result on disk (keyed by the YAML, its data files, the dependency, and
+the library versions), so reloading an unchanged material skips the refit:
+
+```python
+# First call builds and caches; later calls of the unchanged YAML are instant.
+mat = create_material('steel.yaml', dependency=T, enable_plotting=False)
+```
+
+On by default for non-plotting builds; disable with `MATERFORGE_DISABLE_CACHE=1`,
+relocate with `MATERFORGE_CACHE_DIR`, or empty it via `clear_cache()`. See the
+[cache guide](https://materforge.readthedocs.io/en/latest/how-to/cache_builds.html).
+
 ### Property Inversion
 
 ```python

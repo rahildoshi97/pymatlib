@@ -5,6 +5,21 @@ All notable changes to MaterForge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.1] - Unreleased
+
+### Added
+- An on-disk build cache for `create_material`. The first build of a YAML is
+  stored keyed by a hash of the YAML, its referenced `file_path` data files, the
+  dependency symbol, and the `materforge`/`sympy` versions; a later build of the
+  unchanged source returns the stored result and skips the expensive piecewise
+  `pwlf` regression entirely. Enabled by default on non-plotting builds
+  (`create_material(..., use_cache=True, enable_plotting=False)`); a plotting run
+  always rebuilds so the figures are regenerated. The cache lives under
+  `MATERFORGE_CACHE_DIR` (default `~/.cache/materforge`) and can be disabled with
+  `MATERFORGE_DISABLE_CACHE=1`. New `clear_cache()` helper (exported from the top
+  level) empties it. Any unreadable or version-mismatched entry is ignored and
+  rebuilt, so the cache is always safe to delete.
+
 ## [0.9.0] - 2026-06-19
 
 ### Added
