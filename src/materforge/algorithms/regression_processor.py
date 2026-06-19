@@ -6,6 +6,7 @@ import logging
 from typing import List, Tuple, Union
 import pwlf
 import sympy as sp
+from materforge.algorithms import _pwlf_compat
 from materforge.data.constants import ProcessingConstants
 from materforge.parsing.config.yaml_keys import (
     REGRESSION_KEY, SIMPLIFY_KEY, DEGREE_KEY, SEGMENTS_KEY, LINEAR_KEY, CONSTANT_KEY,
@@ -13,6 +14,10 @@ from materforge.parsing.config.yaml_keys import (
 from materforge.parsing.utils.utilities import ensure_sympy_compatible
 
 logger = logging.getLogger(__name__)
+
+# pwlf 2.5.x mishandles the 0-D residual that SciPy's Accelerate (macOS) backend
+# returns from lstsq; route its calls through a 0-D-safe proxy. See _pwlf_compat.
+_pwlf_compat.install()
 
 
 class RegressionProcessor:

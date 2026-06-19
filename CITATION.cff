@@ -12,7 +12,7 @@ contributors:
     affiliation: "Friedrich-Alexander-Universität Erlangen-Nürnberg"
 title: "MaterForge: Materials Formulation Engine with Python"
 version: "0.9.0"
-date-released: "2026-06-17"
+date-released: "2026-06-19"
 url: "https://i10git.cs.fau.de/rahil.doshi/materforge"
 repository-code: "https://i10git.cs.fau.de/rahil.doshi/materforge"
 license: "BSD-3-Clause"

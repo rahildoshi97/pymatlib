@@ -5,7 +5,7 @@ All notable changes to MaterForge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.9.0] - 2026-06-17
+## [0.9.0] - 2026-06-19
 
 ### Added
 - `Material.compile()`, returning a reusable `MaterialEvaluator` that lambdifies
@@ -16,6 +16,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   inferred from the properties (override with `symbol=`); constants are broadcast
   to match the input shape. `MaterialEvaluator` is exported from the top-level
   `materforge` package. See the new "Evaluate Properties Quickly" how-to guide.
+
+### Fixed
+- Regression-backed materials failing to build on macOS. pwlf 2.5.x crashes
+  (`IndexError: ... array is 0-dimensional`) when SciPy's Accelerate LAPACK
+  backend returns the lstsq residual as a 0-D array, which it does on macOS but
+  not on Linux/OpenBLAS. MaterForge now routes pwlf's lstsq through a 0-D-safe
+  proxy that normalises the residual type without altering any fit value.
 
 ### Notes
 - Parse/regression caching (skipping re-parsing and `pwlf` regression for an
