@@ -4,6 +4,7 @@
 # This application depends on waLBerla and pystencils (GPLv3), requiring GPL licensing.
 
 import logging
+import time
 import numpy as np
 import sympy as sp
 import pystencils as ps
@@ -58,6 +59,21 @@ with SourceFileGenerator() as sfg:
 
     print(f"Energy density function: {mat.energy_density}")
     print(f"Type: {type(mat.energy_density)}")
+    print("=" * 80)
+
+    # v0.9.1 build cache: a non-plotting load stores the built material keyed by
+    # the YAML, its referenced data files, the dependency symbol, and the
+    # materforge/sympy versions. A later load of the unchanged file - in this run
+    # or a future configure - returns the stored result and skips the expensive
+    # pwlf regression, which is what keeps repeated code-generation runs cheap.
+    # Disable with MATERFORGE_DISABLE_CACHE=1; clear via materforge.clear_cache().
+    t_start = time.perf_counter()
+    create_material(yaml_path=yaml_path, dependency=S, enable_plotting=False)  # builds + caches
+    first_load = time.perf_counter() - t_start
+    t_start = time.perf_counter()
+    create_material(yaml_path=yaml_path, dependency=S, enable_plotting=False)  # served from cache
+    cached_load = time.perf_counter() - t_start
+    print(f"Build cache: first load {first_load:.3f}s, cached load {cached_load:.3f}s")
     print("=" * 80)
 
     test_temperatures = [
