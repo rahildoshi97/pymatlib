@@ -22,8 +22,8 @@ z = i + 0.5.  The code accounts for this with y_norm[i] = (i + 0.5) / N.
 
 The simulation initialises temperature at cell centres:
     T(cell i) = T_bottom + (T_top - T_bottom) * (i + 0.5) / N
-so the bottom cell reads ~321 K (not 300 K) and the top cell ~2979 K (not 3000 K).
-This is correct cell-centred behaviour - the walls impose 300 K and 3000 K.
+so the bottom cell reads ~302 K (not 300 K) and the top cell ~598 K (not 600 K).
+This is correct cell-centred behaviour - the walls impose 300 K and 600 K.
 
 Alternative ParaView export (cell-centre format)
 -------------------------------------------------
@@ -599,35 +599,35 @@ def main():
     data_dir.mkdir(parents=True, exist_ok=True)
 
     # Wall temperatures and u_max come from CouetteFlowScaling.prm:
-    #   T_bottom = 300 K,  T_top = 3000 K,  u_max = 0.025
+    #   T_bottom = 300 K,  T_top = 600 K,  u_max = 0.025
     # The exponential viscosity model is from CouetteFlowMaterial.yaml:
-    #   ν(T) = 0.16667 * exp(-0.0005 * (T - 300))
+    #   ν(T) = 0.16667 * exp(-0.0045 * (T - 300))
     # (nu_0 cancels in the normalised velocity profile u(z)=I(z)/I(1); it only sets
     #  the absolute magnitude shown in the viscosity subplot.)
     # csv_base: stem without the _dat_NNN_TTT suffix — resolved automatically.
     cases_config = [
         dict(csv_base="cf_cpu_mfconst_0.04",   name="Constant ν=0.04",
-             T_bottom=300.0, T_top=3000.0, u_wall=0.025, nu_0=0.04,   beta=0.0),
+             T_bottom=300.0, T_top=600.0, u_wall=0.025, nu_0=0.04,   beta=0.0),
         dict(csv_base="cf_cpu_mfconst_0.06",   name="Constant ν=0.06",
-             T_bottom=300.0, T_top=3000.0, u_wall=0.025, nu_0=0.06,   beta=0.0),
+             T_bottom=300.0, T_top=600.0, u_wall=0.025, nu_0=0.06,   beta=0.0),
         dict(csv_base="cf_cpu_mfconst_0.08",   name="Constant ν=0.08",
-             T_bottom=300.0, T_top=3000.0, u_wall=0.025, nu_0=0.08,   beta=0.0),
+             T_bottom=300.0, T_top=600.0, u_wall=0.025, nu_0=0.08,   beta=0.0),
         dict(csv_base="cf_cpu_mfconst_0.1",    name="Constant ν=0.1",
-             T_bottom=300.0, T_top=3000.0, u_wall=0.025, nu_0=0.1,    beta=0.0),
+             T_bottom=300.0, T_top=600.0, u_wall=0.025, nu_0=0.1,    beta=0.0),
         dict(csv_base="cf_cpu_mfconst_0.1667", name="Constant ν=0.1667",
-             T_bottom=300.0, T_top=3000.0, u_wall=0.025, nu_0=0.1667, beta=0.0),
+             T_bottom=300.0, T_top=600.0, u_wall=0.025, nu_0=0.1667, beta=0.0),
         dict(csv_base="cf_cpu_mfconst_0.2",    name="Constant ν=0.2",
-             T_bottom=300.0, T_top=3000.0, u_wall=0.025, nu_0=0.2,    beta=0.0),
+             T_bottom=300.0, T_top=600.0, u_wall=0.025, nu_0=0.2,    beta=0.0),
         dict(csv_base="cf_cpu_mfconst_0.4",    name="Constant ν=0.4",
-             T_bottom=300.0, T_top=3000.0, u_wall=0.025, nu_0=0.4,    beta=0.0),
+             T_bottom=300.0, T_top=600.0, u_wall=0.025, nu_0=0.4,    beta=0.0),
         dict(csv_base="cf_cpu_mfconst_0.6",    name="Constant ν=0.6",
-             T_bottom=300.0, T_top=3000.0, u_wall=0.025, nu_0=0.6,    beta=0.0),
+             T_bottom=300.0, T_top=600.0, u_wall=0.025, nu_0=0.6,    beta=0.0),
         dict(csv_base="cf_cpu_mfconst_0.8",    name="Constant ν=0.8",
-             T_bottom=300.0, T_top=3000.0, u_wall=0.025, nu_0=0.8,    beta=0.0),
+             T_bottom=300.0, T_top=600.0, u_wall=0.025, nu_0=0.8,    beta=0.0),
         dict(csv_base="cf_cpu_mfconst_1.0",    name="Constant ν=1.0",
-             T_bottom=300.0, T_top=3000.0, u_wall=0.025, nu_0=1.0,    beta=0.0),
+             T_bottom=300.0, T_top=600.0, u_wall=0.025, nu_0=1.0,    beta=0.0),
         dict(csv_base="cf_cpu_mftempdep",      name="Temperature-Dependent",
-             T_bottom=300.0, T_top=3000.0, u_wall=0.025, nu_0=0.16667, beta=-0.0005),
+             T_bottom=300.0, T_top=600.0, u_wall=0.025, nu_0=0.16667, beta=-0.0045),
     ]
 
     # Resolve each base name to the actual CSV path

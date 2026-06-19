@@ -36,7 +36,7 @@ and is *not* used for timing.
 | Collision operators      | **SRT** (default) and **TRT**, each const-vs-tempdep on one node   |
 | Viscosity write          | **OFF** for all timed binaries (344 B/cell tempdep, 336 B/cell const) |
 | Wall velocity `u_max`    | 0.025 (lattice units)                                               |
-| Wall temperatures        | T_bottom = 300 K, T_top = 3000 K                                    |
+| Wall temperatures        | T_bottom = 300 K, T_top = 600 K                                     |
 | Timesteps                | 60 000                                                              |
 | Trials per case          | **5** (serial, no overlap between cases)                            |
 | Statistics               | mean ± sample std; 95 % CI from t-distribution (df = 4)             |
@@ -46,15 +46,15 @@ Two cases are compared on identical hardware, domain, and timestep count, for ea
 1. **Constant viscosity** — ν = 0.08, baked into the generated kernel at compile time
    via `cmake -DUSE_MATERFORGE=OFF -DCONST_NU=0.08`. The viscosity field is not written.
 2. **Temperature-dependent viscosity (MaterForge)** — `CouetteFlowMaterial.yaml` defines
-   `dynamic_viscosity(T) = 0.16667·exp(−0.0005·(T − 300))` (a dimensionless lattice
-   viscosity) over T ∈ [300, 3000] K. MaterForge fits it with a two-segment degree-2
-   piecewise polynomial (break at T ≈ 1536 K), inlined as the `Piecewise` shown below. The
+   `dynamic_viscosity(T) = 0.16667·exp(−0.0045·(T − 300))` (a dimensionless lattice
+   viscosity) over T ∈ [300, 600] K. MaterForge fits it with a two-segment degree-2
+   piecewise polynomial (break at T ≈ 437 K), inlined as the `Piecewise` shown below. The
    temperature field is read each step; the viscosity field is **not** written (perf config).
 
 ```
 ν(T) ≈
-    1.502e-8·T² − 8.954e-5·T + 0.19194   if T < 1536.24 K
-    8.116e-9·T² − 6.852e-5·T + 0.17593   otherwise
+    1.217e-6·T² − 1.455e-3·T + 0.49335   if T < 437.36 K
+    6.574e-7·T² − 9.673e-4·T + 0.38712   otherwise
 ```
 
 ## 2. Code-generation metric — `count_operations`

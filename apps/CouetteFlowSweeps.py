@@ -45,7 +45,7 @@ logging.basicConfig(level=logging.WARNING,
 print(f"Starting code generation at {Path(__file__).resolve()}")
 
 T_BOTTOM_SIM = 300.0
-T_TOP_SIM    = 3000.0
+T_TOP_SIM    = 600.0
 
 with SourceFileGenerator(keep_unknown_argv=True) as sfg:
     sfg.namespace("CouetteFlow::gen")

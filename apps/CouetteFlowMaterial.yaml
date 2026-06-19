@@ -76,12 +76,11 @@ properties:
   # ====================================================================================================
   
   dynamic_viscosity:
-    # 31 sample points over the full 300-3000 K property domain (the previous
-    # "300-600K" comment was stale). The viscosity is smooth, so two degree-2
-    # piecewise segments reproduce the analytical Couette velocity profile to
-    # L_inf ~ 1e-6 at negligible regression cost.
-    dependency: (300, 3000, 31)
-    equation: 0.16667 * exp(-0.0005 * (T - 300.0))  # LBM-scaled viscosity
+    # 31 sample points over the 300-600 K property domain. The viscosity is
+    # smooth, so two degree-2 piecewise segments reproduce the analytical
+    # Couette velocity profile to L_inf ~ 1e-6 at negligible regression cost.
+    dependency: (300, 600, 31)
+    equation: 0.16667 * exp(-0.0045 * (T - 300.0))  # LBM-scaled viscosity
     bounds: [linear, linear]
     regression:
       simplify: post
@@ -136,11 +135,11 @@ properties:
 # CouetteFlowSweeps.py. It is kept in the 0.04–0.17 range so the relaxation rate stays
 # well away from the omega->2 instability limit across the whole temperature span.
 #
-# Equation: nu(T) = 0.16667 * exp(-0.0005 * (T - 300))   over 300-3000 K
+# Equation: nu(T) = 0.16667 * exp(-0.0045 * (T - 300))   over 300-600 K
 # Sampled viscosity (smooth, ~74% drop across the span):
-# - At  300 K: nu = 0.1667
-# - At  600 K: nu = 0.1434
-# - At 1500 K: nu = 0.0915
-# - At 3000 K: nu = 0.0432
+# - At 300 K: nu = 0.1667
+# - At 400 K: nu = 0.1063
+# - At 500 K: nu = 0.0678
+# - At 600 K: nu = 0.0432
 #
 # ====================================================================================================

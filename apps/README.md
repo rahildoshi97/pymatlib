@@ -216,7 +216,7 @@ enables it with the given write frequency.
 | `Parameters`  | `timesteps`        | `60000`     | Total simulation steps                         |
 | `Parameters`  | `errorThreshold`   | `1e-3`      | Convergence tolerance for steady-state check   |
 | `Parameters`  | `T_bottom`         | `300.0`     | Bottom-wall temperature (K)                    |
-| `Parameters`  | `T_top`            | `3000.0`    | Top-wall temperature (K)                       |
+| `Parameters`  | `T_top`            | `600.0`     | Top-wall temperature (K)                       |
 | `Output`      | `vtkWriteFrequency`| `0`         | Steps between VTK writes (0 = disabled)        |
 | `Output`      | `vtkOutputDir`     | `output/vtk`| VTK output directory (relative to CWD)         |
 
