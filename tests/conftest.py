@@ -9,6 +9,17 @@ from pathlib import Path
 
 from materforge.core.materials import Material
 
+
+@pytest.fixture(autouse=True)
+def _disable_build_cache(monkeypatch):
+    """Keep the on-disk build cache out of tests by default.
+
+    Avoids touching the real ~/.cache and keeps each test building from scratch.
+    Cache-specific tests re-enable it explicitly (see tests/unit/test_cache.py).
+    """
+    monkeypatch.setenv("MATERFORGE_DISABLE_CACHE", "1")
+
+
 @pytest.fixture
 def test_data_dir():
     """Path to test data directory."""
