@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Dict, Set, Union
 import sympy as sp
 from materforge.core.materials import Material
+from materforge.parsing import cache
 from materforge.parsing.config.material_yaml_parser import MaterialYAMLParser
 from materforge.parsing.config.yaml_keys import NAME_KEY, PROPERTIES_KEY
 from materforge.parsing.validation.errors import MaterialConfigError, PropertyConfigError
@@ -20,7 +21,7 @@ logger = logging.getLogger(__name__)
 # ====================================================================
 
 def create_material(yaml_path: Union[str, Path], dependency: sp.Symbol,
-                    enable_plotting: bool = True) -> Material:
+                    enable_plotting: bool = True, use_cache: bool = True) -> Material:
     """Creates a Material from a YAML configuration file.
 
     Args:
@@ -29,6 +30,13 @@ def create_material(yaml_path: Union[str, Path], dependency: sp.Symbol,
                          YAML equations always use the placeholder 'T';
                          it is substituted with this symbol at runtime.
         enable_plotting: Generate visualisation plots (default: True).
+        use_cache:       Reuse a cached build when the YAML and its referenced
+                         data files are unchanged, skipping the piecewise
+                         regression (default: True). Only consulted when
+                         ``enable_plotting`` is False, since a plotting run
+                         exists to (re)produce the figures. Disable globally
+                         with the ``MATERFORGE_DISABLE_CACHE`` environment
+                         variable; relocate with ``MATERFORGE_CACHE_DIR``.
     Returns:
         Fully initialised Material instance.
     Raises:
@@ -49,7 +57,16 @@ def create_material(yaml_path: Union[str, Path], dependency: sp.Symbol,
         )
     try:
         parser = MaterialYAMLParser(yaml_path=yaml_path)
+        cache_key = None
+        if use_cache and not enable_plotting:
+            cache_key = cache.compute_key(Path(yaml_path), dependency, parser.base_dir, parser.config)
+            cached = cache.load(cache_key)
+            if cached is not None:
+                logger.info("Loaded material '%s' from cache for %s", cached.name, yaml_path)
+                return cached
         material = parser.create_material(dependency=dependency, enable_plotting=enable_plotting)
+        if cache_key is not None:
+            cache.store(cache_key, material)
         logger.info("Successfully created material '%s' with %d properties",
                     material.name, len(material.property_names()))
         return material
@@ -187,6 +204,24 @@ def evaluate_material_properties(material: Material, symbol: sp.Symbol, value) -
     return material.evaluate(symbol, value)
 
 # ====================================================================
+# CACHE MANAGEMENT
+# ====================================================================
+
+def clear_cache() -> int:
+    """Removes all cached material builds from the on-disk cache.
+
+    The cache (used by ``create_material(..., use_cache=True)``) lives under
+    ``MATERFORGE_CACHE_DIR`` if set, otherwise the XDG cache directory
+    (``~/.cache/materforge``).
+
+    Returns:
+        Number of cache entries removed.
+    Example:
+        >>> removed = clear_cache()
+    """
+    return cache.clear()
+
+# ====================================================================
 # INTERNAL/TESTING FUNCTIONS
 # ====================================================================
 
@@ -212,4 +247,5 @@ __all__ = [
     'get_material_info',
     'get_material_property_names',
     'evaluate_material_properties',
+    'clear_cache',
 ]

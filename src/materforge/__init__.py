@@ -47,6 +47,7 @@ from .parsing.api import (
     get_material_info,
     get_material_property_names,
     evaluate_material_properties,
+    clear_cache,
 )
 
 # Bundled example materials
@@ -77,6 +78,7 @@ __all__ = [
     "get_material_info",
     "get_material_property_names",
     "evaluate_material_properties",
+    "clear_cache",
     # Bundled example materials
     "list_materials",
     "load_material",
