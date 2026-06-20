@@ -28,6 +28,7 @@
             "binaryDir": "${sourceDir}/build/local-release-cpu",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Release",
+                "TARGET_PLATFORM": "CPU",
                 "CMAKE_C_COMPILER": "/usr/bin/gcc",
                 "CMAKE_CXX_COMPILER": "/usr/bin/g++",
                 "Python_EXECUTABLE": "$env{VIRTUAL_ENV}/bin/python3"

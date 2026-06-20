@@ -1,0 +1,148 @@
+# SPDX-FileCopyrightText: 2025 Rahil Miten Doshi, Friedrich-Alexander-Universität Erlangen-Nürnberg
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# CouetteFlow: a 3D thermal Couette flow LBM benchmark (waLBerla + lbmpy) that
+# quantifies the wall-clock overhead of a MaterForge temperature-dependent
+# viscosity vs. a baked-in constant. The shared waLBerla build, MPI, and the
+# TARGET_PLATFORM / language setup are provided by the top-level
+# apps/CMakeLists.txt; this file only adds the CouetteFlow-specific options and
+# executable.
+
+# ============================================================================
+# MATERFORGE VISCOSITY OPTIONS
+# Single source of truth: controls both codegen (--no-materforge flag) and the
+# USE_MATERFORGE compile definition consumed by CouetteFlowScaling.cpp.
+# ============================================================================
+option(USE_MATERFORGE "Use MaterForge temperature-dependent viscosity" ON)
+set(CONST_NU "0.16667" CACHE STRING
+    "Constant kinematic viscosity baked into the generated code when USE_MATERFORGE=OFF (default 1/6)")
+set(COLLISION_OP "SRT" CACHE STRING
+    "LBM collision operator: SRT (default), TRT, or MRT")
+set_property(CACHE COLLISION_OP PROPERTY STRINGS "SRT" "TRT" "MRT")
+# Include the viscosity field write in StreamCollide only when VTK output is
+# expected (validation runs). For performance benchmarks leave it OFF to save
+# 8 B/cell/step and ~10 ops/cell.
+option(WRITE_VISCOSITY "Include viscosity field write in StreamCollide (validation/VTK only)" OFF)
+if(USE_MATERFORGE)
+    message(STATUS "USE_MATERFORGE=ON  (temperature-dependent viscosity)")
+else()
+    message(STATUS "USE_MATERFORGE=OFF (constant viscosity nu=${CONST_NU})")
+endif()
+message(STATUS "COLLISION_OP=${COLLISION_OP}  WRITE_VISCOSITY=${WRITE_VISCOSITY}")
+
+# Link runtime parameter files (*.prm) into this app's build directory.
+walberla_link_files_to_builddir("*.prm")
+
+# ============================================================================
+# UNIFIED EXECUTABLE FUNCTION
+# A single executable that works on both CPU and GPU; the sweep script generates
+# code for the target platform automatically.
+# ============================================================================
+function(add_unified_executable TARGET_NAME SOURCE_FILE SWEEP_SCRIPT)
+    add_executable(${TARGET_NAME})
+    target_sources(${TARGET_NAME} PRIVATE ${SOURCE_FILE})
+
+    # Common libraries for all targets
+    target_link_libraries(${TARGET_NAME} PRIVATE
+        walberla::blockforest walberla::boundary walberla::core
+        walberla::experimental walberla::gpu walberla::field
+        walberla::lbm walberla::lbm_mesapd_coupling walberla::mesa_pd
+        walberla::stencil walberla::timeloop walberla::vtk
+        walberla::pde
+        MPI::MPI_CXX)
+
+    # Propagate USE_MATERFORGE to C++ as a compile definition so the C++ code
+    # never needs to be edited when switching modes - only the CMake option changes.
+    if(USE_MATERFORGE)
+        target_compile_definitions(${TARGET_NAME} PRIVATE USE_MATERFORGE=1)
+        set(MATERFORGE_SCRIPT_ARG "")
+    else()
+        target_compile_definitions(${TARGET_NAME} PRIVATE USE_MATERFORGE=0)
+        set(MATERFORGE_SCRIPT_ARG "--no-materforge" "--const-nu=${CONST_NU}")
+    endif()
+
+    # Collision operator and viscosity-write flags forwarded to the sweep script.
+    set(COLLISION_SCRIPT_ARG "--collision-operator=${COLLISION_OP}")
+    if(WRITE_VISCOSITY AND USE_MATERFORGE)
+        set(VISC_SCRIPT_ARG "--write-viscosity")
+        # The generated StreamCollide kernel takes the viscosity field as a ctor
+        # argument only in this case; mirror it to C++ so the ctor call matches.
+        target_compile_definitions(${TARGET_NAME} PRIVATE WRITE_VISCOSITY=1)
+    else()
+        set(VISC_SCRIPT_ARG "")
+        target_compile_definitions(${TARGET_NAME} PRIVATE WRITE_VISCOSITY=0)
+    endif()
+
+    # Determine target platform for code generation
+    if(TARGET_PLATFORM STREQUAL "CPU")
+        set(CODEGEN_TARGET "cpu")
+    else()
+        set(CODEGEN_TARGET "gpu")
+    endif()
+
+    # Generate sources with target, materforge, collision operator, and viscosity flags
+    if(TARGET_PLATFORM STREQUAL "GPU-HIP")
+        target_link_libraries(${TARGET_NAME} PRIVATE hip::device)
+
+        walberla_generate_sources(${TARGET_NAME}
+            SCRIPTS ${SWEEP_SCRIPT}
+            SCRIPT_ARGS --target=${CODEGEN_TARGET} ${MATERFORGE_SCRIPT_ARG} ${COLLISION_SCRIPT_ARG} ${VISC_SCRIPT_ARG}
+            FILE_EXTENSIONS .cpp .hpp)
+
+        # Set HIP language for generated files
+        set_source_files_properties(
+            ${CMAKE_CURRENT_BINARY_DIR}/_gen/${TARGET_NAME}/gen/*.cpp
+            PROPERTIES LANGUAGE HIP)
+
+        target_compile_options(${TARGET_NAME} PRIVATE
+            $<$<COMPILE_LANGUAGE:HIP>:--offload-arch=gfx90a>)
+        set_property(TARGET ${TARGET_NAME} PROPERTY HIP_ARCHITECTURES "gfx90a")
+
+        # Link GTL library for LUMI
+        if(DEFINED ENV{PE_MPICH_GTL_DIR_amd_gfx90a})
+            string(REPLACE "-L" "" GTL_DIR "$ENV{PE_MPICH_GTL_DIR_amd_gfx90a}")
+            string(REPLACE "-l" "" GTL_LIB "$ENV{PE_MPICH_GTL_LIBS_amd_gfx90a}")
+            target_link_directories(${TARGET_NAME} PRIVATE ${GTL_DIR})
+            target_link_libraries(${TARGET_NAME} PRIVATE ${GTL_LIB})
+            message(STATUS "Linked GTL library for ${TARGET_NAME}")
+        endif()
+
+    elseif(TARGET_PLATFORM STREQUAL "GPU-CUDA")
+        target_link_libraries(${TARGET_NAME} PRIVATE walberla::gpu)
+
+        walberla_generate_sources(${TARGET_NAME}
+            SCRIPTS ${SWEEP_SCRIPT}
+            SCRIPT_ARGS --target=${CODEGEN_TARGET} ${MATERFORGE_SCRIPT_ARG} ${COLLISION_SCRIPT_ARG} ${VISC_SCRIPT_ARG}
+            FILE_EXTENSIONS .cu .hpp)
+
+        set_source_files_properties(
+            ${CMAKE_CURRENT_BINARY_DIR}/_gen/${TARGET_NAME}/gen/*.cu
+            PROPERTIES LANGUAGE CUDA)
+
+        set_property(TARGET ${TARGET_NAME} PROPERTY CUDA_SEPARABLE_COMPILATION ON)
+
+    else()  # CPU
+        walberla_generate_sources(${TARGET_NAME}
+            SCRIPTS ${SWEEP_SCRIPT}
+            SCRIPT_ARGS --target=${CODEGEN_TARGET} ${MATERFORGE_SCRIPT_ARG} ${COLLISION_SCRIPT_ARG} ${VISC_SCRIPT_ARG}
+            FILE_EXTENSIONS .cpp .hpp)
+    endif()
+endfunction()
+
+# ============================================================================
+# BUILD THE UNIFIED COUETTE FLOW SCALING EXECUTABLE
+# ============================================================================
+add_unified_executable(CouetteFlowScaling
+    CouetteFlowScaling.cpp
+    CouetteFlowSweeps.py)
+
+# Place the binary at the top-level build root (apps/build/<preset>/) rather than
+# in this app's nested binary dir, so it sits at the predictable path documented
+# in the README (../build/<preset>/CouetteFlowScaling).
+set_target_properties(CouetteFlowScaling PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+
+message(STATUS "═══════════════════════════════════════════════════════════")
+message(STATUS "✅ CouetteFlowScaling configured (${TARGET_PLATFORM})")
+message(STATUS "   binary -> ${CMAKE_BINARY_DIR}/CouetteFlowScaling")
+message(STATUS "═══════════════════════════════════════════════════════════")
