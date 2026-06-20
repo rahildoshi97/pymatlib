@@ -30,7 +30,7 @@ def load_property_data(file_config: Dict[str, Union[str, int]], header: bool = T
         PermissionError: If the file cannot be read due to permissions.
     """
     _validate_file_config(file_config)
-    file_path = Path(file_config[FILE_PATH_KEY])
+    file_path = Path(str(file_config[FILE_PATH_KEY]))
     dep_col = file_config[DEPENDENCY_COLUMN_KEY]
     prop_col = file_config[PROPERTY_COLUMN_KEY]
     if not file_path.exists():

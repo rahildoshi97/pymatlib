@@ -4,7 +4,7 @@
 
 import logging
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple
 
 import sympy as sp
 from materforge.core.materials import Material
@@ -44,12 +44,13 @@ class PropertyProcessor(PropertyProcessorBase):
         self.post_processor = PropertyPostProcessor()
         self.properties: Optional[Dict[str, Any]] = None
         self.categorized_properties: Optional[Dict[PropertyType, List[Tuple[str, Any]]]] = None
-        self.base_dir: Optional[Path] = None
+        # base_dir is provided by PropertyProcessorBase.__init__ (set later via
+        # set_processing_context); no need to redeclare it here.
         logger.debug("PropertyProcessor initialised with %d handlers", len(self.handlers))
 
     # --- Public API ---
     def process_properties(self, material: Material,
-                           dependency: Union[float, sp.Symbol],
+                           dependency: sp.Symbol,
                            properties: Dict[str, Any],
                            categorized_properties: Dict[PropertyType, List[Tuple[str, Any]]],
                            base_dir: Path, visualizer) -> None:
@@ -68,6 +69,8 @@ class PropertyProcessor(PropertyProcessorBase):
         try:
             self._process_by_category(material, dependency)
             logger.info("Starting post-processing for '%s'", material.name)
+            # Set non-None by _initialize_processing_context above.
+            assert self.properties is not None and self.categorized_properties is not None
             self.post_processor.post_process_properties(
                 material, dependency, self.properties, self.categorized_properties, self.processed_properties)
             logger.info("Finished processing all properties for '%s'", material.name)
@@ -91,17 +94,19 @@ class PropertyProcessor(PropertyProcessorBase):
             handler.set_processing_context(self.base_dir, visualizer, self.processed_properties)
             logger.debug("Context set for handler: %s", handler_type.name)
         computed_handler = self.handlers.get(PropertyType.COMPUTED_PROPERTY)
-        if computed_handler:
+        if isinstance(computed_handler, ComputedPropertyHandler):
             computed_handler.set_computed_property_processor(properties)
 
     def _process_by_category(self, material: Material,
-                              dependency: Union[float, sp.Symbol]) -> None:
+                              dependency: sp.Symbol) -> None:
         """Iterates PropertyType enum order and processes each category.
 
         CONSTANT_VALUE is the first enum value, so all scalar constants are
         assigned to the material before any other type runs - enabling safe
         forward references from STEP_FUNCTION, TABULAR_DATA, etc.
         """
+        # Set non-None by _initialize_processing_context before this runs.
+        assert self.categorized_properties is not None
         total = sum(len(v) for v in self.categorized_properties.values())
         active = sum(1 for v in self.categorized_properties.values() if v)
         logger.info("Processing %d properties across %d categories", total, active)

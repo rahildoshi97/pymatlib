@@ -55,6 +55,9 @@ class PiecewiseBuilder:
                 logger.info("Regression enabled for %r: type=%s, degree=%d, segments=%d",
                             prop_name, simplify_type, degree, segments)
             if has_regression and simplify_type == PRE_KEY:
+                # process_regression_params returns concrete ints whenever
+                # has_regression is True.
+                assert degree is not None and segments is not None
                 pw_result = PiecewiseBuilder._build_with_regression(
                     dep_array, prop_array, YAML_PLACEHOLDER,
                     lower_bound_type, upper_bound_type, degree, segments)
@@ -153,34 +156,34 @@ class PiecewiseBuilder:
         """
         logger.debug("Building linear interpolation piecewise: %d points, bounds=(%s, %s)",
                      len(dep_array), lower, upper)
-        dep_array  = [ensure_sympy_compatible(x) for x in dep_array]
-        prop_array = [ensure_sympy_compatible(x) for x in prop_array]
+        dep_vals  = [ensure_sympy_compatible(x) for x in dep_array]
+        prop_vals = [ensure_sympy_compatible(x) for x in prop_array]
         conditions = []
         # Lower boundary
         if lower == CONSTANT_KEY:
-            lower_expr = prop_array[0]
+            lower_expr = prop_vals[0]
         else:
-            if len(dep_array) > 1:
-                slope = (prop_array[1] - prop_array[0]) / (dep_array[1] - dep_array[0])
-                lower_expr = prop_array[0] + slope * (dependency - dep_array[0])
+            if len(dep_vals) > 1:
+                slope = (prop_vals[1] - prop_vals[0]) / (dep_vals[1] - dep_vals[0])
+                lower_expr = prop_vals[0] + slope * (dependency - dep_vals[0])
             else:
-                lower_expr = prop_array[0]
-        conditions.append((lower_expr, dependency < dep_array[0]))
+                lower_expr = prop_vals[0]
+        conditions.append((lower_expr, dependency < dep_vals[0]))
         # Interior segments
-        for i in range(len(dep_array) - 1):
-            slope = (prop_array[i + 1] - prop_array[i]) / (dep_array[i + 1] - dep_array[i])
-            expr = prop_array[i] + slope * (dependency - dep_array[i])
-            conditions.append((expr, sp.And(dependency >= dep_array[i], dependency < dep_array[i + 1])))
+        for i in range(len(dep_vals) - 1):
+            slope = (prop_vals[i + 1] - prop_vals[i]) / (dep_vals[i + 1] - dep_vals[i])
+            expr = prop_vals[i] + slope * (dependency - dep_vals[i])
+            conditions.append((expr, sp.And(dependency >= dep_vals[i], dependency < dep_vals[i + 1])))
         # Upper boundary
         if upper == CONSTANT_KEY:
-            upper_expr = prop_array[-1]
+            upper_expr = prop_vals[-1]
         else:
-            if len(dep_array) > 1:
-                slope = (prop_array[-1] - prop_array[-2]) / (dep_array[-1] - dep_array[-2])
-                upper_expr = prop_array[-1] + slope * (dependency - dep_array[-1])
+            if len(dep_vals) > 1:
+                slope = (prop_vals[-1] - prop_vals[-2]) / (dep_vals[-1] - dep_vals[-2])
+                upper_expr = prop_vals[-1] + slope * (dependency - dep_vals[-1])
             else:
-                upper_expr = prop_array[-1]
-        conditions.append((upper_expr, dependency >= dep_array[-1]))
+                upper_expr = prop_vals[-1]
+        conditions.append((upper_expr, dependency >= dep_vals[-1]))
         return sp.Piecewise(*conditions)
 
     @staticmethod

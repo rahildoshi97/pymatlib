@@ -32,6 +32,14 @@ class BasePropertyHandler(PropertyProcessorBase):
         super().__init__()
         logger.debug("BasePropertyHandler initialized")
 
+    def process_property(self, material: Material, prop_name: str,
+                         prop_config: Any, dependency: sp.Symbol) -> None:
+        """Processes a single property and assigns it to the material.
+
+        Implemented by each concrete handler subclass.
+        """
+        raise NotImplementedError
+
 
 class ConstantValuePropertyHandler(BasePropertyHandler):
     """Handler for constant (dependency-independent) properties."""

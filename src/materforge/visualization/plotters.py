@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import sympy as sp
 from matplotlib.gridspec import GridSpec
+from matplotlib.figure import Figure
 from materforge.core.materials import Material
 from materforge.algorithms.regression_processor import RegressionProcessor
 from materforge.parsing.config.yaml_keys import CONSTANT_KEY, NAME_KEY, POST_KEY, PRE_KEY
@@ -24,11 +25,11 @@ class PropertyVisualizer:
     # --- Constructor ---
     def __init__(self, parser) -> None:
         self.parser = parser
-        self.fig = None
-        self.gs = None
+        self.fig: Optional[Figure] = None
+        self.gs: Optional[GridSpec] = None
         self.current_subplot = 0
         self.plot_directory = self.parser.base_dir / "materforge_plots"
-        self.visualized_properties = set()
+        self.visualized_properties: set[str] = set()
         self.is_enabled = True
         self.setup_style()
         logger.debug("PropertyVisualizer initialized for: %s", parser.config_path)
@@ -108,7 +109,7 @@ class PropertyVisualizer:
         if prop_name in self.visualized_properties:
             logger.debug("Property %r already visualized - skipping", prop_name)
             return
-        if self.fig is None:
+        if self.fig is None or self.gs is None:
             logger.warning("No figure available for %r - visualization skipped", prop_name)
             return
         if not isinstance(dependency, sp.Symbol):
@@ -301,7 +302,7 @@ class PropertyVisualizer:
             material_name = self.parser.config[NAME_KEY]
             self.fig.suptitle(f"Material Properties: {material_name}", fontsize=16, fontweight="bold", y=0.98)
             try:
-                plt.tight_layout(rect=[0, 0.01, 1, 0.98], pad=1.0)
+                plt.tight_layout(rect=(0.0, 0.01, 1.0, 0.98), pad=1.0)
             except Exception as e:
                 logger.warning("tight_layout failed: %s - using subplots_adjust", e)
                 plt.subplots_adjust(left=0.08, bottom=0.08, right=0.92, top=0.88, hspace=0.8)

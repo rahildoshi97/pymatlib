@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import logging
-from typing import Dict, List, Set, Any
+from typing import Dict, List, Optional, Set, Any
 import numpy as np
 import sympy as sp
 from materforge.core.materials import Material
@@ -147,7 +147,7 @@ class ComputedPropertyProcessor:
             raise ValueError(f"Failed to parse and process expression: {expression}") from e
 
     def _validate_circular_dependencies(self, prop_name: str, current_deps: List[str],
-                                        visited: Set[str], path: List[str] = None) -> None:
+                                        visited: Set[str], path: Optional[List[str]] = None) -> None:
         """Checks for circular dependencies in property definitions.
 
         Args:
