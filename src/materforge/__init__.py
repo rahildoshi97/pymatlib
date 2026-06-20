@@ -29,11 +29,12 @@ Main Components:
 try:
     from ._version import version as __version__
 except ImportError:
-    from importlib.metadata import version, PackageNotFoundError
+    # Underscore aliases so these helpers don't leak into the public namespace.
+    from importlib.metadata import version as _pkg_version, PackageNotFoundError as _PackageNotFoundError
     try:
-        __version__ = version("materforge")
-    except PackageNotFoundError:
-        __version__ = "0.9.1+unknown"
+        __version__ = _pkg_version("materforge")
+    except _PackageNotFoundError:
+        __version__ = "0.9.2+unknown"
 
 # Core material definitions
 from .core.materials import Material
