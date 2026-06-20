@@ -10,14 +10,23 @@ from pathlib import Path
 from materforge.core.materials import Material
 
 
-@pytest.fixture(autouse=True)
-def _disable_build_cache(monkeypatch):
-    """Keep the on-disk build cache out of tests by default.
+@pytest.fixture(scope="session")
+def _shared_build_cache_dir(tmp_path_factory):
+    """One on-disk build cache shared across the whole test session."""
+    return tmp_path_factory.mktemp("materforge_build_cache")
 
-    Avoids touching the real ~/.cache and keeps each test building from scratch.
-    Cache-specific tests re-enable it explicitly (see tests/unit/test_cache.py).
+
+@pytest.fixture(autouse=True)
+def _use_isolated_build_cache(_shared_build_cache_dir, monkeypatch):
+    """Route the build cache to a session-local directory.
+
+    Keeps the real ~/.cache untouched and lets the suite reuse regression
+    builds instead of re-running the (slow) pwlf fit for the same material in
+    every test. Cache-specific tests override MATERFORGE_CACHE_DIR with their
+    own directory (see tests/unit/test_cache.py).
     """
-    monkeypatch.setenv("MATERFORGE_DISABLE_CACHE", "1")
+    monkeypatch.setenv("MATERFORGE_CACHE_DIR", str(_shared_build_cache_dir))
+    monkeypatch.delenv("MATERFORGE_DISABLE_CACHE", raising=False)
 
 
 @pytest.fixture
