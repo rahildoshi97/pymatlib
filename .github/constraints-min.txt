@@ -1,0 +1,13 @@
+# Exact lower bounds of every runtime dependency declared in pyproject.toml.
+# Used by the "min-versions" CI job (pip install -e . -c .github/constraints-min.txt)
+# so the suite runs against the oldest versions we claim to support, not just
+# whatever the resolver happens to pick. Keep this in lock-step with the
+# `dependencies` floors in pyproject.toml.
+numpy==1.26.0
+sympy==1.13.0
+scipy==1.11.1
+matplotlib==3.8.0
+ruamel.yaml==0.18.0
+pandas==2.0.0
+openpyxl==3.1.5
+pwlf==2.5.1

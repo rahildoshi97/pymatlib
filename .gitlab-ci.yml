@@ -141,6 +141,23 @@ python_3.12:
   <<: *python_test
   image: python:3.12
 
+# Install the exact dependency floors (see .github/constraints-min.txt) and run
+# the suite on the lowest supported Python, so we test the oldest versions we
+# advertise rather than whatever the resolver picks. Mirrors the GitHub
+# "min-versions" job.
+python_min_versions:
+  stage: test
+  image: python:3.10
+  before_script:
+    - pip install --upgrade pip
+    - pip install -e . -c .github/constraints-min.txt
+    - pip install pytest pytest-xdist
+  script:
+    - echo "Resolved dependency versions:"
+    - pip list
+    - pytest tests/ -v -m "not slow"
+    - echo "✅ Minimum-version tests completed"
+
 # Test examples
 test_examples:
   stage: test
@@ -156,23 +173,10 @@ test_examples:
   dependencies:
     - python_3.10
 
-# Test apps (if they contain Python scripts)
-test_apps:
-  stage: test
-  image: python:${PYTHON_VERSION}
-  before_script:
-    - pip install --upgrade pip
-    - pip install -e .
-  script:
-    - echo "Testing application scripts..."
-    - cd apps/
-    # NOTE: these scripts use the legacy Material API and are pending update
-    - python material_demo_callgraph.py || echo "⚠️ Demo script may require additional dependencies"
-    - python quick_visualize.py || echo "⚠️ Visualization script may require additional dependencies"
-    - echo "✅ Application scripts tested"
-  dependencies:
-    - python_3.10
-  allow_failure: true
+# The waLBerla-backed apps (HeatEquationKernel, CouetteFlow) are built and run on
+# the HPC clusters, not in this CI image (they need the C++/CMake/MPI + sweepgen
+# toolchain), so there is no app smoke-test job here. Material-file loading is
+# covered by test_material_files below.
 
 # Integration tests with material files
 test_material_files:
@@ -183,11 +187,11 @@ test_material_files:
     - pip install -e .
   script:
     - echo "Testing material file loading..."
-    - cd apps/
+    - cd apps/HeatEquationKernel/
     - |
       python3 -c "
       import sys
-      sys.path.append('../src')
+      sys.path.append('../../src')
       from materforge import create_material, validate_yaml_file
       import sympy as sp
 
