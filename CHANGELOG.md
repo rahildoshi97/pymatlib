@@ -5,6 +5,50 @@ All notable changes to MaterForge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.2] - 2026-06-20
+
+Housekeeping release: dependency hygiene, repository consolidation of the demo
+apps, and a correctness audit. No public API change.
+
+### Changed
+- Raised the minimum supported dependency versions to a SPEC-0 (~24-month)
+  support window, keeping the existing major-version caps: `numpy>=1.26`,
+  `scipy>=1.11.1`, `sympy>=1.13`, `matplotlib>=3.8`, `pandas>=2.0`,
+  `ruamel.yaml>=0.18`. `openpyxl`, `pwlf`, and `requires-python` (`>=3.10`) are
+  unchanged. (`sympy>=1.13` specifically: 1.12 round-trips `Float(0.0)` to an
+  integer `Zero` through `pickle`, which the build cache relies on.)
+- Consolidated `apps/` into one app per subdirectory (`apps/HeatEquationKernel/`
+  and `apps/CouetteFlow/`) driven by a single top-level `apps/CMakeLists.txt`
+  that adds the shared `walberla/` submodule once and builds both apps; each app
+  is independently switchable (`-DBUILD_HEAT_EQUATION`, `-DBUILD_COUETTE_FLOW`).
+  Imported the runnable 3D thermal Couette flow LBM benchmark (driver, sweep
+  generator, material spec, runtime parameters). Added a top-level
+  `apps/README.md` overview and per-app READMEs.
+
+### Added
+- A minimum-versions CI job (GitHub Actions and GitLab CI) that installs the
+  exact dependency floors from `.github/constraints-min.txt` and runs the test
+  suite, so the oldest supported versions are actually tested. The GitHub
+  release gate now depends on it.
+
+### Removed
+- `apps/generate_pycallgraph2_images.py` (an unmaintained call-graph image
+  generator using the legacy API).
+
+### Fixed
+- The package no longer leaks the `importlib.metadata` `version` and
+  `PackageNotFoundError` helpers into the public namespace (they were importable
+  as `materforge.version` / `materforge.PackageNotFoundError`).
+- Resolved all outstanding `mypy --ignore-missing-imports` errors in
+  `src/materforge/` (type annotations and `None`-narrowing in the property
+  processors, piecewise builder, data handler, and plotters). Public API and
+  runtime behaviour are unchanged.
+
+### Docs
+- README and `apps/README.md` now state that the GPL-3.0 demo apps are not part
+  of the PyPI wheel and explain how to obtain them (`git clone` + submodule
+  init).
+
 ## [0.9.1] - 2026-06-19
 
 ### Added

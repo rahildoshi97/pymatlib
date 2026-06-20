@@ -253,17 +253,31 @@ under the **BSD 3-Clause License**. See the
 
 ### Application Examples (GPL-3.0-or-later)
 
-The `apps/` directory contains demonstration applications that integrate MaterForge with
+The `apps/` directory contains two demonstration applications that integrate MaterForge with
 [waLBerla](https://i10git.cs.fau.de/walberla/walberla) and
-[pystencils](https://pypi.org/project/pystencils/). Because these dependencies are
+[pystencils](https://pypi.org/project/pystencils/) via code generation —
+`apps/HeatEquationKernel/` (a heat-equation solver with a temperature-dependent material) and
+`apps/CouetteFlow/` (a 3D thermal Couette flow LBM benchmark). Because these dependencies are
 GPLv3-licensed, the apps directory is licensed under **GPL-3.0-or-later**. See
-[apps/LICENSE](https://github.com/rahildoshi97/materforge/blob/main/apps/LICENSE) for
-full details.
+[apps/README.md](https://github.com/rahildoshi97/materforge/blob/main/apps/README.md) for the
+overview and [apps/LICENSE](https://github.com/rahildoshi97/materforge/blob/main/apps/LICENSE)
+for full details.
 
 ### PyPI Distribution
 
 `pip install materforge` includes **only the BSD-3-Clause licensed core library**. The
-GPL-licensed apps are excluded from the PyPI distribution.
+GPL-licensed apps are excluded from the PyPI distribution — they need a C++/CMake/MPI
+toolchain plus waLBerla that pip cannot provide. To run the demo apps, get them from the
+source repository:
+
+```bash
+git clone https://github.com/rahildoshi97/materforge.git
+cd materforge
+git submodule update --init --recursive   # populates apps/walberla
+```
+
+See [apps/README.md](https://github.com/rahildoshi97/materforge/blob/main/apps/README.md)
+for build and run instructions.
 
 | Component | Location | License | In PyPI |
 |-----------|----------|---------|---------|
