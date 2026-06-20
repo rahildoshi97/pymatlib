@@ -5,6 +5,22 @@ All notable changes to MaterForge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.3] - 2026-06-20
+
+Documentation and packaging-metadata patch so every link on the PyPI project
+page resolves to GitHub. No code or public API change.
+
+### Fixed
+- Project-page links that targeted a non-existent `main` branch now point at the
+  default `master` branch, fixing the 404 on the PyPI `Changelog` link and on
+  the README links to the example materials, contributing guide, license, demo
+  apps, and citation file.
+
+### Changed
+- The "Latest Release" badge now links to the GitHub Releases page, and a
+  `Releases` entry was added to the project URLs in place of the GitLab mirror
+  link, so the PyPI sidebar and README point to GitHub rather than GitLab.
+
 ## [0.9.2] - 2026-06-20
 
 Housekeeping release: dependency hygiene, repository consolidation of the demo

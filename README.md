@@ -7,7 +7,7 @@ property evaluation as a function of any SymPy symbol.
 
 [![DOI](https://joss.theoj.org/papers/10.21105/joss.09909/status.svg)](https://doi.org/10.21105/joss.09909)
 [![Python](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
-[![Latest Release](https://i10git.cs.fau.de/rahil.doshi/materforge/-/badges/release.svg)](https://i10git.cs.fau.de/rahil.doshi/materforge/-/releases)
+[![Latest Release](https://img.shields.io/github/v/release/rahildoshi97/materforge)](https://github.com/rahildoshi97/materforge/releases)
 [![License](https://img.shields.io/badge/license-BSD%203--Clause-blue.svg)](LICENSE)
 [![Documentation Status](https://readthedocs.org/projects/materforge/badge/?version=latest)](https://materforge.readthedocs.io/)
 [![Pipeline Status](https://i10git.cs.fau.de/rahil.doshi/materforge/badges/master/pipeline.svg)](https://i10git.cs.fau.de/rahil.doshi/materforge/-/pipelines)
@@ -62,7 +62,7 @@ All required dependencies are installed automatically.
 Clone the repository and install in editable mode:
 
 ```bash
-git clone https://i10git.cs.fau.de/rahil.doshi/materforge.git
+git clone https://github.com/rahildoshi97/materforge.git
 cd materforge
 pip install -e .
 ```
@@ -205,9 +205,9 @@ See the [YAML schema documentation](https://materforge.readthedocs.io/en/latest/
 for full configuration options.
 
 **Example YAML files:**
-- [Example alloy](https://github.com/rahildoshi97/materforge/blob/main/examples/myAlloy.yaml)
-- [Aluminum](https://github.com/rahildoshi97/materforge/blob/main/src/materforge/data/materials/pure_metals/Al/Al.yaml)
-- [Steel 1.4301](https://github.com/rahildoshi97/materforge/blob/main/src/materforge/data/materials/alloys/1.4301/1.4301.yaml)
+- [Example alloy](https://github.com/rahildoshi97/materforge/blob/master/examples/myAlloy.yaml)
+- [Aluminum](https://github.com/rahildoshi97/materforge/blob/master/src/materforge/data/materials/pure_metals/Al/Al.yaml)
+- [Steel 1.4301](https://github.com/rahildoshi97/materforge/blob/master/src/materforge/data/materials/alloys/1.4301/1.4301.yaml)
 
 ---
 
@@ -229,7 +229,7 @@ The documentation follows the [Diátaxis](https://diataxis.fr/) framework:
 ## 🤝 Contributing
 
 Contributions are welcome! Please see our
-[Contributing Guide](https://github.com/rahildoshi97/materforge/blob/main/CONTRIBUTING.md)
+[Contributing Guide](https://github.com/rahildoshi97/materforge/blob/master/CONTRIBUTING.md)
 for details on how to get started.
 
 ---
@@ -249,7 +249,7 @@ for details on how to get started.
 
 The MaterForge library itself (`src/materforge/`, `examples/`, `tests/`, `docs/`) is licensed
 under the **BSD 3-Clause License**. See the
-[LICENSE](https://github.com/rahildoshi97/materforge/blob/main/LICENSE) file for full details.
+[LICENSE](https://github.com/rahildoshi97/materforge/blob/master/LICENSE) file for full details.
 
 ### Application Examples (GPL-3.0-or-later)
 
@@ -259,8 +259,8 @@ The `apps/` directory contains two demonstration applications that integrate Mat
 `apps/HeatEquationKernel/` (a heat-equation solver with a temperature-dependent material) and
 `apps/CouetteFlow/` (a 3D thermal Couette flow LBM benchmark). Because these dependencies are
 GPLv3-licensed, the apps directory is licensed under **GPL-3.0-or-later**. See
-[apps/README.md](https://github.com/rahildoshi97/materforge/blob/main/apps/README.md) for the
-overview and [apps/LICENSE](https://github.com/rahildoshi97/materforge/blob/main/apps/LICENSE)
+[apps/README.md](https://github.com/rahildoshi97/materforge/blob/master/apps/README.md) for the
+overview and [apps/LICENSE](https://github.com/rahildoshi97/materforge/blob/master/apps/LICENSE)
 for full details.
 
 ### PyPI Distribution
@@ -276,7 +276,7 @@ cd materforge
 git submodule update --init --recursive   # populates apps/walberla
 ```
 
-See [apps/README.md](https://github.com/rahildoshi97/materforge/blob/main/apps/README.md)
+See [apps/README.md](https://github.com/rahildoshi97/materforge/blob/master/apps/README.md)
 for build and run instructions.
 
 | Component | Location | License | In PyPI |
@@ -292,7 +292,7 @@ for build and run instructions.
 ## 📖 Citation
 
 If you use MaterForge in your research, please cite it using the information in our
-[CITATION.cff](https://github.com/rahildoshi97/materforge/blob/main/CITATION.cff) file.
+[CITATION.cff](https://github.com/rahildoshi97/materforge/blob/master/CITATION.cff) file.
 
 ---
 
@@ -302,7 +302,7 @@ If you use MaterForge in your research, please cite it using the information in 
 - **Email**: [rahil.doshi@fau.de](mailto:rahil.doshi@fau.de)
 - **Documentation**: [materforge.readthedocs.io](https://materforge.readthedocs.io)
 - **Bug Tracker**: [GitHub Issues](https://github.com/rahildoshi97/materforge/issues)
-- **GitLab**: [i10git.cs.fau.de](https://i10git.cs.fau.de/rahil.doshi/materforge)
+- **Source Code**: [GitHub](https://github.com/rahildoshi97/materforge)
 
 ---
 
