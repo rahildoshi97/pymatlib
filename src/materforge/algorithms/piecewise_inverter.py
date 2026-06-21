@@ -103,7 +103,7 @@ class PiecewiseInverter:
         slopes = []
         for piece in non_final:
             deg = sp.degree(piece["expr"], input_symbol)
-            if deg == 0:
+            if deg <= 0:  # 0 for a non-zero constant, -oo for the zero constant
                 slopes.append(0.0)
             elif deg == 1:
                 slopes.append(float(sp.Poly(piece["expr"], input_symbol).all_coeffs()[0]))
@@ -128,10 +128,16 @@ class PiecewiseInverter:
 
     @staticmethod
     def _extract_boundary(condition: sp.Basic, symbol: sp.Symbol) -> float:
-        """Extracts the numeric boundary value from a condition such as dep < 300.0.
+        """Extracts the numeric upper edge of a piece's validity interval.
+
+        Each non-final Piecewise piece is valid up to a breakpoint where it hands
+        off to the next, e.g. ``dep < 300.0`` -> ``300.0``. While simplifying a
+        Piecewise, SymPy also produces compound conditions - an interior
+        ``And(dep >= lo, dep < hi)`` or a merged ``Or(dep < a, dep < b)`` - whose
+        right edge is the ``<`` bound and the largest ``<`` bound respectively.
 
         Args:
-            condition: A SymPy relational expression.
+            condition: A SymPy relational or And/Or of relationals.
             symbol:    The independent variable symbol.
         Returns:
             Boundary value as a Python float.
@@ -139,6 +145,10 @@ class PiecewiseInverter:
             ValueError: If the boundary cannot be extracted.
         """
         try:
+            edge = PiecewiseInverter._interval_upper_edge(condition, symbol)
+            if edge is not None:
+                return edge
+            # Fallback: a plain relational shape the edge-finder does not cover.
             if hasattr(condition, "rhs"):
                 return float(condition.rhs)
             if hasattr(condition, "args") and len(condition.args) == 2:
@@ -150,6 +160,28 @@ class PiecewiseInverter:
             raise ValueError(f"Cannot extract boundary from condition: {condition}")
         except (ValueError, TypeError) as e:
             raise ValueError(f"Error extracting boundary from {condition}: {str(e)}") from e
+
+    @staticmethod
+    def _interval_upper_edge(node: sp.Basic, symbol: sp.Symbol) -> Optional[float]:
+        """Right edge of the dependency interval a condition describes.
+
+        Returns None when the condition imposes no upper bound on ``symbol`` (so
+        the caller can fall back). ``Or`` is a union (rightmost edge); ``And`` is
+        an intersection (tightest ``<`` bound).
+        """
+        if isinstance(node, sp.Or):
+            edges = [PiecewiseInverter._interval_upper_edge(a, symbol) for a in node.args]
+            present = [e for e in edges if e is not None]
+            return max(present) if present else None
+        if isinstance(node, sp.And):
+            edges = [PiecewiseInverter._interval_upper_edge(a, symbol) for a in node.args]
+            present = [e for e in edges if e is not None]
+            return min(present) if present else None
+        if isinstance(node, (sp.StrictLessThan, sp.LessThan)):
+            lhs, rhs = node.args
+            if lhs == symbol:
+                return float(rhs)
+        return None
 
     def _invert_linear_expression(self, expr: sp.Expr, input_symbol: sp.Symbol,
         output_symbol: sp.Symbol, boundary_val: Optional[float] = None) -> sp.Expr:
@@ -169,7 +201,7 @@ class PiecewiseInverter:
         """
         try:
             deg = sp.degree(expr, input_symbol)
-            if deg == 0:
+            if deg <= 0:  # 0 for a non-zero constant; -oo for the constant 0.0
                 if boundary_val is not None and boundary_val != float("inf"):
                     return sp.sympify(boundary_val)
                 return sp.sympify(float(expr))

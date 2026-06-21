@@ -28,6 +28,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Repeated dependency values in a tabular property now raise a clear error naming
   the duplicates, instead of failing later with a cryptic `float division by
   zero` from the degenerate interpolation slope.
+- `PiecewiseInverter` now inverts the piecewise shapes a linearly-interpolated
+  property produces: a merged `Or` boundary condition (which SymPy creates when a
+  `linear` lower bound makes the extrapolation piece equal segment 0) and a
+  constant piece equal to exactly `0.0` (SymPy degree `-oo`) used to abort
+  inversion. The regression-backed `energy_density` inversion is unchanged.
 
 ## [0.9.3] - 2026-06-20
 
