@@ -1,4 +1,7 @@
 """Unit tests for Material class."""
+import copy
+import pickle
+
 import pytest
 import sympy as sp
 
@@ -135,3 +138,44 @@ class TestMaterial:
         assert sample_valid_alloy.name == "Test Steel"
         assert sample_valid_alloy.solidus_temperature == pytest.approx(1400.0)
         assert sample_valid_alloy.liquidus_temperature == pytest.approx(1450.0)
+
+
+class TestMaterialSerialization:
+    """A Material must survive pickling and deep-copying.
+
+    The dynamic-attribute machinery used to recurse forever when pickle/deepcopy
+    probed dunder attributes (e.g. __setstate__) before ``properties`` was
+    restored, raising RecursionError. These guard against that regression so the
+    container works with multiprocessing, joblib, and user-side caching.
+    """
+
+    @staticmethod
+    def _build() -> Material:
+        T = sp.Symbol('T')
+        mat = Material(name="Steel 1.4301")
+        mat.density = sp.Float(7850.0)
+        mat.heat_capacity = sp.Piecewise((450 + 0.1 * T, T < 1000), (550.0, True))
+        return mat
+
+    def test_pickle_round_trip_preserves_properties(self):
+        mat = self._build()
+        restored = pickle.loads(pickle.dumps(mat))
+        assert restored.name == mat.name
+        assert restored.property_names() == mat.property_names()
+        assert restored.density == sp.Float(7850.0)
+        assert restored.heat_capacity == mat.heat_capacity
+
+    def test_deepcopy_round_trip_is_independent(self):
+        mat = self._build()
+        clone = copy.deepcopy(mat)
+        assert clone.property_names() == mat.property_names()
+        assert clone.heat_capacity == mat.heat_capacity
+        # mutating the copy must not touch the original
+        clone.density = sp.Float(1.0)
+        assert mat.density == sp.Float(7850.0)
+
+    def test_missing_attribute_still_raises_attributeerror(self):
+        # The recursion fix must not swallow normal missing-attribute behaviour.
+        mat = self._build()
+        with pytest.raises(AttributeError):
+            _ = mat.does_not_exist

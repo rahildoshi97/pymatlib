@@ -17,6 +17,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (re)generate the composite plot (still a cache-bypassing rebuild, by design).
   `load_material` already defaulted to no plotting and is unchanged.
 
+### Fixed
+- `Material` can now be pickled and deep-copied. Its dynamic-attribute lookup
+  recursed forever when `pickle`/`copy.deepcopy` probed dunder attributes before
+  `properties` was restored, raising `RecursionError` - which broke
+  multiprocessing, `joblib`, and user-side caching of a built material.
+
 ## [0.9.3] - 2026-06-20
 
 Documentation and packaging-metadata patch so every link on the PyPI project

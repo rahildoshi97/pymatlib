@@ -37,9 +37,14 @@ class Material:
             self.properties[name] = value
 
     def __getattr__(self, name: str) -> Any:
-        # Only fires when normal lookup in properties fails
-        if name in self.properties:
-            return self.properties[name]
+        # Only fires when normal attribute lookup fails. Read `properties`
+        # straight from __dict__ (never via attribute access): during the
+        # unpickle / deepcopy window `properties` is not restored yet, and
+        # probing dunders like __setstate__/__deepcopy__ would otherwise recurse
+        # back into __getattr__ forever (RecursionError).
+        properties = self.__dict__.get("properties")
+        if properties is not None and name in properties:
+            return properties[name]
         raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
 
     def property_names(self) -> set:
