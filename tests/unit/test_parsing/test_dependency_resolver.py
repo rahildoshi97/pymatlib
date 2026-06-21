@@ -46,6 +46,23 @@ class TestDependencyResolver:
         mat = _make_material(melting_temperature=933.47, boiling_temperature=2792.0)
         assert DependencyResolver.resolve_dependency_reference("melting_temperature + 50", mat) == pytest.approx(983.47)
         assert DependencyResolver.resolve_dependency_reference("melting_temperature - 100", mat) == pytest.approx(833.47)
+        assert DependencyResolver.resolve_dependency_reference("melting_temperature * 2", mat) == pytest.approx(1866.94)
+        assert DependencyResolver.resolve_dependency_reference("melting_temperature / 2", mat) == pytest.approx(466.735)
+
+    def test_arithmetic_addition_with_zero_operand(self):
+        """A non-division operator must not trip over the (unused) division path.
+
+        The operator results were once all computed up front, so 'ref + 0' raised
+        ZeroDivisionError from the '/' entry even though nothing was divided.
+        """
+        mat = _make_material(solidus_temp=1400.0)
+        assert DependencyResolver.resolve_dependency_reference("solidus_temp + 0", mat) == pytest.approx(1400.0)
+
+    def test_arithmetic_division_by_zero_raises_clear_error(self):
+        """Division by zero reports the dependency expression, not a bare ZeroDivisionError."""
+        mat = _make_material(solidus_temp=1400.0)
+        with pytest.raises(ValueError, match="Division by zero in dependency expression"):
+            DependencyResolver.resolve_dependency_reference("solidus_temp / 0", mat)
 
     def test_invalid_dependency_reference(self):
         """Unknown property name raises ValueError."""

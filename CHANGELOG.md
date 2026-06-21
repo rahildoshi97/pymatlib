@@ -22,6 +22,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   recursed forever when `pickle`/`copy.deepcopy` probed dunder attributes before
   `properties` was restored, raising `RecursionError` - which broke
   multiprocessing, `joblib`, and user-side caching of a built material.
+- A scalar dependency expression with a zero operand (e.g. `ref + 0`) no longer
+  raises a spurious `ZeroDivisionError`: only the matched operator is now
+  evaluated, and a genuine `ref / 0` reports the offending expression.
 
 ## [0.9.3] - 2026-06-20
 

@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import logging
+import operator
 import numpy as np
 import re
 from typing import List, Union, Optional
@@ -97,13 +98,14 @@ class DependencyResolver:
                 base_name, op, operand = match.groups()
                 base = DependencyResolver.get_dependency_value(base_name, material)
                 operand_val = float(operand)
-                ops = {'+': base + operand_val,
-                    '-': base - operand_val,
-                    '*': base * operand_val,
-                    '/': base / operand_val}
                 if op == '/' and operand_val == 0.0:
                     raise ValueError(f"Division by zero in dependency expression: '{dep_ref}'")
-                return ops[op]
+                # Evaluate only the matched operator. Building every result up
+                # front used to raise ZeroDivisionError from the unused '/' entry
+                # even for additions like 'ref + 0', masking the message above.
+                ops = {'+': operator.add, '-': operator.sub,
+                       '*': operator.mul, '/': operator.truediv}
+                return ops[op](base, operand_val)
             # Plain property-name reference
             return DependencyResolver.get_dependency_value(dep_ref, material)
         raise ValueError(f"Unsupported dependency reference type: {type(dep_ref)} for value '{dep_ref}'")
