@@ -2,8 +2,8 @@
 
 Installing MaterForge puts a `materforge` command on your `PATH`. It exposes the
 most common operations - listing the bundled examples, validating a YAML file,
-inspecting its metadata, plotting it, and evaluating its properties - so you can
-work with material files without writing any Python.
+inspecting its metadata, plotting it, evaluating its properties, and checking
+fit quality - so you can work with material files without writing any Python.
 
 Every subcommand is a thin wrapper over the [public API](../reference/api.rst);
 anything the CLI does is also reachable from Python, and vice versa.
@@ -117,6 +117,36 @@ As with `plot`, `-s/--symbol` sets the dependency symbol:
 ```bash
 materforge evaluate my_material.yaml 500 --symbol u_C
 ```
+
+---
+
+## Checking Fit Quality
+
+`fit` reports how faithfully each data-backed property (file-import, tabular, or
+computed) reproduces the data it was built from - the genuine error for a
+regression, ~0 for plain interpolation:
+
+```bash
+materforge fit my_material.yaml
+```
+
+```text
+density          R²=0.999995  RMSE=1.263  MAE=0.8293  max|err|=6.347  (n=541)
+heat_capacity    R²=0.969656  RMSE=81.45  MAE=37.71   max|err|=755.6  (n=541)
+...
+```
+
+Pass a property name to score just that one, and `-s/--symbol` to set the
+dependency symbol:
+
+```bash
+materforge fit my_material.yaml heat_capacity --symbol u_C
+```
+
+Constants, step functions, and piecewise-equation properties are exact
+definitions with no source data, so they are not reported; a material with none
+of them exits with code `1`. See the
+[fit-quality guide](assess_fit_quality.md) for the Python API behind this command.
 
 ---
 

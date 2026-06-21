@@ -12,7 +12,7 @@ from pathlib import Path
 from pystencilssfg import SourceFileGenerator
 from sweepgen import Sweep
 
-from materforge import create_material, get_material_info
+from materforge import create_material, get_material_info, fit_report
 from materforge.algorithms.piecewise_inverter import PiecewiseInverter
 
 logging.basicConfig(
@@ -59,6 +59,16 @@ with SourceFileGenerator() as sfg:
 
     print(f"Energy density function: {mat.energy_density}")
     print(f"Type: {type(mat.energy_density)}")
+    print("=" * 80)
+
+    # v0.10.0 fit quality: every data-backed property is a regression (or
+    # interpolation) of its source points. fit_report() scores how faithfully each
+    # stored curve reproduces that data (R²/RMSE) - including the thermal_diffusivity
+    # that drives this kernel and the energy_density we invert below. Cheap, and a
+    # quick sanity check that a regression degree/segment choice is good enough.
+    print("Fit quality (stored curve vs. source data):")
+    for quality in fit_report(mat).values():
+        print(f"  {quality}")
     print("=" * 80)
 
     # v0.9.1 build cache: a non-plotting load stores the built material keyed by

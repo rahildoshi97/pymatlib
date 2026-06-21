@@ -51,6 +51,17 @@ over a NumPy array. See :doc:`../how-to/fast_evaluation` for usage.
    :show-inheritance:
    :no-index:
 
+Fit Quality
+~~~~~~~~~~~
+
+Goodness-of-fit metrics (R², RMSE, MAE, residuals) for data-backed properties.
+See :doc:`../how-to/assess_fit_quality` for usage.
+
+.. automodule:: materforge.analysis
+   :members:
+   :show-inheritance:
+   :no-index:
+
 Command-Line Interface
 ----------------------
 
@@ -84,8 +95,18 @@ Parsing Module
 Visualization Module
 --------------------
 
+Parse-time plotting - the composite figure written during a build.
+
 .. automodule:: materforge.visualization
    :members:
    :undoc-members:
+   :show-inheritance:
+   :no-index:
+
+Post-build plotting helpers that return a Matplotlib ``Axes`` (fit, residual, and
+compare plots). See :doc:`../how-to/visualize_properties` for usage.
+
+.. automodule:: materforge.visualization.plots
+   :members:
    :show-inheritance:
    :no-index:

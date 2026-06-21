@@ -34,7 +34,9 @@ from materforge.parsing.config.yaml_keys import FILE_PATH_KEY
 logger = logging.getLogger(__name__)
 
 # Bump when the on-disk payload layout changes in a backwards-incompatible way.
-_CACHE_FORMAT_VERSION = 1
+# v2: payload also carries `sample_data` (the source points each property was fit
+# from) so fit-quality and plotting work off a cached material.
+_CACHE_FORMAT_VERSION = 2
 _ENTRY_SUFFIX = ".mfcache"
 _TRUE_FLAGS = {"1", "true", "yes", "on"}
 
@@ -114,7 +116,11 @@ def load(key: str) -> Optional[Material]:
     try:
         with open(entry, "rb") as handle:
             payload: Dict[str, Any] = pickle.load(handle)
-        return Material(name=payload["name"], properties=payload["properties"])
+        return Material(
+            name=payload["name"],
+            properties=payload["properties"],
+            sample_data=payload.get("sample_data", {}),
+        )
     except Exception as error:  # corrupt, truncated, or version-incompatible
         logger.warning("Ignoring unreadable cache entry %s: %s", entry, error)
         return None
@@ -127,7 +133,11 @@ def store(key: str, material: Material) -> None:
     try:
         directory = cache_dir()
         directory.mkdir(parents=True, exist_ok=True)
-        payload = {"name": material.name, "properties": dict(material.properties)}
+        payload = {
+            "name": material.name,
+            "properties": dict(material.properties),
+            "sample_data": dict(material.sample_data),
+        }
         final = directory / f"{key}{_ENTRY_SUFFIX}"
         tmp = directory / f"{key}{_ENTRY_SUFFIX}.{os.getpid()}.tmp"
         with open(tmp, "wb") as handle:

@@ -16,6 +16,8 @@ symbolic and numerical property evaluation for various material properties.
    how-to/use_the_cli
    how-to/fast_evaluation
    how-to/cache_builds
+   how-to/assess_fit_quality
+   how-to/visualize_properties
    how-to/property_inversion
    explanation/design_philosophy
    explanation/material_properties

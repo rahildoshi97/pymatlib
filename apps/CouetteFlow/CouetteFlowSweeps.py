@@ -47,6 +47,57 @@ print(f"Starting code generation at {Path(__file__).resolve()}")
 T_BOTTOM_SIM = 300.0
 T_TOP_SIM    = 600.0
 
+
+def survey_viscosity_fit(yaml_path, *, tol=1e-3):
+    """Example: pick the dynamic_viscosity regression (segments, degree) with the
+    MaterForge fit-quality API (v0.10.0).
+
+    Rebuilds just the viscosity property for a small grid of regression configs,
+    scores each fit against its source samples, and reports the cheapest config
+    whose maximum error stays under ``tol`` - i.e. the best accuracy/cost
+    trade-off to paste into the ``regression:`` block of CouetteFlowMaterial.yaml.
+    Enabled with ``--survey-viscosity-fit``; it does not affect code generation.
+    """
+    import os
+    import tempfile
+    from ruamel.yaml import YAML
+    from materforge import create_material, fit_quality
+
+    yaml = YAML()
+    with open(yaml_path) as handle:
+        viscosity = yaml.load(handle)["properties"]["dynamic_viscosity"]
+    grid = [(1, 1), (2, 1), (1, 2), (2, 2), (3, 2), (2, 3)]  # (segments, degree)
+    T = sp.Symbol("T")
+    print(f"\nViscosity fit survey - cheapest (segments, degree) with max|err| < {tol:g}:")
+    print(f"{'segments':>8} {'degree':>6} {'R^2':>10} {'RMSE':>11} {'max|err|':>11} {'ok':>4}")
+    best = None
+    for segments, degree in grid:
+        config = {"name": "viscosity_survey",
+                  "properties": {"dynamic_viscosity": dict(viscosity)}}
+        config["properties"]["dynamic_viscosity"]["regression"] = {
+            "simplify": "post", "degree": degree, "segments": segments}
+        with tempfile.NamedTemporaryFile("w", suffix=".yaml", delete=False) as tmp_file:
+            yaml.dump(config, tmp_file)
+            tmp_path = tmp_file.name
+        try:
+            material = create_material(tmp_path, T, enable_plotting=False)
+            fq = fit_quality(material, "dynamic_viscosity")
+        finally:
+            os.unlink(tmp_path)
+        ok = fq.max_abs_error < tol
+        print(f"{segments:>8} {degree:>6} {fq.r_squared:>10.6f} {fq.rmse:>11.3e} "
+              f"{fq.max_abs_error:>11.3e} {'yes' if ok else 'no':>4}")
+        cost = segments * (degree + 1)  # rough symbolic-term proxy for runtime cost
+        if ok and (best is None or cost < best[0]):
+            best = (cost, segments, degree, fq)
+    if best is not None:
+        _, segments, degree, fq = best
+        print(f"  -> use segments={segments}, degree={degree} "
+              f"(max|err|={fq.max_abs_error:.2e}); set this in the regression block.")
+    else:
+        print("  -> no surveyed config met the tolerance; widen the grid or raise tol.")
+
+
 with SourceFileGenerator(keep_unknown_argv=True) as sfg:
     sfg.namespace("CouetteFlow::gen")
 
@@ -66,6 +117,10 @@ with SourceFileGenerator(keep_unknown_argv=True) as sfg:
     parser.add_argument("--write-viscosity", action="store_true",
                         help="Include viscosity field write in StreamCollide (enable "
                              "only for validation/VTK runs, not performance benchmarks)")
+    parser.add_argument("--survey-viscosity-fit", action="store_true",
+                        help="Survey dynamic_viscosity regression (segments, degree) with "
+                             "the materforge fit-quality API and print the cheapest config "
+                             "within tolerance, then continue with code generation")
     args = parser.parse_args(sfg.context.argv)
 
     use_materforge = not args.no_materforge
@@ -112,6 +167,17 @@ with SourceFileGenerator(keep_unknown_argv=True) as sfg:
             )
         nu_expr = mat.dynamic_viscosity
         print(f"MaterForge viscosity expression loaded: {nu_expr}")
+        # v0.10.0 fit quality: dynamic_viscosity is a regression of its sampled
+        # values, and that fit directly bounds how well the analytical Couette
+        # profile computed below can match the simulation. Report R²/RMSE when the
+        # source points were retained (an exact, non-fitted definition has none).
+        if "dynamic_viscosity" in mat.sample_data:
+            from materforge import fit_quality
+            print(f"dynamic_viscosity fit: {fit_quality(mat, 'dynamic_viscosity')}")
+        # Optional tuning example: let fit_quality pick the cheapest regression
+        # config that meets an accuracy target (does not change the generated code).
+        if args.survey_viscosity_fit:
+            survey_viscosity_fit(yaml_path)
         print("Computing analytical solution for error calculation...")
         temp_symbols = [s for s in nu_expr.free_symbols
                         if 'temperature' in str(s)]

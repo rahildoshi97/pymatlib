@@ -10,8 +10,8 @@ property evaluation as a function of any SymPy symbol.
 [![Latest Release](https://img.shields.io/github/v/release/rahildoshi97/materforge)](https://github.com/rahildoshi97/materforge/releases)
 [![License](https://img.shields.io/badge/license-BSD%203--Clause-blue.svg)](LICENSE)
 [![Documentation Status](https://readthedocs.org/projects/materforge/badge/?version=latest)](https://materforge.readthedocs.io/)
-[![Pipeline Status](https://i10git.cs.fau.de/rahil.doshi/materforge/badges/master/pipeline.svg)](https://i10git.cs.fau.de/rahil.doshi/materforge/-/pipelines)
-[![Code Coverage](https://i10git.cs.fau.de/rahil.doshi/materforge/badges/master/coverage.svg)](https://i10git.cs.fau.de/rahil.doshi/materforge/-/commits/master)
+[![CI](https://github.com/rahildoshi97/materforge/actions/workflows/ci.yml/badge.svg)](https://github.com/rahildoshi97/materforge/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/rahildoshi97/materforge/branch/master/graph/badge.svg)](https://codecov.io/gh/rahildoshi97/materforge)
 
 **Documentation:** [https://materforge.readthedocs.io](https://materforge.readthedocs.io)
 
@@ -40,7 +40,10 @@ property evaluation as a function of any SymPy symbol.
 - **Symbolic Mathematics**: Built on SymPy for precise mathematical expressions
 - **Piecewise Functions**: Advanced piecewise function support with regression capabilities
 - **Property Inversion**: Create inverse functions for any piecewise-linear property
-- **Visualization**: Automatic plotting of material properties with customizable options
+- **Visualization**: Automatic plotting during a build, plus post-build, notebook-friendly
+  helpers that return a Matplotlib `Axes` for fit, residual, and cross-material compare plots
+- **Fit-Quality Metrics**: R², RMSE, MAE, and residuals for every data-backed property, so
+  you can check how faithfully a fit reproduces its source data
 - **Multiple Property Types**: Constants, step functions, file-based data, tabular data,
   piecewise equations, and computed properties
 - **Regression Analysis**: Built-in piecewise linear fitting with configurable parameters
@@ -125,6 +128,7 @@ materforge validate my_material.yaml  # check a file is structurally valid
 materforge info my_material.yaml       # name, properties, and property types
 materforge plot my_material.yaml       # write a property figure
 materforge evaluate my_material.yaml 500   # evaluate every property at T=500
+materforge fit my_material.yaml         # R²/RMSE for every data-backed property
 ```
 
 Each subcommand wraps the same public API shown above. See the
@@ -149,6 +153,32 @@ table['density'].shape                # (500,)
 
 See the [fast evaluation guide](https://materforge.readthedocs.io/en/latest/how-to/fast_evaluation.html)
 for details.
+
+### Assess Fit Quality & Visualize
+
+Every data-backed property (file-import, tabular, or computed) keeps the points it
+was fit from, so you can score the fit and plot it after the build - no re-parsing:
+
+```python
+import materforge as mf
+
+# How well does each stored curve reproduce its source data?
+print(mf.fit_quality(mat, 'heat_capacity'))     # R²=0.9996  RMSE=8.9  ...
+report = mf.fit_report(mat)                      # dict: name -> FitQuality
+
+# Plotting helpers return a Matplotlib Axes - they render inline in Jupyter and
+# never save or close the figure, so you stay in control of styling and output:
+mf.plot_property(mat, 'heat_capacity')           # fitted curve + the source points
+mf.plot_residuals(mat, 'heat_capacity')          # residuals with a zero reference line
+mf.compare_materials([steel, alloy], 'density')  # the same property, several materials
+```
+
+Fit quality measures the stored curve against its source points: for a property
+with `regression: {simplify: pre/post}` that is the genuine fit error; plain
+interpolation passes through every point, so it reads ~0. See the
+[fit-quality](https://materforge.readthedocs.io/en/latest/how-to/assess_fit_quality.html)
+and [visualization](https://materforge.readthedocs.io/en/latest/how-to/visualize_properties.html)
+guides.
 
 ### Cached Builds
 
@@ -220,7 +250,7 @@ The documentation follows the [Diátaxis](https://diataxis.fr/) framework:
 | Type | Content |
 |------|---------|
 | **Tutorials** | [Getting Started](https://materforge.readthedocs.io/en/latest/tutorials/getting_started.html) · [First Simulation](https://materforge.readthedocs.io/en/latest/tutorials/first_simulation.html) |
-| **How-to Guides** | [Defining Material Properties](https://materforge.readthedocs.io/en/latest/how-to/define_materials.html) · [Property Inversion](https://materforge.readthedocs.io/en/latest/how-to/property_inversion.html) |
+| **How-to Guides** | [Defining Material Properties](https://materforge.readthedocs.io/en/latest/how-to/define_materials.html) · [Assess Fit Quality](https://materforge.readthedocs.io/en/latest/how-to/assess_fit_quality.html) · [Visualize Properties](https://materforge.readthedocs.io/en/latest/how-to/visualize_properties.html) · [Property Inversion](https://materforge.readthedocs.io/en/latest/how-to/property_inversion.html) |
 | **Reference** | [API Reference](https://materforge.readthedocs.io/en/latest/reference/api.html) · [YAML Schema](https://materforge.readthedocs.io/en/latest/reference/yaml_schema.html) |
 | **Explanation** | [Design Philosophy](https://materforge.readthedocs.io/en/latest/explanation/design_philosophy.html) · [Material Properties](https://materforge.readthedocs.io/en/latest/explanation/material_properties.html) |
 
