@@ -222,7 +222,8 @@ Use `degree: 1` for any property you intend to invert with `PiecewiseInverter`.
 
 ## Visualization
 
-Plots are generated automatically when `dependency` is a SymPy symbol:
+Pass `enable_plotting=True` to write a composite figure of every property during
+the build; the `dependency` must be a SymPy symbol. Plotting is off by default:
 
 ```python
 import sympy as sp
@@ -230,7 +231,7 @@ from materforge import create_material
 
 T = sp.Symbol('T')   # any symbol - not limited to temperature
 mat = create_material('myAlloy.yaml', dependency=T, enable_plotting=True)
-# Plots saved automatically
+# Composite figure written during the build
 ```
 
 ---
