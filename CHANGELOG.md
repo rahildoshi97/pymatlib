@@ -25,6 +25,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A scalar dependency expression with a zero operand (e.g. `ref + 0`) no longer
   raises a spurious `ZeroDivisionError`: only the matched operator is now
   evaluated, and a genuine `ref / 0` reports the offending expression.
+- Repeated dependency values in a tabular property now raise a clear error naming
+  the duplicates, instead of failing later with a cryptic `float division by
+  zero` from the degenerate interpolation slope.
 
 ## [0.9.3] - 2026-06-20
 

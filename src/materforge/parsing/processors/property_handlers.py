@@ -157,6 +157,15 @@ class TabularDataPropertyHandler(BasePropertyHandler):
             if len(dep_array) != len(val_array):
                 raise ValueError(f"Length mismatch in '{prop_name}': "
                     f"dependency array ({len(dep_array)}) and value array ({len(val_array)}) must match")
+            # Distinct dependency values are required: a repeat would give a
+            # divide-by-zero slope when the interpolation is built. (File imports
+            # de-duplicate noisy data; explicit tabular values are authoritative,
+            # so a clash is reported rather than silently dropped.)
+            values, counts = np.unique(dep_array, return_counts=True)
+            duplicates = values[counts > 1]
+            if duplicates.size:
+                raise ValueError(f"Duplicate dependency values in '{prop_name}': "
+                    f"{duplicates.tolist()}. Tabular dependency values must be distinct.")
             dep_array, val_array = ensure_ascending_order(dep_array, val_array)
             self.finalize_with_data_arrays(material=material, prop_name=prop_name, dep_array=dep_array,
                 prop_array=val_array, dependency=dependency,

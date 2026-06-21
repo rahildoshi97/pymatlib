@@ -1,5 +1,6 @@
 """Unit tests for property handlers."""
 
+import pytest
 import sympy as sp
 import tempfile
 from pathlib import Path
@@ -46,6 +47,18 @@ class TestKeyValPropertyHandler:
         assert isinstance(material.heat_capacity, sp.Piecewise)
         result = float(material.heat_capacity.subs(temp_symbol, 350))
         assert 900 < result < 1000
+
+    def test_duplicate_dependency_values_raise_clear_error(self, temp_symbol):
+        material = Material(name="Test Material")
+        config = {
+            'dependency': [300, 400, 400, 500],
+            'value': [900, 950, 960, 1000],
+            'bounds': ['constant', 'constant'],
+        }
+        handler = TabularDataPropertyHandler()
+        handler.set_processing_context(Path("."), None, set())
+        with pytest.raises(ValueError, match="Duplicate dependency values"):
+            handler.process_property(material, "heat_capacity", config, temp_symbol)
 
 class TestStepFunctionPropertyHandler:
     """Test cases for StepFunctionPropertyHandler."""
