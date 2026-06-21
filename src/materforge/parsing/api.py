@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 # ====================================================================
 
 def create_material(yaml_path: Union[str, Path], dependency: sp.Symbol,
-                    enable_plotting: bool = True, use_cache: bool = True) -> Material:
+                    enable_plotting: bool = False, use_cache: bool = True) -> Material:
     """Creates a Material from a YAML configuration file.
 
     Args:
@@ -29,14 +29,18 @@ def create_material(yaml_path: Union[str, Path], dependency: sp.Symbol,
         dependency:      SymPy symbol used as the independent variable.
                          YAML equations always use the placeholder 'T';
                          it is substituted with this symbol at runtime.
-        enable_plotting: Generate visualisation plots (default: True).
+        enable_plotting: Write a composite PNG of every property to a
+                         ``materforge_plots`` directory next to the YAML file
+                         (default: False). Opt in when you want the figures; a
+                         plotting run always rebuilds (it exists to (re)produce
+                         the figures) and therefore bypasses the cache.
         use_cache:       Reuse a cached build when the YAML and its referenced
                          data files are unchanged, skipping the piecewise
-                         regression (default: True). Only consulted when
-                         ``enable_plotting`` is False, since a plotting run
-                         exists to (re)produce the figures. Disable globally
-                         with the ``MATERFORGE_DISABLE_CACHE`` environment
-                         variable; relocate with ``MATERFORGE_CACHE_DIR``.
+                         regression (default: True). Consulted on every build
+                         except a plotting run (see ``enable_plotting``), so the
+                         default call is cached. Disable globally with the
+                         ``MATERFORGE_DISABLE_CACHE`` environment variable;
+                         relocate with ``MATERFORGE_CACHE_DIR``.
     Returns:
         Fully initialised Material instance.
     Raises:
@@ -45,8 +49,8 @@ def create_material(yaml_path: Union[str, Path], dependency: sp.Symbol,
         MaterialConfigError: YAML content is invalid or material creation fails.
         PropertyConfigError: A specific property block is structurally invalid.
     Example:
-        >>> material = create_material('steel.yaml', sp.Symbol('T'))
-        >>> material = create_material('copper.yaml', sp.Symbol('u_C'), enable_plotting=False)
+        >>> material = create_material('steel.yaml', sp.Symbol('T'))  # built and cached
+        >>> material = create_material('copper.yaml', sp.Symbol('u_C'), enable_plotting=True)  # also writes plots
     """
     logger.info("Creating material from: %s (dependency=%s, plotting=%s)",
                 yaml_path, dependency, enable_plotting)

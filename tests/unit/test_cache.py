@@ -112,6 +112,15 @@ def test_create_material_writes_one_cache_entry(cache_env, aluminum_yaml_path, t
     assert len(list(cache_env.glob("*.mfcache"))) == 1
 
 
+def test_default_build_uses_the_cache(cache_env, aluminum_yaml_path, temp_symbol):
+    # The default call (plotting off) must populate the cache: a cache entry is
+    # written only on a non-plotting build, so its presence also proves the
+    # default does not silently run a plotting build.
+    clear_cache()
+    create_material(aluminum_yaml_path, temp_symbol)
+    assert len(list(cache_env.glob("*.mfcache"))) == 1
+
+
 def test_second_build_hits_cache_and_skips_regression(
     cache_env, aluminum_yaml_path, temp_symbol, monkeypatch
 ):

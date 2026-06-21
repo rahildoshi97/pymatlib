@@ -158,10 +158,10 @@ the library versions), so reloading an unchanged material skips the refit:
 
 ```python
 # First call builds and caches; later calls of the unchanged YAML are instant.
-mat = create_material('steel.yaml', dependency=T, enable_plotting=False)
+mat = create_material('steel.yaml', dependency=T)
 ```
 
-On by default for non-plotting builds; disable with `MATERFORGE_DISABLE_CACHE=1`,
+On by default (a plotting build always rebuilds); disable with `MATERFORGE_DISABLE_CACHE=1`,
 relocate with `MATERFORGE_CACHE_DIR`, or empty it via `clear_cache()`. See the
 [cache guide](https://materforge.readthedocs.io/en/latest/how-to/cache_builds.html).
 

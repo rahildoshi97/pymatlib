@@ -5,6 +5,18 @@ All notable changes to MaterForge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+- **Behavior change:** `create_material` now defaults to `enable_plotting=False`.
+  Previously the default was `enable_plotting=True`, and because the on-disk build
+  cache is bypassed during a plotting run, the default call never used the cache
+  and silently wrote a `materforge_plots` directory next to the YAML file - making
+  the `use_cache=True` default a no-op. A plain `create_material(yaml, dependency)`
+  now builds, caches, and writes nothing extra. Pass `enable_plotting=True` to
+  (re)generate the composite plot (still a cache-bypassing rebuild, by design).
+  `load_material` already defaulted to no plotting and is unchanged.
+
 ## [0.9.3] - 2026-06-20
 
 Documentation and packaging-metadata patch so every link on the PyPI project

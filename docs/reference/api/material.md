@@ -96,7 +96,8 @@ from materforge import create_material
 def create_material(
     yaml_path: Union[str, Path],
     dependency: sp.Symbol,
-    enable_plotting: bool = True,
+    enable_plotting: bool = False,
+    use_cache: bool = True,
 ) -> Material:
 ```
 
@@ -105,7 +106,11 @@ def create_material(
 - `dependency`: SymPy symbol used as the independent variable in all property
   expressions. Must be a plain `sp.Symbol`. pystencils field accessors such
   as `u.center()` are not valid here - apply `.subs()` after creation instead.
-- `enable_plotting`: Whether to generate and save property plots (default: `True`)
+- `enable_plotting`: Whether to generate and save property plots (default: `False`).
+  Opt in to write a composite figure; a plotting run always rebuilds and bypasses
+  the cache.
+- `use_cache`: Reuse a cached build of an unchanged YAML, skipping the regression
+  (default: `True`). Consulted on every build except a plotting run.
 
 **Returns:**
 - `Material`: Fully initialised material with all properties assigned
@@ -122,8 +127,8 @@ import sympy as sp
 from materforge import create_material
 
 T = sp.Symbol('T')
-mat = create_material('myAlloy.yaml', dependency=T)
-mat_no_plots = create_material('myAlloy.yaml', dependency=T, enable_plotting=False)
+mat = create_material('myAlloy.yaml', dependency=T)                                   # cached build, no plot files
+mat_with_plots = create_material('myAlloy.yaml', dependency=T, enable_plotting=True)  # also writes plots
 ```
 
 ---

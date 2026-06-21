@@ -69,7 +69,7 @@ at_800 = steel.evaluate(T, 800.0)
 print(float(at_800.heat_capacity))
 ```
 
-Plotting is off by default here (unlike `create_material`), so loading an example
+Plotting is off by default (as with `create_material`), so loading an example
 never writes plot files next to the installed package. Pass `enable_plotting=True`
 if you want the plots.
 

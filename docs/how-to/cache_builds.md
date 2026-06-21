@@ -6,7 +6,8 @@ produces the same result every time the source is unchanged. MaterForge caches
 the built result on disk so a second load of an unchanged YAML returns instantly,
 skipping the regression entirely.
 
-The cache is on by default for non-plotting builds and needs no setup.
+The cache is on by default and needs no setup: a plain `create_material` call
+builds, caches, and serves from the cache next time.
 
 ---
 
@@ -19,11 +20,11 @@ from materforge import create_material
 T = sp.Symbol('T')
 
 # First call: builds normally and stores the result.
-mat = create_material('steel.yaml', dependency=T, enable_plotting=False)
+mat = create_material('steel.yaml', dependency=T)
 
 # Later call (same process or a new one): returns the cached build,
 # skipping the pwlf regression.
-mat = create_material('steel.yaml', dependency=T, enable_plotting=False)
+mat = create_material('steel.yaml', dependency=T)
 ```
 
 A cache entry is keyed by a hash of everything that can change the result:
@@ -42,12 +43,13 @@ provably matches.
 
 ## When the Cache Is Used
 
-The cache is consulted only when `enable_plotting=False`. A plotting run exists to
-(re)produce figures, so it always rebuilds. Opt out for a single call with
-`use_cache=False`:
+The cache is consulted on every build except a plotting run. Passing
+`enable_plotting=True` exists to (re)produce the figures, so it always rebuilds
+and never reads or writes the cache. Opt out for a single (non-plotting) call
+with `use_cache=False`:
 
 ```python
-create_material('steel.yaml', dependency=T, enable_plotting=False, use_cache=False)
+create_material('steel.yaml', dependency=T, use_cache=False)
 ```
 
 ---
