@@ -32,6 +32,36 @@ licensed under **BSD-3-Clause** - see the repository root for details.
 | `CouetteFlowScaling.prm`  | runtime parameters |
 | `CMakeLists.txt`          | app target + MaterForge viscosity options |
 
+## Tuning the viscosity fit (MaterForge ≥ 0.10.0)
+
+`dynamic_viscosity` in `CouetteFlowMaterial.yaml` carries a `regression:` block
+(`simplify`, `degree`, `segments`) that fits its smooth analytic form to a cheap
+piecewise polynomial. With `USE_MATERFORGE=ON`, code generation reports how
+faithfully that fit reproduces the source data, via the MaterForge fit-quality
+API, e.g.:
+
+```
+Fit quality: dynamic_viscosity: R²=0.999989  RMSE=0.0001226  MAE=0.0001085  max|err|=0.0002464  (n=31)
+```
+
+To choose the cheapest `(segments, degree)` that meets an accuracy target, pass
+`--survey-viscosity-fit` to the code generator. It rebuilds only the viscosity
+for a small grid of configs, scores each with `materforge.fit_quality`, and
+recommends the lowest-cost config under tolerance (it only prints - the generated
+code is unchanged):
+
+```
+Viscosity fit survey - cheapest (segments, degree) with max|err| < 0.001:
+segments degree        R^2        RMSE    max|err|   ok
+       1      1   0.969131   6.397e-03   1.466e-02   no
+       2      1   0.998113   1.582e-03   3.258e-03   no
+       1      2   0.999584   7.427e-04   1.761e-03   no
+       2      2   0.999989   1.226e-04   2.464e-04  yes
+       3      2   0.999999   4.112e-05   7.050e-05  yes
+       2      3   1.000000   3.899e-06   8.571e-06  yes
+  -> use segments=2, degree=2 (max|err|=2.46e-04); set this in the regression block.
+```
+
 ## Configure
 
 The build is driven from `apps/` by a small set of CMake cache variables. The
