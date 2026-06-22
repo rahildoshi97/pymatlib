@@ -1,10 +1,11 @@
 """Unit tests for the build cache (materforge.parsing.cache)."""
 
+import numpy as np
 import pytest
 import sympy as sp
 
 from materforge import clear_cache, create_material
-from materforge.core.materials import Material
+from materforge.core.materials import Material, PropertySamples
 from materforge.parsing import cache
 from materforge.parsing.config.material_yaml_parser import MaterialYAMLParser
 
@@ -76,6 +77,19 @@ def test_store_load_roundtrip_preserves_expressions(cache_env):
     assert loaded.name == "demo"
     assert loaded.properties["density"] == sp.Float(2700.0)
     assert loaded.properties["k"] == 3 * t + 1
+
+
+def test_store_load_roundtrip_preserves_sample_data(cache_env):
+    material = Material(name="demo", properties={"k": sp.Symbol("T")})
+    material.sample_data["k"] = PropertySamples(
+        np.array([1.0, 2.0]), np.array([3.0, 4.0]), "TABULAR_DATA")
+    cache.store("withsamples", material)
+    loaded = cache.load("withsamples")
+    assert loaded is not None
+    assert "k" in loaded.sample_data
+    assert list(loaded.sample_data["k"].x) == [1.0, 2.0]
+    assert list(loaded.sample_data["k"].y) == [3.0, 4.0]
+    assert loaded.sample_data["k"].prop_type == "TABULAR_DATA"
 
 
 def test_load_miss_returns_none(cache_env):

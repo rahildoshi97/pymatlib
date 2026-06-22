@@ -2,10 +2,11 @@
 import copy
 import pickle
 
+import numpy as np
 import pytest
 import sympy as sp
 
-from materforge.core.materials import Material
+from materforge.core.materials import Material, PropertySamples
 
 class TestMaterial:
     """Tests for the dynamic-property Material model."""
@@ -179,3 +180,38 @@ class TestMaterialSerialization:
         mat = self._build()
         with pytest.raises(AttributeError):
             _ = mat.does_not_exist
+
+
+class TestSampleData:
+    """Tests for the source-data store used by fit quality and plotting."""
+
+    def test_default_is_empty(self):
+        assert Material(name="m").sample_data == {}
+
+    def test_storing_samples_does_not_create_a_property(self):
+        mat = Material(name="m")
+        mat.sample_data["p"] = PropertySamples(
+            np.array([1.0]), np.array([2.0]), "TABULAR_DATA")
+        assert "sample_data" not in mat.properties
+        assert "p" not in mat.properties
+
+    def test_evaluate_drops_sample_data(self):
+        T = sp.Symbol("T")
+        mat = Material(name="m")
+        mat.p = sp.Float(2) * T
+        mat.sample_data["p"] = PropertySamples(
+            np.array([1.0, 2.0]), np.array([2.0, 4.0]), "TABULAR_DATA")
+        assert mat.evaluate(T, 3.0).sample_data == {}
+
+    def test_equality_ignores_sample_data(self):
+        a = Material(name="m", properties={"x": sp.Float(1)})
+        b = Material(name="m", properties={"x": sp.Float(1)})
+        a.sample_data["x"] = PropertySamples(
+            np.array([1.0]), np.array([1.0]), "TABULAR_DATA")
+        assert a == b
+
+    def test_property_samples_fields(self):
+        s = PropertySamples(np.array([1.0, 2.0]), np.array([3.0, 4.0]), "FILE_IMPORT")
+        assert s.prop_type == "FILE_IMPORT"
+        assert list(s.x) == [1.0, 2.0]
+        assert list(s.y) == [3.0, 4.0]

@@ -8,12 +8,31 @@ import logging
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Dict, Optional
 
+import numpy as np
 import sympy as sp
 
 if TYPE_CHECKING:
     from materforge.core.evaluator import MaterialEvaluator
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass(frozen=True, eq=False)
+class PropertySamples:
+    """The source data points a data-backed property was built from.
+
+    Retained on the owning :class:`Material` (see :attr:`Material.sample_data`) so
+    fit-quality metrics and data-overlay plots can be computed *after* the build,
+    without re-reading the original YAML or its data files.
+
+    Attributes:
+        x:         Dependency-axis sample values, ascending.
+        y:         Corresponding property values.
+        prop_type: Source property type, e.g. ``'FILE_IMPORT'`` or ``'TABULAR_DATA'``.
+    """
+    x: np.ndarray
+    y: np.ndarray
+    prop_type: str
 
 
 @dataclass
@@ -25,13 +44,18 @@ class Material:
     Attributes:
         name: Human-readable material identifier.
         properties: Dictionary with all properties.
+        sample_data: Source data points each data-backed property was built from,
+            keyed by property name. Populated during :func:`create_material`;
+            empty for a material produced by :meth:`evaluate`. Consumed by the
+            :mod:`materforge.analysis` and plotting helpers.
     """
     name: str
     properties: Dict[str, sp.Basic] = field(default_factory=dict)
+    sample_data: Dict[str, PropertySamples] = field(default_factory=dict, compare=False, repr=False)
 
     # --- Dynamic property tracking ---
     def __setattr__(self, name: str, value) -> None:
-        if name in {"name", "properties"}:
+        if name in {"name", "properties", "sample_data"}:
             super().__setattr__(name, value)
         else:
             self.properties[name] = value

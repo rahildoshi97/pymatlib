@@ -16,7 +16,7 @@ import sympy as sp
 from typing import Dict, Union, Tuple, Optional
 from pathlib import Path
 from materforge.algorithms.piecewise_builder import PiecewiseBuilder
-from materforge.core.materials import Material
+from materforge.core.materials import Material, PropertySamples
 
 
 logger = logging.getLogger(__name__)
@@ -71,6 +71,9 @@ class PropertyProcessorBase:
         """
         logger.debug("Finalizing property '%s' with existing piecewise function", prop_name)
         setattr(material, prop_name, piecewise_func)
+        # No sample_data here: STEP_FUNCTION / PIECEWISE_EQUATION are exact symbolic
+        # definitions, so their x/y arrays are synthetic plotting points, not source
+        # data to assess a fit against. Only finalize_with_data_arrays retains samples.
         bounds = (np.min(x_data), np.max(x_data)) if x_data is not None and len(x_data) > 0 else None
         self._visualize_if_enabled(
             material=material, prop_name=prop_name, dependency=dependency,
@@ -117,6 +120,8 @@ class PropertyProcessorBase:
             logger.debug("Created piecewise function for property '%s'", prop_name)
         except Exception as e:
             raise ValueError(f"Failed to finalize property '{prop_name}': {str(e)}") from e
+        material.sample_data[prop_name] = PropertySamples(
+            np.asarray(dep_array, dtype=float), np.asarray(prop_array, dtype=float), prop_type)
         self._visualize_if_enabled(material=material, prop_name=prop_name, dependency=dependency,
             prop_type=prop_type, x_data=dep_array, y_data=prop_array, config=config,
             bounds=(np.min(dep_array), np.max(dep_array)))
