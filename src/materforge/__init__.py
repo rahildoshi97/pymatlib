@@ -37,7 +37,7 @@ except ImportError:
         __version__ = "0.9.2+unknown"
 
 # Core material definitions
-from .core.materials import Material
+from .core.materials import Material, PropertySamples
 from .core.symbol_registry import SymbolRegistry
 from .core.evaluator import MaterialEvaluator
 
@@ -66,11 +66,24 @@ from .algorithms.piecewise_inverter import PiecewiseInverter
 # Visualization
 from .visualization.plotters import PropertyVisualizer
 
+# Fit-quality analysis
+from .analysis import (
+    r_squared,
+    rmse,
+    mae,
+    max_abs_error,
+    FitQuality,
+    fit_quality,
+    residuals,
+    fit_report,
+)
+
 __all__ = [
     # Version
     "__version__",
     # Core classes
     "Material",
+    "PropertySamples",
     "SymbolRegistry",
     "MaterialEvaluator",
     # Main API
@@ -94,6 +107,15 @@ __all__ = [
     "PiecewiseInverter",
     # Visualization
     "PropertyVisualizer",
+    # Fit-quality analysis
+    "r_squared",
+    "rmse",
+    "mae",
+    "max_abs_error",
+    "FitQuality",
+    "fit_quality",
+    "residuals",
+    "fit_report",
 ]
 
 # Package metadata
