@@ -65,6 +65,7 @@ from .algorithms.piecewise_inverter import PiecewiseInverter
 
 # Visualization
 from .visualization.plotters import PropertyVisualizer
+from .visualization.plots import plot_property, plot_residuals, compare_materials
 
 # Fit-quality analysis
 from .analysis import (
@@ -107,6 +108,9 @@ __all__ = [
     "PiecewiseInverter",
     # Visualization
     "PropertyVisualizer",
+    "plot_property",
+    "plot_residuals",
+    "compare_materials",
     # Fit-quality analysis
     "r_squared",
     "rmse",
