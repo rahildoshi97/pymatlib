@@ -114,6 +114,34 @@ def test_plot_writes_png(tmp_path, capsys, aluminum_yaml_path):
     assert plots, "expected a PNG to be written to the materforge_plots directory"
 
 
+# --- fit ----------------------------------------------------------------
+
+def test_fit_reports_all_data_backed_properties(capsys, aluminum_yaml_path):
+    assert main(["fit", str(aluminum_yaml_path)]) == 0
+    out = capsys.readouterr().out
+    assert "R²" in out
+    assert "density" in out
+
+
+def test_fit_single_property(capsys, aluminum_yaml_path):
+    assert main(["fit", str(aluminum_yaml_path), "density"]) == 0
+    out = capsys.readouterr().out
+    assert out.startswith("density")
+    assert "R²" in out
+
+
+def test_fit_unknown_property_returns_error(capsys, aluminum_yaml_path):
+    assert main(["fit", str(aluminum_yaml_path), "does_not_exist"]) == 1
+    assert "Error:" in capsys.readouterr().err
+
+
+def test_fit_without_data_backed_properties_returns_error(tmp_path, capsys):
+    yaml = tmp_path / "const.yaml"
+    yaml.write_text("name: C\nproperties:\n  density: 2700\n")
+    assert main(["fit", str(yaml)]) == 1
+    assert "No data-backed properties" in capsys.readouterr().err
+
+
 # --- top level ----------------------------------------------------------
 
 def test_no_command_prints_help_and_fails(capsys):

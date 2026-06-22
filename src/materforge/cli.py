@@ -19,6 +19,7 @@ from typing import Optional, Sequence
 import sympy as sp
 
 from materforge import __version__
+from materforge.analysis import fit_quality, fit_report
 from materforge.catalog import get_material_path, list_materials
 from materforge.parsing.api import (
     create_material,
@@ -117,6 +118,23 @@ def _cmd_evaluate(args: argparse.Namespace) -> int:
     return _EXIT_OK
 
 
+def _cmd_fit(args: argparse.Namespace) -> int:
+    """Reports goodness-of-fit for data-backed properties against their source data."""
+    symbol = sp.Symbol(args.symbol)
+    material = create_material(args.yaml_path, symbol, enable_plotting=False)
+    if args.property:
+        print(fit_quality(material, args.property, symbol=symbol))
+        return _EXIT_OK
+    report = fit_report(material, symbol=symbol)
+    if not report:
+        print(f"No data-backed properties to assess in {args.yaml_path}.",
+              file=sys.stderr)
+        return _EXIT_ERROR
+    for name in sorted(report):
+        print(report[name])
+    return _EXIT_OK
+
+
 def _format_value(value: sp.Basic) -> str:
     """Formats an evaluated property value for display, preferring a short float."""
     try:
@@ -132,7 +150,7 @@ def _format_value(value: sp.Basic) -> str:
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="materforge",
-        description="Inspect, validate, plot, and evaluate MaterForge YAML materials.",
+        description="Inspect, validate, plot, evaluate, and fit-check MaterForge YAML materials.",
     )
     parser.add_argument("--version", action="version",
                         version=f"materforge {__version__}")
@@ -183,6 +201,15 @@ def _build_parser() -> argparse.ArgumentParser:
     p_evaluate.add_argument("value", type=float,
                             help="numeric value of the dependency to evaluate at")
     p_evaluate.set_defaults(func=_cmd_evaluate)
+
+    p_fit = subparsers.add_parser(
+        "fit", parents=[common, symbol_opt],
+        help="report goodness-of-fit (R²/RMSE) for data-backed properties")
+    p_fit.add_argument("yaml_path", type=_existing_path,
+                       help="path to the YAML material file")
+    p_fit.add_argument("property", nargs="?", default=None,
+                       help="property to assess (default: all data-backed properties)")
+    p_fit.set_defaults(func=_cmd_fit)
 
     return parser
 
