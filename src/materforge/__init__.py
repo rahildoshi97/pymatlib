@@ -34,7 +34,9 @@ except ImportError:
     try:
         __version__ = _pkg_version("materforge")
     except _PackageNotFoundError:
-        __version__ = "0.9.2+unknown"
+        # Last resort: neither the generated _version.py nor installed package
+        # metadata is available. Stay version-neutral so this can't go stale.
+        __version__ = "0+unknown"
 
 # Core material definitions
 from .core.materials import Material, PropertySamples
