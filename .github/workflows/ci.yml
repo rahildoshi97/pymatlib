@@ -49,8 +49,11 @@ jobs:
           pytest tests/ --cov=materforge --cov-report=xml -v -m "not slow"
 
       - name: Upload coverage reports
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v5
         if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.10'
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false
 
   # Install the exact dependency floors from pyproject.toml (via
   # .github/constraints-min.txt) and run the suite, so we test the oldest
