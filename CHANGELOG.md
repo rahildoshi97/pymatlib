@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-06-23
+
+Visualization and fit-quality release. A built material now keeps the source data
+points each data-backed property was fit from, which unlocks goodness-of-fit
+metrics and post-build, notebook-friendly plotting. Additive and backward
+compatible.
+
+### Added
+- `materforge.analysis`, a fit-quality module (re-exported from the top level):
+  `r_squared`, `rmse`, `mae`, `max_abs_error` as plain array metrics; a
+  `FitQuality` summary dataclass; and material-aware `fit_quality(material, prop)`,
+  `residuals(material, prop)`, and `fit_report(material)`. Each scores the stored
+  property against the data it was built from - the genuine regression error for a
+  `regression: {simplify: pre|post}` property, ~0 for plain interpolation. See the
+  new "Assess Fit Quality" how-to guide.
+- Post-build plotting helpers in `materforge.visualization.plots` (re-exported from
+  the top level): `plot_property`, `plot_residuals`, and `compare_materials`. Each
+  draws onto a Matplotlib `Axes` and returns it without saving or closing, so they
+  render inline in Jupyter and compose into custom figures via `ax=`. The
+  parse-time `PropertyVisualizer` auto-plot is unchanged. See the new "Visualize
+  Properties" how-to guide.
+- `Material.sample_data`: the source `(x, y)` points each data-backed property
+  (file-import, tabular, computed) was built from, exposed as the new
+  `PropertySamples` dataclass. Captured during `create_material` and persisted
+  through the build cache.
+- A `materforge fit <yaml> [property]` CLI subcommand that prints the fit quality
+  of one property, or of every data-backed property when none is given.
+- Fit-quality reporting in the demo apps: `HeatEquationKernel` now prints a
+  `fit_report` for its regression-backed properties, and `CouetteFlow` reports the
+  `dynamic_viscosity` fit that bounds its analytical-solution accuracy.
+
 ### Changed
 - **Behavior change:** `create_material` now defaults to `enable_plotting=False`.
   Previously the default was `enable_plotting=True`, and because the on-disk build
@@ -16,6 +47,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   now builds, caches, and writes nothing extra. Pass `enable_plotting=True` to
   (re)generate the composite plot (still a cache-bypassing rebuild, by design).
   `load_material` already defaulted to no plotting and is unchanged.
+- The build cache payload now carries `sample_data` (format bumped to v2); existing
+  cache entries are transparently invalidated and rebuilt.
+- README "Pipeline Status" and "Code Coverage" badges now point at GitHub Actions
+  and Codecov instead of the GitLab mirror, completing the PyPI-page migration to
+  GitHub. The CI coverage upload uses `codecov/codecov-action@v5`.
 
 ### Fixed
 - `Material` can now be pickled and deep-copied. Its dynamic-attribute lookup
